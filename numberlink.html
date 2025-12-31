@@ -371,14 +371,15 @@
             // 端点に到達
             if (cellData.isEndpoint) {
                 if (cellData.endpointId === currentPathId) {
+                    // 同じペアの端点に到達 - パスを完成
                     currentPath.push({ x: pos.x, y: pos.y });
                     grid[pos.y][pos.x].pathId = currentPathId;
                     isDrawing = false;
                     render();
                     saveGame();
                     checkClear();
-                    return;
                 }
+                // 異なるペアの端点には入れない
                 return;
             }
 
@@ -825,13 +826,32 @@
         }
 
         // ============================================
+        // セーブデータの検証
+        // ============================================
+        function validateSaveData(savedGame) {
+            if (!savedGame || !savedGame.endpoints || !savedGame.grid) return false;
+
+            // 各ペアの端点が隣接していないことを確認
+            // （隣接している場合は古い生成ロジックのデータなので再生成）
+            for (const ep of savedGame.endpoints) {
+                if (!ep.cells || ep.cells.length !== 2) return false;
+                const [a, b] = ep.cells;
+                const dx = Math.abs(a.x - b.x);
+                const dy = Math.abs(a.y - b.y);
+                // 端点が隣接している（マンハッタン距離1）場合は無効
+                if (dx + dy <= 1) return false;
+            }
+            return true;
+        }
+
+        // ============================================
         // 初期化
         // ============================================
         document.addEventListener('DOMContentLoaded', () => {
             initCanvas();
 
             const savedGame = loadGame();
-            if (savedGame) {
+            if (savedGame && validateSaveData(savedGame)) {
                 currentStage = savedGame.currentStage;
                 gridSize = savedGame.gridSize;
                 grid = savedGame.grid;
@@ -840,6 +860,8 @@
                 calculateSizes();
                 render();
             } else {
+                // 古いまたは無効なセーブデータはクリアして新規生成
+                clearSave();
                 generatePuzzle();
                 render();
                 saveGame();
