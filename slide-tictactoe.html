@@ -667,6 +667,32 @@
             }
         }
 
+        // AI: 重み付きランダム選択（案4）
+        function weightedRandomSelect(candidates) {
+            if (candidates.length === 0) return null;
+            if (candidates.length === 1) return candidates[0];
+
+            // スコア順にソート（降順）
+            candidates.sort((a, b) => b.score - a.score);
+
+            const topScore = candidates[0].score;
+            const topTier = candidates.filter(c => c.score === topScore);
+
+            // 最高スコアの手が複数あればその中からランダム（案1）
+            if (topTier.length > 1) {
+                return topTier[Math.floor(Math.random() * topTier.length)];
+            }
+
+            // 80%で最善手、20%で次善手以降から選択（案4）
+            if (Math.random() < 0.8 || candidates.length === 1) {
+                return candidates[0];
+            } else {
+                // 次善手以降からランダム選択
+                const others = candidates.slice(1);
+                return others[Math.floor(Math.random() * others.length)];
+            }
+        }
+
         // AI: 最適な配置位置を探す
         function findBestPlacement() {
             const emptyCells = [];
@@ -674,37 +700,48 @@
                 if (board[i] === EMPTY) emptyCells.push(i);
             }
 
-            // 1. 勝てる位置があれば配置
+            // 各セルにスコアを付ける
+            const candidates = [];
+
             for (const cell of emptyCells) {
+                let score = 0;
+
+                // 勝てる位置は最優先（スコア1000）
                 board[cell] = AI;
                 if (checkWinWithoutEffect(AI)) {
                     board[cell] = EMPTY;
-                    return cell;
+                    return cell; // 勝てるなら即決
                 }
                 board[cell] = EMPTY;
-            }
 
-            // 2. 相手の勝利を阻止
-            for (const cell of emptyCells) {
+                // 相手の勝利を阻止（スコア100）
                 board[cell] = PLAYER;
                 if (checkWinWithoutEffect(PLAYER)) {
-                    board[cell] = EMPTY;
-                    return cell;
+                    score += 100;
                 }
                 board[cell] = EMPTY;
+
+                // リーチを作れる位置（スコア30）
+                board[cell] = AI;
+                if (hasReach(AI)) {
+                    score += 30;
+                }
+                board[cell] = EMPTY;
+
+                // 中央（スコア20）
+                if (cell === 4) score += 20;
+
+                // 角（スコア10）
+                if ([0, 2, 6, 8].includes(cell)) score += 10;
+
+                // 基本スコア（ランダム要素）
+                score += Math.random() * 5;
+
+                candidates.push({ cell, score });
             }
 
-            // 3. 中央優先
-            if (board[4] === EMPTY) return 4;
-
-            // 4. 角優先
-            const corners = [0, 2, 6, 8].filter(i => board[i] === EMPTY);
-            if (corners.length > 0) {
-                return corners[Math.floor(Math.random() * corners.length)];
-            }
-
-            // 5. ランダム
-            return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            const selected = weightedRandomSelect(candidates);
+            return selected ? selected.cell : emptyCells[0];
         }
 
         // AI: 最適な移動を探す
@@ -714,98 +751,82 @@
                 if (board[i] === AI) aiCells.push(i);
             }
 
-            // 1. 勝てる移動があれば実行
+            // 全ての有効な移動を収集してスコアを付ける
+            const candidates = [];
+
             for (const from of aiCells) {
                 for (const to of ADJACENTS[from]) {
                     if (board[to] === EMPTY) {
+                        let score = 0;
+
+                        // 勝てる移動は即決（スコア1000）
                         board[to] = AI;
                         board[from] = EMPTY;
                         if (checkWinWithoutEffect(AI)) {
                             board[from] = AI;
                             board[to] = EMPTY;
-                            return { from, to };
+                            return { from, to }; // 勝てるなら即決
                         }
+
+                        // リーチを作れる（スコア50）
+                        if (hasReach(AI)) {
+                            score += 50;
+                        }
+
+                        // ダブルリーチ（2つ以上のリーチ）を作れる（スコア80）
+                        let reachCount = 0;
+                        for (const pattern of WIN_PATTERNS) {
+                            const values = pattern.map(i => board[i]);
+                            const aiCount = values.filter(v => v === AI).length;
+                            const emptyCount = values.filter(v => v === EMPTY).length;
+                            if (aiCount === 2 && emptyCount === 1) reachCount++;
+                        }
+                        if (reachCount >= 2) score += 80;
+
                         board[from] = AI;
                         board[to] = EMPTY;
-                    }
-                }
-            }
 
-            // 2. 相手の勝利を阻止
-            const playerCells = [];
-            for (let i = 0; i < 9; i++) {
-                if (board[i] === PLAYER) playerCells.push(i);
-            }
-
-            // プレイヤーが次に勝てる移動をチェック
-            let blockingMoves = [];
-            for (const pFrom of playerCells) {
-                for (const pTo of ADJACENTS[pFrom]) {
-                    if (board[pTo] === EMPTY) {
-                        board[pTo] = PLAYER;
-                        board[pFrom] = EMPTY;
-                        if (checkWinWithoutEffect(PLAYER)) {
-                            // この位置(pTo)を塞ぐか、リーチを崩す移動を探す
-                            board[pFrom] = PLAYER;
-                            board[pTo] = EMPTY;
-
-                            // AIがpToに移動できるか
-                            for (const from of aiCells) {
-                                if (ADJACENTS[from].includes(pTo)) {
-                                    blockingMoves.push({ from, to: pTo, priority: 1 });
+                        // 相手の勝利を阻止（スコア100）
+                        const playerCells = [];
+                        for (let i = 0; i < 9; i++) {
+                            if (board[i] === PLAYER) playerCells.push(i);
+                        }
+                        for (const pFrom of playerCells) {
+                            for (const pTo of ADJACENTS[pFrom]) {
+                                if (board[pTo] === EMPTY) {
+                                    board[pTo] = PLAYER;
+                                    board[pFrom] = EMPTY;
+                                    if (checkWinWithoutEffect(PLAYER)) {
+                                        // toがpToと同じ位置なら阻止できる
+                                        if (to === pTo) {
+                                            score += 100;
+                                        }
+                                    }
+                                    board[pFrom] = PLAYER;
+                                    board[pTo] = EMPTY;
                                 }
                             }
-                        } else {
-                            board[pFrom] = PLAYER;
-                            board[pTo] = EMPTY;
                         }
+
+                        // 中央への移動（スコア25）
+                        if (to === 4) score += 25;
+
+                        // 角への移動（スコア10）
+                        if ([0, 2, 6, 8].includes(to)) score += 10;
+
+                        // 中央から離れる移動はマイナス
+                        if (from === 4) score -= 15;
+
+                        // 基本スコア（ランダム要素）
+                        score += Math.random() * 5;
+
+                        candidates.push({ from, to, score });
                     }
                 }
             }
 
-            if (blockingMoves.length > 0) {
-                return blockingMoves[0];
-            }
-
-            // 3. リーチを作る移動
-            for (const from of aiCells) {
-                for (const to of ADJACENTS[from]) {
-                    if (board[to] === EMPTY) {
-                        board[to] = AI;
-                        board[from] = EMPTY;
-                        if (hasReach(AI)) {
-                            board[from] = AI;
-                            board[to] = EMPTY;
-                            return { from, to };
-                        }
-                        board[from] = AI;
-                        board[to] = EMPTY;
-                    }
-                }
-            }
-
-            // 4. 中央への移動を優先
-            for (const from of aiCells) {
-                if (ADJACENTS[from].includes(4) && board[4] === EMPTY) {
-                    return { from, to: 4 };
-                }
-            }
-
-            // 5. ランダムな有効移動
-            const validMoves = [];
-            for (const from of aiCells) {
-                for (const to of ADJACENTS[from]) {
-                    if (board[to] === EMPTY) {
-                        validMoves.push({ from, to });
-                    }
-                }
-            }
-
-            if (validMoves.length > 0) {
-                return validMoves[Math.floor(Math.random() * validMoves.length)];
-            }
-
-            return null;
+            const selected = weightedRandomSelect(candidates);
+            return selected ? { from: selected.from, to: selected.to } : null;
         }
 
         // 勝利判定（副作用なし）
