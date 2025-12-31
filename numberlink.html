@@ -719,9 +719,8 @@
             const path = paths[pathId];
             if (path) {
                 for (const cell of path) {
-                    if (!grid[cell.y][cell.x].isEndpoint || grid[cell.y][cell.x].endpointId !== pathId) {
-                        grid[cell.y][cell.x].pathId = null;
-                    }
+                    // パス上のセルのpathIdをクリア（端点も含む）
+                    grid[cell.y][cell.x].pathId = null;
                 }
             }
             paths[pathId] = [];
