@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bucket Shoot - Lumina</title>
+    <!-- Matter.js 物理エンジン -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+        /* ============================================
+           基本スタイル - スクロール防止とリセット
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none; /* スマホでのスクロール防止 */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 25%, #0d1b2a 50%, #1b0a28 75%, #0a0a1a 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* ============================================
+           ヘッダー - バックボタンとタイトル
+           ============================================ */
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #88ccff;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 12px;
+            border: 1px solid #88ccff;
+            border-radius: 6px;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            background: rgba(136, 204, 255, 0.2);
+        }
+
+        .header {
+            text-align: center;
+            padding: 15px 0 10px;
+            width: 100%;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 15px #00ffff;
+            letter-spacing: 4px;
+        }
+
+        /* ============================================
+           ゲーム情報 - スコアとタイマー
+           ============================================ */
+        .game-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 10px;
+            font-size: 18px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-label {
+            color: #88ccff;
+        }
+
+        .info-value {
+            font-weight: bold;
+            font-size: 24px;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .info-value.score {
+            color: #ffcc00;
+            text-shadow: 0 0 10px #ffcc00;
+        }
+
+        .info-value.time {
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88;
+        }
+
+        .info-value.time.warning {
+            color: #ff6666;
+            text-shadow: 0 0 10px #ff6666;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ============================================
+           ゲームキャンバス
+           ============================================ */
+        #game-container {
+            position: relative;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        #game-canvas {
+            display: block;
+        }
+
+        /* ============================================
+           操作ヒント
+           ============================================ */
+        .hint {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* ============================================
+           リザルト画面
+           ============================================ */
+        #result-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .result-title {
+            font-size: 48px;
+            color: #00ffff;
+            text-shadow: 0 0 30px #00ffff;
+            margin-bottom: 20px;
+        }
+
+        .result-score {
+            font-size: 72px;
+            color: #ffcc00;
+            text-shadow: 0 0 40px #ffcc00;
+            margin-bottom: 10px;
+        }
+
+        .result-label {
+            font-size: 24px;
+            color: #88ccff;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            border: 2px solid;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            background: rgba(255, 200, 100, 0.2);
+            border-color: #ffcc66;
+            color: #ffcc66;
+            text-shadow: 0 0 10px #ffcc66;
+        }
+
+        .btn:hover {
+            background: rgba(255, 200, 100, 0.4);
+        }
+
+        /* ============================================
+           スタート画面
+           ============================================ */
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .start-title {
+            font-size: 36px;
+            color: #00ffff;
+            text-shadow: 0 0 30px #00ffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .instructions {
+            color: #88ccff;
+            font-size: 16px;
+            text-align: center;
+            line-height: 2;
+            margin-bottom: 40px;
+        }
+
+        /* ============================================
+           ゴールエフェクト
+           ============================================ */
+        .goal-effect {
+            position: fixed;
+            pointer-events: none;
+            font-size: 32px;
+            animation: goalPop 0.8s ease-out forwards;
+            z-index: 150;
+        }
+
+        @keyframes goalPop {
+            0% {
+                transform: scale(0.5) translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.5) translateY(-50px);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Back</a>
+
+    <div class="header">
+        <h1 class="title">BUCKET SHOOT</h1>
+    </div>
+
+    <div class="game-info">
+        <div class="info-item">
+            <span class="info-label">SCORE:</span>
+            <span class="info-value score" id="score">0</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">TIME:</span>
+            <span class="info-value time" id="time">30</span>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+    </div>
+
+    <div class="hint">
+        板をドラッグで移動 / タップで45°回転
+    </div>
+
+    <!-- スタート画面 -->
+    <div id="start-screen">
+        <h1 class="start-title">BUCKET SHOOT</h1>
+        <div class="instructions">
+            板を動かしてボールをバケツに入れよう！<br>
+            ドラッグ：板を移動<br>
+            タップ：板を45°回転<br>
+            制限時間：30秒
+        </div>
+        <button class="btn" id="start-btn">START</button>
+    </div>
+
+    <!-- リザルト画面 -->
+    <div id="result-screen">
+        <div class="result-title">TIME UP!</div>
+        <div class="result-score" id="final-score">0</div>
+        <div class="result-label">ボールをゴール</div>
+        <button class="btn" id="retry-btn">RETRY</button>
+    </div>
+
+    <script>
+        // ============================================
+        // Matter.js モジュールの取得
+        // ============================================
+        const { Engine, Render, Runner, Bodies, Body, Composite, Events, Mouse, MouseConstraint, Vector } = Matter;
+
+        // ============================================
+        // ゲーム設定
+        // ============================================
+        const GAME_TIME = 30; // 制限時間（秒）
+        const BALL_SPAWN_INTERVAL = 2000; // ボール発射間隔（ミリ秒）
+        const BALL_RADIUS = 15;
+        const PLATFORM_WIDTH = 120;
+        const PLATFORM_HEIGHT = 12;
+
+        // ============================================
+        // ゲーム状態
+        // ============================================
+        let score = 0;
+        let timeLeft = GAME_TIME;
+        let gameRunning = false;
+        let timerInterval = null;
+        let ballSpawnInterval = null;
+        let platforms = []; // 操作可能な板
+        let balls = []; // 現在のボール
+        let engine, render, runner, mouse, mouseConstraint;
+        let canvasWidth, canvasHeight;
+        let bucket; // バケツのボディ
+        let selectedPlatform = null;
+        let dragStartTime = 0;
+
+        // ============================================
+        // DOM要素
+        // ============================================
+        const scoreEl = document.getElementById('score');
+        const timeEl = document.getElementById('time');
+        const startScreen = document.getElementById('start-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const finalScoreEl = document.getElementById('final-score');
+        const startBtn = document.getElementById('start-btn');
+        const retryBtn = document.getElementById('retry-btn');
+        const gameContainer = document.getElementById('game-container');
+        const canvas = document.getElementById('game-canvas');
+
+        // ============================================
+        // キャンバスサイズの計算
+        // ============================================
+        function calculateCanvasSize() {
+            const maxWidth = Math.min(window.innerWidth - 20, 400);
+            const maxHeight = Math.min(window.innerHeight - 200, 600);
+            canvasWidth = maxWidth;
+            canvasHeight = maxHeight;
+        }
+
+        // ============================================
+        // 物理エンジンの初期化
+        // ============================================
+        function initPhysics() {
+            calculateCanvasSize();
+
+            // エンジン作成
+            engine = Engine.create();
+            engine.world.gravity.y = 1; // 重力
+
+            // レンダラー作成
+            render = Render.create({
+                canvas: canvas,
+                engine: engine,
+                options: {
+                    width: canvasWidth,
+                    height: canvasHeight,
+                    wireframes: false, // ワイヤーフレームモードOFF
+                    background: 'transparent'
+                }
+            });
+
+            // ランナー作成
+            runner = Runner.create();
+
+            // 壁の作成（左右と上）
+            const wallThickness = 20;
+            const walls = [
+                // 左壁
+                Bodies.rectangle(-wallThickness/2, canvasHeight/2, wallThickness, canvasHeight, {
+                    isStatic: true,
+                    render: { fillStyle: 'transparent' }
+                }),
+                // 右壁
+                Bodies.rectangle(canvasWidth + wallThickness/2, canvasHeight/2, wallThickness, canvasHeight, {
+                    isStatic: true,
+                    render: { fillStyle: 'transparent' }
+                }),
+                // 上壁（発射口以外）
+                Bodies.rectangle(canvasWidth/4, -wallThickness/2, canvasWidth/2 - 30, wallThickness, {
+                    isStatic: true,
+                    render: { fillStyle: 'transparent' }
+                }),
+                Bodies.rectangle(canvasWidth*3/4, -wallThickness/2, canvasWidth/2 - 30, wallThickness, {
+                    isStatic: true,
+                    render: { fillStyle: 'transparent' }
+                })
+            ];
+            Composite.add(engine.world, walls);
+
+            // バケツ（ゴール）の作成
+            createBucket();
+
+            // 操作可能な板の作成
+            createPlatforms();
+
+            // マウス/タッチ制御の設定
+            setupMouseControl();
+
+            // 衝突イベントの設定
+            setupCollisionEvents();
+
+            // レンダリング開始
+            Render.run(render);
+        }
+
+        // ============================================
+        // バケツ（ゴール）の作成
+        // ============================================
+        function createBucket() {
+            const bucketWidth = 80;
+            const bucketHeight = 50;
+            const wallThick = 8;
+            const bucketX = canvasWidth / 2;
+            const bucketY = canvasHeight - bucketHeight / 2 - 10;
+
+            // バケツの壁（左・右・底）
+            const bucketParts = [
+                // 左壁
+                Bodies.rectangle(
+                    bucketX - bucketWidth/2 + wallThick/2,
+                    bucketY,
+                    wallThick,
+                    bucketHeight,
+                    { isStatic: true, render: { fillStyle: '#4a9eff' }, label: 'bucketWall' }
+                ),
+                // 右壁
+                Bodies.rectangle(
+                    bucketX + bucketWidth/2 - wallThick/2,
+                    bucketY,
+                    wallThick,
+                    bucketHeight,
+                    { isStatic: true, render: { fillStyle: '#4a9eff' }, label: 'bucketWall' }
+                ),
+                // 底
+                Bodies.rectangle(
+                    bucketX,
+                    bucketY + bucketHeight/2 - wallThick/2,
+                    bucketWidth,
+                    wallThick,
+                    { isStatic: true, render: { fillStyle: '#4a9eff' }, label: 'bucketBottom' }
+                )
+            ];
+
+            // ゴール判定用のセンサー（透明、衝突検知のみ）
+            const goalSensor = Bodies.rectangle(
+                bucketX,
+                bucketY + 10,
+                bucketWidth - wallThick * 2 - 10,
+                bucketHeight - 20,
+                {
+                    isStatic: true,
+                    isSensor: true, // 衝突しないが検知する
+                    render: { fillStyle: 'rgba(0, 255, 100, 0.2)' },
+                    label: 'goal'
+                }
+            );
+
+            bucket = { parts: bucketParts, sensor: goalSensor, x: bucketX, y: bucketY };
+            Composite.add(engine.world, [...bucketParts, goalSensor]);
+        }
+
+        // ============================================
+        // 操作可能な板の作成
+        // ============================================
+        function createPlatforms() {
+            platforms = [];
+
+            // 3枚の板を配置
+            const platformPositions = [
+                { x: canvasWidth * 0.3, y: canvasHeight * 0.3, angle: Math.PI / 6 },
+                { x: canvasWidth * 0.7, y: canvasHeight * 0.45, angle: -Math.PI / 6 },
+                { x: canvasWidth * 0.4, y: canvasHeight * 0.6, angle: 0 }
+            ];
+
+            platformPositions.forEach((pos, index) => {
+                const platform = Bodies.rectangle(
+                    pos.x,
+                    pos.y,
+                    PLATFORM_WIDTH,
+                    PLATFORM_HEIGHT,
+                    {
+                        isStatic: true,
+                        angle: pos.angle,
+                        render: {
+                            fillStyle: '#ff8844',
+                            strokeStyle: '#ffaa66',
+                            lineWidth: 2
+                        },
+                        label: 'platform',
+                        friction: 0.3,
+                        restitution: 0.4
+                    }
+                );
+                platform.platformIndex = index;
+                platforms.push(platform);
+                Composite.add(engine.world, platform);
+            });
+        }
+
+        // ============================================
+        // マウス/タッチ制御の設定
+        // ============================================
+        function setupMouseControl() {
+            mouse = Mouse.create(canvas);
+
+            // タッチイベントの処理
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+            // マウスイベント（PC用）
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+        }
+
+        // ============================================
+        // タッチ/マウスイベントハンドラー
+        // ============================================
+        function getEventPosition(e) {
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches && e.touches.length > 0) {
+                return {
+                    x: e.touches[0].clientX - rect.left,
+                    y: e.touches[0].clientY - rect.top
+                };
+            }
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function findPlatformAtPosition(pos) {
+            for (const platform of platforms) {
+                const dx = pos.x - platform.position.x;
+                const dy = pos.y - platform.position.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < PLATFORM_WIDTH / 2 + 20) {
+                    return platform;
+                }
+            }
+            return null;
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const pos = getEventPosition(e);
+            selectedPlatform = findPlatformAtPosition(pos);
+            dragStartTime = Date.now();
+            if (selectedPlatform) {
+                selectedPlatform.dragOffset = {
+                    x: pos.x - selectedPlatform.position.x,
+                    y: pos.y - selectedPlatform.position.y
+                };
+            }
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (selectedPlatform) {
+                const pos = getEventPosition(e);
+                const newX = Math.max(PLATFORM_WIDTH/2, Math.min(canvasWidth - PLATFORM_WIDTH/2, pos.x - selectedPlatform.dragOffset.x));
+                const newY = Math.max(50, Math.min(canvasHeight - 100, pos.y - selectedPlatform.dragOffset.y));
+                Body.setPosition(selectedPlatform, { x: newX, y: newY });
+            }
+        }
+
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            const dragDuration = Date.now() - dragStartTime;
+            // 短いタップなら回転
+            if (selectedPlatform && dragDuration < 200) {
+                const pos = getEventPosition(e.changedTouches ? { touches: e.changedTouches } : e);
+                const platform = findPlatformAtPosition(pos);
+                if (platform) {
+                    Body.setAngle(platform, platform.angle + Math.PI / 4);
+                }
+            }
+            selectedPlatform = null;
+        }
+
+        function handleMouseDown(e) {
+            const pos = getEventPosition(e);
+            selectedPlatform = findPlatformAtPosition(pos);
+            dragStartTime = Date.now();
+            if (selectedPlatform) {
+                selectedPlatform.dragOffset = {
+                    x: pos.x - selectedPlatform.position.x,
+                    y: pos.y - selectedPlatform.position.y
+                };
+            }
+        }
+
+        function handleMouseMove(e) {
+            if (selectedPlatform) {
+                const pos = getEventPosition(e);
+                const newX = Math.max(PLATFORM_WIDTH/2, Math.min(canvasWidth - PLATFORM_WIDTH/2, pos.x - selectedPlatform.dragOffset.x));
+                const newY = Math.max(50, Math.min(canvasHeight - 100, pos.y - selectedPlatform.dragOffset.y));
+                Body.setPosition(selectedPlatform, { x: newX, y: newY });
+            }
+        }
+
+        function handleMouseUp(e) {
+            const dragDuration = Date.now() - dragStartTime;
+            // 短いクリックなら回転
+            if (selectedPlatform && dragDuration < 200) {
+                Body.setAngle(selectedPlatform, selectedPlatform.angle + Math.PI / 4);
+            }
+            selectedPlatform = null;
+        }
+
+        // ============================================
+        // 衝突イベントの設定
+        // ============================================
+        function setupCollisionEvents() {
+            Events.on(engine, 'collisionStart', (event) => {
+                event.pairs.forEach(pair => {
+                    const { bodyA, bodyB } = pair;
+
+                    // ゴールセンサーとボールの衝突
+                    if ((bodyA.label === 'goal' && bodyB.label === 'ball') ||
+                        (bodyB.label === 'goal' && bodyA.label === 'ball')) {
+                        const ball = bodyA.label === 'ball' ? bodyA : bodyB;
+                        handleGoal(ball);
+                    }
+                });
+            });
+        }
+
+        // ============================================
+        // ゴール処理
+        // ============================================
+        function handleGoal(ball) {
+            if (!gameRunning || ball.scored) return;
+            ball.scored = true;
+
+            // スコア加算
+            score++;
+            scoreEl.textContent = score;
+
+            // エフェクト表示
+            showGoalEffect(ball.position.x, ball.position.y);
+
+            // ボール削除
+            setTimeout(() => {
+                Composite.remove(engine.world, ball);
+                balls = balls.filter(b => b !== ball);
+            }, 100);
+        }
+
+        // ============================================
+        // ゴールエフェクト
+        // ============================================
+        function showGoalEffect(x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'goal-effect';
+            effect.textContent = '+1';
+            effect.style.left = (gameContainer.offsetLeft + x) + 'px';
+            effect.style.top = (gameContainer.offsetTop + y) + 'px';
+            effect.style.color = '#ffcc00';
+            document.body.appendChild(effect);
+
+            setTimeout(() => effect.remove(), 800);
+        }
+
+        // ============================================
+        // ボールの生成
+        // ============================================
+        function spawnBall() {
+            if (!gameRunning) return;
+
+            const ball = Bodies.circle(
+                canvasWidth / 2 + (Math.random() - 0.5) * 40, // 少しランダムな位置
+                -BALL_RADIUS,
+                BALL_RADIUS,
+                {
+                    restitution: 0.6, // 反発係数
+                    friction: 0.1,
+                    frictionAir: 0.01,
+                    render: {
+                        fillStyle: '#00ff88',
+                        strokeStyle: '#44ffaa',
+                        lineWidth: 2
+                    },
+                    label: 'ball'
+                }
+            );
+
+            balls.push(ball);
+            Composite.add(engine.world, ball);
+
+            // 画面外に落ちたボールを削除
+            setTimeout(() => {
+                if (ball.position.y > canvasHeight + 50) {
+                    Composite.remove(engine.world, ball);
+                    balls = balls.filter(b => b !== ball);
+                }
+            }, 10000);
+        }
+
+        // ============================================
+        // ゲーム開始
+        // ============================================
+        function startGame() {
+            score = 0;
+            timeLeft = GAME_TIME;
+            gameRunning = true;
+
+            scoreEl.textContent = '0';
+            timeEl.textContent = GAME_TIME;
+            timeEl.classList.remove('warning');
+
+            startScreen.style.display = 'none';
+            resultScreen.style.display = 'none';
+
+            // 既存のボールを削除
+            balls.forEach(ball => Composite.remove(engine.world, ball));
+            balls = [];
+
+            // 板をリセット
+            platforms.forEach(p => Composite.remove(engine.world, p));
+            platforms = [];
+            createPlatforms();
+
+            // 物理エンジン開始
+            Runner.run(runner, engine);
+
+            // タイマー開始
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timeEl.textContent = timeLeft;
+
+                if (timeLeft <= 10) {
+                    timeEl.classList.add('warning');
+                }
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+
+            // ボール生成開始
+            spawnBall();
+            ballSpawnInterval = setInterval(spawnBall, BALL_SPAWN_INTERVAL);
+        }
+
+        // ============================================
+        // ゲーム終了
+        // ============================================
+        function endGame() {
+            gameRunning = false;
+
+            clearInterval(timerInterval);
+            clearInterval(ballSpawnInterval);
+            Runner.stop(runner);
+
+            finalScoreEl.textContent = score;
+            resultScreen.style.display = 'flex';
+        }
+
+        // ============================================
+        // イベントリスナー
+        // ============================================
+        startBtn.addEventListener('click', startGame);
+        retryBtn.addEventListener('click', startGame);
+
+        // ウィンドウリサイズ対応
+        window.addEventListener('resize', () => {
+            if (!gameRunning) {
+                calculateCanvasSize();
+                render.canvas.width = canvasWidth;
+                render.canvas.height = canvasHeight;
+                render.options.width = canvasWidth;
+                render.options.height = canvasHeight;
+            }
+        });
+
+        // ============================================
+        // 初期化
+        // ============================================
+        initPhysics();
+    </script>
+</body>
+</html>
