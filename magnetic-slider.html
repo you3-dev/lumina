@@ -362,11 +362,11 @@
     <div class="legend">
         <div class="legend-item">
             <div class="legend-symbol n">+</div>
-            <span>N極 (引き寄せ: S)</span>
+            <span>N極 (同極で反発)</span>
         </div>
         <div class="legend-item">
             <div class="legend-symbol s">−</div>
-            <span>S極 (引き寄せ: N)</span>
+            <span>S極 (同極で反発)</span>
         </div>
         <div class="legend-item">
             <div class="legend-symbol neu">○</div>
@@ -400,48 +400,47 @@
 
         // ============================================
         // ステージ定義
-        // 磁力（反発）を活用しないと解けない配置
-        // 壁ピースで経路を塞ぎ、反発で押しのける必要がある
+        // 同極=反発で押しのける、異極=動かないブロッカー
+        // 反発を活用してルートを開く必要がある
         // ============================================
         const STAGES = [
-            // Easy: 4x4 - ゴール前の壁を反発で押しのける
-            // ターゲット(N)を右に動かすと、壁(N)が反発で押し出される
+            // Easy: 4x4 - 同極ブロッカーを反発で押しのける
             {
                 name: 'Easy',
                 gridSize: 4,
                 goal: { x: 3, y: 1 },
-                walls: [{ x: 1, y: 0 }, { x: 1, y: 2 }, { x: 1, y: 3 }], // 壁で迂回不可
+                walls: [{ x: 1, y: 0 }, { x: 1, y: 2 }, { x: 1, y: 3 }],
                 pieces: [
                     { x: 0, y: 1, pole: POLE_N, isTarget: true },
-                    { x: 2, y: 1, pole: POLE_N, isTarget: false }, // 反発で押し出す壁
+                    { x: 2, y: 1, pole: POLE_N, isTarget: false }, // 同極→反発で押せる
                 ]
             },
-            // Normal: 4x4 - 2段階の反発が必要
+            // Normal: 4x4 - 異極ブロッカーを迂回して同極で押す
             {
                 name: 'Normal',
                 gridSize: 4,
                 goal: { x: 3, y: 3 },
-                walls: [{ x: 1, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 1 }],
+                walls: [{ x: 1, y: 1 }, { x: 1, y: 2 }],
                 pieces: [
-                    { x: 0, y: 0, pole: POLE_S, isTarget: true },
-                    { x: 2, y: 2, pole: POLE_S, isTarget: false }, // 反発で押す
-                    { x: 3, y: 2, pole: POLE_N, isTarget: false },
-                    { x: 2, y: 3, pole: POLE_S, isTarget: false }, // ゴール手前を塞ぐ
+                    { x: 0, y: 0, pole: POLE_N, isTarget: true },
+                    { x: 2, y: 0, pole: POLE_S, isTarget: false }, // 異極→動かない壁
+                    { x: 2, y: 3, pole: POLE_N, isTarget: false }, // 同極→反発で押せる
+                    { x: 3, y: 2, pole: POLE_S, isTarget: false }, // 異極→動かない壁
                 ]
             },
-            // Hard: 5x5 - 連鎖的な反発が必要
+            // Hard: 5x5 - 複数の反発を使って道を開く
             {
                 name: 'Hard',
                 gridSize: 5,
                 goal: { x: 4, y: 4 },
-                walls: [{ x: 2, y: 1 }, { x: 2, y: 2 }, { x: 2, y: 3 }, { x: 3, y: 1 }],
+                walls: [{ x: 2, y: 0 }, { x: 2, y: 1 }, { x: 2, y: 2 }],
                 pieces: [
-                    { x: 0, y: 2, pole: POLE_N, isTarget: true },
-                    { x: 1, y: 2, pole: POLE_N, isTarget: false }, // 反発用
-                    { x: 4, y: 2, pole: POLE_S, isTarget: false },
-                    { x: 3, y: 3, pole: POLE_N, isTarget: false },
-                    { x: 4, y: 3, pole: POLE_N, isTarget: false }, // ゴールへの経路
-                    { x: 3, y: 4, pole: POLE_S, isTarget: false }, // ゴール手前
+                    { x: 0, y: 1, pole: POLE_N, isTarget: true },
+                    { x: 1, y: 1, pole: POLE_N, isTarget: false }, // 同極→反発用
+                    { x: 3, y: 2, pole: POLE_S, isTarget: false }, // 異極→動かないブロッカー
+                    { x: 4, y: 2, pole: POLE_N, isTarget: false }, // 同極→反発で押せる
+                    { x: 3, y: 4, pole: POLE_N, isTarget: false }, // 同極→ゴール手前、反発で押す
+                    { x: 4, y: 3, pole: POLE_S, isTarget: false }, // 異極→固定ブロッカー
                 ]
             }
         ];
@@ -715,19 +714,11 @@
                 const adjPiece = getPieceAt(adjX, adjY);
                 if (!adjPiece || adjPiece.pole === POLE_NONE) continue;
 
-                // 異なる極: 引き寄せ
-                // 異極のピースは、movedPieceに吸い寄せられて「一緒に移動」する
-                // = movedPieceの元の位置に引き寄せられる
-                if (isOpposite(movedPiece.pole, adjPiece.pole)) {
-                    // movedPieceの元の位置が空いていて、壁でなければ引き寄せ
-                    if (!getPieceAt(fromX, fromY) && !isWall(fromX, fromY)) {
-                        adjPiece.x = fromX;
-                        adjPiece.y = fromY;
-                        showMagneticEffect(adjX, adjY, '♥');
-                    }
-                }
+                // 異なる極: 引き寄せは発生しない（ただし接触可能）
+                // → ブロッカーとして機能する
+
                 // 同じ極: 反発（押し出し）
-                else if (isSame(movedPiece.pole, adjPiece.pole)) {
+                if (isSame(movedPiece.pole, adjPiece.pole)) {
                     // adjPieceを反対方向に押し出す
                     const pushX = adjX + dir.dx;
                     const pushY = adjY + dir.dy;
