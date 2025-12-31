@@ -122,6 +122,15 @@
             border: 3px dashed #ffcc00;
             animation: goalPulse 1.5s infinite;
         }
+        .cell.wall {
+            background: rgba(80, 60, 60, 0.9);
+            border: 2px solid #443333;
+        }
+        .cell.wall::after {
+            content: '▓';
+            font-size: 28px;
+            color: #554444;
+        }
         @keyframes goalPulse {
             0%, 100% { box-shadow: inset 0 0 15px rgba(255, 200, 0, 0.3); }
             50% { box-shadow: inset 0 0 25px rgba(255, 200, 0, 0.6); }
@@ -391,45 +400,48 @@
 
         // ============================================
         // ステージ定義
+        // 磁力（反発）を活用しないと解けない配置
+        // 壁ピースで経路を塞ぎ、反発で押しのける必要がある
         // ============================================
         const STAGES = [
-            // Easy: 4x4, シンプルな配置
+            // Easy: 4x4 - ゴール前の壁を反発で押しのける
+            // ターゲット(N)を右に動かすと、壁(N)が反発で押し出される
             {
                 name: 'Easy',
                 gridSize: 4,
-                goal: { x: 3, y: 3 },
+                goal: { x: 3, y: 1 },
+                walls: [{ x: 1, y: 0 }, { x: 1, y: 2 }, { x: 1, y: 3 }], // 壁で迂回不可
                 pieces: [
-                    { x: 0, y: 0, pole: POLE_N, isTarget: true },
-                    { x: 2, y: 1, pole: POLE_S, isTarget: false },
-                    { x: 1, y: 2, pole: POLE_N, isTarget: false }
+                    { x: 0, y: 1, pole: POLE_N, isTarget: true },
+                    { x: 2, y: 1, pole: POLE_N, isTarget: false }, // 反発で押し出す壁
                 ]
             },
-            // Normal: 4x4, より複雑
+            // Normal: 4x4 - 2段階の反発が必要
             {
                 name: 'Normal',
                 gridSize: 4,
-                goal: { x: 3, y: 0 },
+                goal: { x: 3, y: 3 },
+                walls: [{ x: 1, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 1 }],
                 pieces: [
-                    { x: 0, y: 3, pole: POLE_S, isTarget: true },
-                    { x: 1, y: 1, pole: POLE_N, isTarget: false },
-                    { x: 2, y: 2, pole: POLE_S, isTarget: false },
-                    { x: 3, y: 2, pole: POLE_NONE, isTarget: false },
-                    { x: 0, y: 1, pole: POLE_N, isTarget: false }
+                    { x: 0, y: 0, pole: POLE_S, isTarget: true },
+                    { x: 2, y: 2, pole: POLE_S, isTarget: false }, // 反発で押す
+                    { x: 3, y: 2, pole: POLE_N, isTarget: false },
+                    { x: 2, y: 3, pole: POLE_S, isTarget: false }, // ゴール手前を塞ぐ
                 ]
             },
-            // Hard: 5x5, 本格的なパズル
+            // Hard: 5x5 - 連鎖的な反発が必要
             {
                 name: 'Hard',
                 gridSize: 5,
                 goal: { x: 4, y: 4 },
+                walls: [{ x: 2, y: 1 }, { x: 2, y: 2 }, { x: 2, y: 3 }, { x: 3, y: 1 }],
                 pieces: [
-                    { x: 0, y: 0, pole: POLE_N, isTarget: true },
-                    { x: 2, y: 0, pole: POLE_S, isTarget: false },
-                    { x: 4, y: 1, pole: POLE_N, isTarget: false },
-                    { x: 1, y: 2, pole: POLE_S, isTarget: false },
-                    { x: 3, y: 2, pole: POLE_N, isTarget: false },
-                    { x: 0, y: 3, pole: POLE_NONE, isTarget: false },
-                    { x: 2, y: 4, pole: POLE_S, isTarget: false }
+                    { x: 0, y: 2, pole: POLE_N, isTarget: true },
+                    { x: 1, y: 2, pole: POLE_N, isTarget: false }, // 反発用
+                    { x: 4, y: 2, pole: POLE_S, isTarget: false },
+                    { x: 3, y: 3, pole: POLE_N, isTarget: false },
+                    { x: 4, y: 3, pole: POLE_N, isTarget: false }, // ゴールへの経路
+                    { x: 3, y: 4, pole: POLE_S, isTarget: false }, // ゴール手前
                 ]
             }
         ];
@@ -441,6 +453,7 @@
         let gridSize = 4;
         let grid = [];
         let pieces = [];
+        let walls = []; // 移動不可の壁
         let goalPos = { x: 0, y: 0 };
         let selectedPiece = null;
         let moveCount = 0;
@@ -496,6 +509,7 @@
             gridSize = stage.gridSize;
             goalPos = { ...stage.goal };
             pieces = stage.pieces.map(p => ({ ...p }));
+            walls = (stage.walls || []).map(w => ({ ...w }));
             moveCount = 0;
             moveHistory = [];
             selectedPiece = null;
@@ -530,6 +544,11 @@
                         cell.classList.add('goal');
                     }
 
+                    // 壁セルの判定
+                    if (isWall(x, y)) {
+                        cell.classList.add('wall');
+                    }
+
                     cell.addEventListener('click', () => handleCellClick(x, y));
                     cell.addEventListener('touchstart', (e) => {
                         e.preventDefault();
@@ -540,6 +559,10 @@
                     grid[y][x] = cell;
                 }
             }
+        }
+
+        function isWall(x, y) {
+            return walls.some(w => w.x === x && w.y === y);
         }
 
         // ============================================
@@ -641,6 +664,11 @@
                 return false;
             }
 
+            // 壁への移動は不可
+            if (isWall(nx, ny)) {
+                return false;
+            }
+
             // 移動先にピースがないか
             if (getPieceAt(nx, ny)) {
                 return false;
@@ -716,7 +744,8 @@
 
                     if (pushX >= 0 && pushX < gridSize &&
                         pushY >= 0 && pushY < gridSize &&
-                        !getPieceAt(pushX, pushY)) {
+                        !getPieceAt(pushX, pushY) &&
+                        !isWall(pushX, pushY)) {  // 壁には押し出せない
                         adjPiece.x = pushX;
                         adjPiece.y = pushY;
                         showMagneticEffect(adjX, adjY, '⚡');
