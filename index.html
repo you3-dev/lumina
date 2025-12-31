@@ -489,52 +489,149 @@
             }
         }
 
-        // ヒント機能：解を探してブロックを点滅させる
+        // ヒント機能：Gaussian eliminationで解を求めてブロックを点滅させる
         let hintCube = null;
         let hintBlinking = false;
 
-        function findHintCube() {
-            // 消灯しているブロックの中で、クリックすると最も効果的なものを探す
-            // シンプルに：消灯しているブロックを1つ見つけて、そこをクリックすると改善するか確認
+        // 表面のブロックかどうか判定
+        function isSurfaceCube(x, y, z) {
+            return x === 0 || x === gridSize - 1 ||
+                   y === 0 || y === gridSize - 1 ||
+                   z === 0 || z === gridSize - 1;
+        }
 
-            let bestCube = null;
-            let bestScore = -Infinity;
+        // Gaussian elimination (GF(2)) でLights Outパズルを解く
+        function solveLightsOut() {
+            // 表面のブロックのみを対象にする
+            const surfaceCubes = [];
+            for (let x = 0; x < gridSize; x++) {
+                for (let y = 0; y < gridSize; y++) {
+                    for (let z = 0; z < gridSize; z++) {
+                        if (isSurfaceCube(x, y, z)) {
+                            surfaceCubes.push({ x, y, z });
+                        }
+                    }
+                }
+            }
 
-            cubes.forEach(cube => {
-                const { gridX, gridY, gridZ } = cube.userData;
+            const n = surfaceCubes.length;
 
-                // このブロックをクリックした場合の影響をシミュレート
+            // キューブのインデックスマップを作成
+            const cubeIndex = {};
+            surfaceCubes.forEach((cube, idx) => {
+                cubeIndex[`${cube.x},${cube.y},${cube.z}`] = idx;
+            });
+
+            // 拡大係数行列を構築 [A|b]
+            // A[i][j] = 1 if clicking cube j affects cube i
+            // b[i] = 1 if cube i is currently unlit (needs to be toggled)
+            const matrix = [];
+
+            for (let i = 0; i < n; i++) {
+                const row = new Array(n + 1).fill(0);
+                const { x: ix, y: iy, z: iz } = surfaceCubes[i];
+
+                // 自分自身と隣接6方向のブロックをチェック
                 const directions = [
                     [0, 0, 0],
-                    [1, 0, 0],
-                    [-1, 0, 0],
-                    [0, 1, 0],
-                    [0, -1, 0],
-                    [0, 0, 1],
-                    [0, 0, -1]
+                    [1, 0, 0], [-1, 0, 0],
+                    [0, 1, 0], [0, -1, 0],
+                    [0, 0, 1], [0, 0, -1]
                 ];
 
-                let litGain = 0;
                 directions.forEach(([dx, dy, dz]) => {
-                    const nx = gridX + dx;
-                    const ny = gridY + dy;
-                    const nz = gridZ + dz;
+                    const nx = ix + dx;
+                    const ny = iy + dy;
+                    const nz = iz + dz;
                     const key = `${nx},${ny},${nz}`;
 
-                    if (cubeStates.hasOwnProperty(key)) {
-                        // 現在消灯なら点灯になる（+1）、点灯なら消灯になる（-1）
-                        litGain += cubeStates[key] ? -1 : 1;
+                    // そのブロックが表面に存在するかチェック
+                    if (cubeIndex.hasOwnProperty(key)) {
+                        // ブロックjをクリックするとブロックiに影響がある
+                        row[cubeIndex[key]] = 1;
                     }
                 });
 
-                // 点灯が増えるブロックを優先
-                if (litGain > bestScore) {
-                    bestScore = litGain;
-                    bestCube = cube;
-                }
-            });
+                // b[i]: 消灯なら1（トグルが必要）、点灯なら0
+                const key = `${ix},${iy},${iz}`;
+                row[n] = cubeStates[key] ? 0 : 1;
 
-            return bestCube;
+                matrix.push(row);
+            }
+
+            // Gaussian elimination (GF(2))
+            const pivotCol = new Array(n).fill(-1);
+            let col = 0;
+
+            for (let row = 0; row < n && col < n; col++) {
+                // ピボットを探す
+                let pivotRow = -1;
+                for (let r = row; r < n; r++) {
+                    if (matrix[r][col] === 1) {
+                        pivotRow = r;
+                        break;
+                    }
+                }
+
+                if (pivotRow === -1) continue;
+
+                // 行を交換
+                [matrix[row], matrix[pivotRow]] = [matrix[pivotRow], matrix[row]];
+                pivotCol[col] = row;
+
+                // 他の行からこの列を消去
+                for (let r = 0; r < n; r++) {
+                    if (r !== row && matrix[r][col] === 1) {
+                        for (let c = 0; c <= n; c++) {
+                            matrix[r][c] ^= matrix[row][c];
+                        }
+                    }
+                }
+
+                row++;
+            }
+
+            // 後退代入で解を求める
+            const solution = new Array(n).fill(0);
+
+            for (let c = n - 1; c >= 0; c--) {
+                if (pivotCol[c] !== -1) {
+                    const row = pivotCol[c];
+                    let val = matrix[row][n];
+                    for (let c2 = c + 1; c2 < n; c2++) {
+                        val ^= (matrix[row][c2] & solution[c2]);
+                    }
+                    solution[c] = val;
+                }
+            }
+
+            // 解の中でクリックすべきブロック（solution[i] === 1）を返す
+            const clicksNeeded = [];
+            for (let i = 0; i < n; i++) {
+                if (solution[i] === 1) {
+                    clicksNeeded.push(surfaceCubes[i]);
+                }
+            }
+
+            return clicksNeeded;
+        }
+
+        function findHintCube() {
+            // Gaussian eliminationで解を求める
+            const solution = solveLightsOut();
+
+            if (solution.length === 0) {
+                // 解がない、または既にクリア状態
+                return null;
+            }
+
+            // 解のうち最初のブロックを返す
+            const target = solution[0];
+            return cubes.find(c =>
+                c.userData.gridX === target.x &&
+                c.userData.gridY === target.y &&
+                c.userData.gridZ === target.z
+            );
         }
 
         function showHint() {
