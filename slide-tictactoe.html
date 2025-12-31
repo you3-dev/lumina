@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>移動する三目並べ - 3x3 Slide Tic-Tac-Toe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 25%, #0d1b2a 50%, #1b0a28 75%, #0a0a1a 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #88ccff;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 12px;
+            border: 1px solid #88ccff;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            background: rgba(136, 204, 255, 0.2);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+        }
+
+        .game-info {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .turn-indicator {
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+
+        .turn-indicator.player-turn {
+            background: rgba(0, 150, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 150, 255, 0.5);
+        }
+
+        .turn-indicator.ai-turn {
+            background: rgba(255, 100, 100, 0.3);
+            box-shadow: 0 0 15px rgba(255, 100, 100, 0.5);
+        }
+
+        .timer {
+            font-size: 1.3rem;
+            font-weight: bold;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .timer.warning {
+            color: #ff6b6b;
+            animation: pulse 0.5s infinite;
+        }
+
+        .timer.disabled {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #88ccff;
+            cursor: pointer;
+            user-select: none;
+            margin-bottom: 10px;
+        }
+
+        .mode-toggle input {
+            display: none;
+        }
+
+        .toggle-switch {
+            width: 40px;
+            height: 22px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 11px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s;
+        }
+
+        .mode-toggle input:checked + .toggle-switch {
+            background: rgba(0, 200, 100, 0.5);
+        }
+
+        .mode-toggle input:checked + .toggle-switch::after {
+            left: 20px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .phase-indicator {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+
+        .board-container {
+            position: relative;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .cell {
+            width: 90px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            user-select: none;
+        }
+
+        .cell:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .cell.player {
+            color: #00bfff;
+            text-shadow: 0 0 15px rgba(0, 191, 255, 0.8);
+        }
+
+        .cell.ai {
+            color: #ff6b6b;
+            text-shadow: 0 0 15px rgba(255, 107, 107, 0.8);
+        }
+
+        .cell.selected {
+            animation: glow 0.8s infinite alternate;
+            background: rgba(0, 191, 255, 0.3);
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 10px rgba(0, 191, 255, 0.5); }
+            to { box-shadow: 0 0 25px rgba(0, 191, 255, 0.9); }
+        }
+
+        .cell.movable {
+            background: rgba(0, 255, 0, 0.2);
+            animation: movable-pulse 1s infinite;
+        }
+
+        @keyframes movable-pulse {
+            0%, 100% { background: rgba(0, 255, 0, 0.15); }
+            50% { background: rgba(0, 255, 0, 0.3); }
+        }
+
+        .cell.reach-warning {
+            animation: reach-warning 0.5s infinite;
+        }
+
+        @keyframes reach-warning {
+            0%, 100% { box-shadow: inset 0 0 20px rgba(255, 200, 0, 0.5); }
+            50% { box-shadow: inset 0 0 30px rgba(255, 200, 0, 0.8); }
+        }
+
+        .cell.disabled {
+            cursor: default;
+            opacity: 0.7;
+        }
+
+        .winning-line {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, #fff, transparent);
+            height: 6px;
+            border-radius: 3px;
+            animation: winning-flash 0.5s infinite alternate;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes winning-flash {
+            from { opacity: 0.7; box-shadow: 0 0 10px #fff; }
+            to { opacity: 1; box-shadow: 0 0 25px #fff; }
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            min-height: 40px;
+        }
+
+        .message.win {
+            color: #00ff88;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+            animation: victory 0.5s ease-out;
+        }
+
+        .message.lose {
+            color: #ff6b6b;
+            text-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+        }
+
+        @keyframes victory {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: 2px solid;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-new {
+            background: rgba(255, 200, 100, 0.2);
+            border-color: #ffcc66;
+            color: #ffcc66;
+            text-shadow: 0 0 10px #ffcc66;
+        }
+
+        .btn-new:hover {
+            background: rgba(255, 200, 100, 0.4);
+        }
+
+        .score-board {
+            margin-top: 15px;
+            display: flex;
+            gap: 30px;
+            font-size: 1rem;
+        }
+
+        .score {
+            padding: 5px 15px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .score.player-score {
+            border-left: 3px solid #00bfff;
+        }
+
+        .score.ai-score {
+            border-left: 3px solid #ff6b6b;
+        }
+
+        /* 画面サイズに応じた調整 */
+        @media (max-width: 400px) {
+            .cell {
+                width: 75px;
+                height: 75px;
+                font-size: 2.5rem;
+            }
+
+            h1 {
+                font-size: 1.2rem;
+            }
+        }
+
+        @media (min-height: 800px) {
+            .cell {
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        /* 勝利時のエフェクト */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            animation: confetti-fall 3s linear forwards;
+        }
+
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Back</a>
+    <h1>移動する三目並べ</h1>
+
+    <div class="game-info">
+        <div class="turn-indicator" id="turnIndicator">あなたの番</div>
+        <div class="timer" id="timer">5</div>
+    </div>
+
+    <label class="mode-toggle">
+        <input type="checkbox" id="timerToggle" checked>
+        <span class="toggle-switch"></span>
+        <span>制限時間あり</span>
+    </label>
+
+    <div class="phase-indicator" id="phaseIndicator">フェーズ1: 駒を配置 (あなた: 0/3)</div>
+
+    <div class="board-container">
+        <div class="board" id="board"></div>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <div class="buttons">
+        <button class="btn btn-new" id="restartBtn">NEW GAME</button>
+    </div>
+
+    <div class="score-board">
+        <div class="score player-score">あなた: <span id="playerScore">0</span></div>
+        <div class="score ai-score">AI: <span id="aiScore">0</span></div>
+    </div>
+
+    <script>
+        // ゲーム状態
+        const EMPTY = null;
+        const PLAYER = 'player';
+        const AI = 'ai';
+
+        let board = Array(9).fill(EMPTY);
+        let currentTurn = PLAYER;
+        let phase = 1; // 1: 配置フェーズ, 2: 移動フェーズ
+        let playerPieces = 0;
+        let aiPieces = 0;
+        let selectedCell = null;
+        let gameOver = false;
+        let timer = 5;
+        let timerInterval = null;
+        let scores = { player: 0, ai: 0 };
+        let timerEnabled = true;
+
+        // DOM要素
+        const boardEl = document.getElementById('board');
+        const turnIndicatorEl = document.getElementById('turnIndicator');
+        const timerEl = document.getElementById('timer');
+        const phaseIndicatorEl = document.getElementById('phaseIndicator');
+        const messageEl = document.getElementById('message');
+        const restartBtn = document.getElementById('restartBtn');
+        const playerScoreEl = document.getElementById('playerScore');
+        const aiScoreEl = document.getElementById('aiScore');
+        const timerToggleEl = document.getElementById('timerToggle');
+
+        // 勝利パターン
+        const WIN_PATTERNS = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // 横
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // 縦
+            [0, 4, 8], [2, 4, 6]             // 斜め
+        ];
+
+        // 隣接セル（上下左右斜め）
+        const ADJACENTS = {
+            0: [1, 3, 4],
+            1: [0, 2, 3, 4, 5],
+            2: [1, 4, 5],
+            3: [0, 1, 4, 6, 7],
+            4: [0, 1, 2, 3, 5, 6, 7, 8],
+            5: [1, 2, 4, 7, 8],
+            6: [3, 4, 7],
+            7: [3, 4, 5, 6, 8],
+            8: [4, 5, 7]
+        };
+
+        // ボード初期化
+        function initBoard() {
+            boardEl.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.index = i;
+                cell.addEventListener('click', () => handleCellClick(i));
+                cell.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    handleCellClick(i);
+                }, { passive: false });
+                boardEl.appendChild(cell);
+            }
+        }
+
+        // セルのクリック処理
+        function handleCellClick(index) {
+            if (gameOver || currentTurn !== PLAYER) return;
+
+            if (phase === 1) {
+                // 配置フェーズ
+                if (board[index] === EMPTY) {
+                    placePiece(index, PLAYER);
+                    playerPieces++;
+                    checkPhaseTransition();
+                    if (!gameOver && phase === 1) {
+                        endTurn();
+                    } else if (!gameOver && phase === 2) {
+                        endTurn();
+                    }
+                }
+            } else {
+                // 移動フェーズ
+                if (selectedCell === null) {
+                    // 駒を選択
+                    if (board[index] === PLAYER) {
+                        selectCell(index);
+                    }
+                } else {
+                    if (index === selectedCell) {
+                        // 同じセルをタップで選択解除
+                        deselectCell();
+                    } else if (board[index] === PLAYER) {
+                        // 別の自分の駒を選択
+                        deselectCell();
+                        selectCell(index);
+                    } else if (board[index] === EMPTY && isAdjacent(selectedCell, index)) {
+                        // 移動実行
+                        movePiece(selectedCell, index);
+                        deselectCell();
+                        if (!gameOver) {
+                            endTurn();
+                        }
+                    }
+                }
+            }
+        }
+
+        // 駒を配置
+        function placePiece(index, owner) {
+            board[index] = owner;
+            updateCell(index);
+            checkWin(owner);
+        }
+
+        // 駒を移動
+        function movePiece(from, to) {
+            board[to] = board[from];
+            board[from] = EMPTY;
+            updateCell(from);
+            updateCell(to);
+            checkWin(board[to]);
+        }
+
+        // セルを選択
+        function selectCell(index) {
+            selectedCell = index;
+            const cells = boardEl.children;
+            cells[index].classList.add('selected');
+
+            // 移動可能なセルをハイライト
+            ADJACENTS[index].forEach(adj => {
+                if (board[adj] === EMPTY) {
+                    cells[adj].classList.add('movable');
+                }
+            });
+        }
+
+        // 選択解除
+        function deselectCell() {
+            if (selectedCell !== null) {
+                const cells = boardEl.children;
+                cells[selectedCell].classList.remove('selected');
+                for (let i = 0; i < 9; i++) {
+                    cells[i].classList.remove('movable');
+                }
+                selectedCell = null;
+            }
+        }
+
+        // 隣接判定
+        function isAdjacent(from, to) {
+            return ADJACENTS[from].includes(to);
+        }
+
+        // セル表示更新
+        function updateCell(index) {
+            const cell = boardEl.children[index];
+            cell.className = 'cell';
+            if (board[index] === PLAYER) {
+                cell.textContent = '◯';
+                cell.classList.add('player');
+            } else if (board[index] === AI) {
+                cell.textContent = '✖';
+                cell.classList.add('ai');
+            } else {
+                cell.textContent = '';
+            }
+        }
+
+        // フェーズ遷移チェック
+        function checkPhaseTransition() {
+            if (phase === 1 && playerPieces === 3 && aiPieces === 3) {
+                phase = 2;
+                updatePhaseIndicator();
+            }
+        }
+
+        // 勝利判定
+        function checkWin(owner) {
+            for (const pattern of WIN_PATTERNS) {
+                if (pattern.every(i => board[i] === owner)) {
+                    gameOver = true;
+                    stopTimer();
+                    highlightWinningLine(pattern);
+                    if (owner === PLAYER) {
+                        messageEl.textContent = '🎉 あなたの勝ち！';
+                        messageEl.className = 'message win';
+                        scores.player++;
+                        playerScoreEl.textContent = scores.player;
+                        createConfetti();
+                    } else {
+                        messageEl.textContent = '😢 AIの勝ち...';
+                        messageEl.className = 'message lose';
+                        scores.ai++;
+                        aiScoreEl.textContent = scores.ai;
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // 勝利ライン表示
+        function highlightWinningLine(pattern) {
+            const cells = boardEl.children;
+            pattern.forEach(i => {
+                cells[i].classList.add('reach-warning');
+            });
+        }
+
+        // リーチ警告
+        function checkReach() {
+            const cells = boardEl.children;
+            // 全セルのリーチ警告をクリア
+            for (let i = 0; i < 9; i++) {
+                cells[i].classList.remove('reach-warning');
+            }
+
+            if (gameOver) return;
+
+            // リーチをチェック
+            for (const pattern of WIN_PATTERNS) {
+                const values = pattern.map(i => board[i]);
+                const playerCount = values.filter(v => v === PLAYER).length;
+                const aiCount = values.filter(v => v === AI).length;
+                const emptyCount = values.filter(v => v === EMPTY).length;
+
+                if ((playerCount === 2 && emptyCount === 1) || (aiCount === 2 && emptyCount === 1)) {
+                    pattern.forEach(i => {
+                        if (board[i] !== EMPTY) {
+                            cells[i].classList.add('reach-warning');
+                        }
+                    });
+                }
+            }
+        }
+
+        // ターン終了
+        function endTurn() {
+            deselectCell();
+            checkReach();
+
+            if (gameOver) return;
+
+            currentTurn = currentTurn === PLAYER ? AI : PLAYER;
+            updateTurnIndicator();
+            updatePhaseIndicator();
+            resetTimer();
+
+            if (currentTurn === AI) {
+                setTimeout(aiTurn, 500);
+            }
+        }
+
+        // AIのターン
+        function aiTurn() {
+            if (gameOver || currentTurn !== AI) return;
+
+            stopTimer();
+
+            if (phase === 1) {
+                // 配置フェーズ
+                const move = findBestPlacement();
+                if (move !== -1) {
+                    placePiece(move, AI);
+                    aiPieces++;
+                    checkPhaseTransition();
+                }
+            } else {
+                // 移動フェーズ
+                const move = findBestMove();
+                if (move) {
+                    movePiece(move.from, move.to);
+                }
+            }
+
+            if (!gameOver) {
+                endTurn();
+            }
+        }
+
+        // AI: 最適な配置位置を探す
+        function findBestPlacement() {
+            const emptyCells = [];
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === EMPTY) emptyCells.push(i);
+            }
+
+            // 1. 勝てる位置があれば配置
+            for (const cell of emptyCells) {
+                board[cell] = AI;
+                if (checkWinWithoutEffect(AI)) {
+                    board[cell] = EMPTY;
+                    return cell;
+                }
+                board[cell] = EMPTY;
+            }
+
+            // 2. 相手の勝利を阻止
+            for (const cell of emptyCells) {
+                board[cell] = PLAYER;
+                if (checkWinWithoutEffect(PLAYER)) {
+                    board[cell] = EMPTY;
+                    return cell;
+                }
+                board[cell] = EMPTY;
+            }
+
+            // 3. 中央優先
+            if (board[4] === EMPTY) return 4;
+
+            // 4. 角優先
+            const corners = [0, 2, 6, 8].filter(i => board[i] === EMPTY);
+            if (corners.length > 0) {
+                return corners[Math.floor(Math.random() * corners.length)];
+            }
+
+            // 5. ランダム
+            return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        }
+
+        // AI: 最適な移動を探す
+        function findBestMove() {
+            const aiCells = [];
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === AI) aiCells.push(i);
+            }
+
+            // 1. 勝てる移動があれば実行
+            for (const from of aiCells) {
+                for (const to of ADJACENTS[from]) {
+                    if (board[to] === EMPTY) {
+                        board[to] = AI;
+                        board[from] = EMPTY;
+                        if (checkWinWithoutEffect(AI)) {
+                            board[from] = AI;
+                            board[to] = EMPTY;
+                            return { from, to };
+                        }
+                        board[from] = AI;
+                        board[to] = EMPTY;
+                    }
+                }
+            }
+
+            // 2. 相手の勝利を阻止
+            const playerCells = [];
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === PLAYER) playerCells.push(i);
+            }
+
+            // プレイヤーが次に勝てる移動をチェック
+            let blockingMoves = [];
+            for (const pFrom of playerCells) {
+                for (const pTo of ADJACENTS[pFrom]) {
+                    if (board[pTo] === EMPTY) {
+                        board[pTo] = PLAYER;
+                        board[pFrom] = EMPTY;
+                        if (checkWinWithoutEffect(PLAYER)) {
+                            // この位置(pTo)を塞ぐか、リーチを崩す移動を探す
+                            board[pFrom] = PLAYER;
+                            board[pTo] = EMPTY;
+
+                            // AIがpToに移動できるか
+                            for (const from of aiCells) {
+                                if (ADJACENTS[from].includes(pTo)) {
+                                    blockingMoves.push({ from, to: pTo, priority: 1 });
+                                }
+                            }
+                        } else {
+                            board[pFrom] = PLAYER;
+                            board[pTo] = EMPTY;
+                        }
+                    }
+                }
+            }
+
+            if (blockingMoves.length > 0) {
+                return blockingMoves[0];
+            }
+
+            // 3. リーチを作る移動
+            for (const from of aiCells) {
+                for (const to of ADJACENTS[from]) {
+                    if (board[to] === EMPTY) {
+                        board[to] = AI;
+                        board[from] = EMPTY;
+                        if (hasReach(AI)) {
+                            board[from] = AI;
+                            board[to] = EMPTY;
+                            return { from, to };
+                        }
+                        board[from] = AI;
+                        board[to] = EMPTY;
+                    }
+                }
+            }
+
+            // 4. 中央への移動を優先
+            for (const from of aiCells) {
+                if (ADJACENTS[from].includes(4) && board[4] === EMPTY) {
+                    return { from, to: 4 };
+                }
+            }
+
+            // 5. ランダムな有効移動
+            const validMoves = [];
+            for (const from of aiCells) {
+                for (const to of ADJACENTS[from]) {
+                    if (board[to] === EMPTY) {
+                        validMoves.push({ from, to });
+                    }
+                }
+            }
+
+            if (validMoves.length > 0) {
+                return validMoves[Math.floor(Math.random() * validMoves.length)];
+            }
+
+            return null;
+        }
+
+        // 勝利判定（副作用なし）
+        function checkWinWithoutEffect(owner) {
+            for (const pattern of WIN_PATTERNS) {
+                if (pattern.every(i => board[i] === owner)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // リーチ判定
+        function hasReach(owner) {
+            for (const pattern of WIN_PATTERNS) {
+                const values = pattern.map(i => board[i]);
+                const ownerCount = values.filter(v => v === owner).length;
+                const emptyCount = values.filter(v => v === EMPTY).length;
+                if (ownerCount === 2 && emptyCount === 1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // タイマー関連
+        function resetTimer() {
+            stopTimer();
+
+            if (!timerEnabled) {
+                timerEl.textContent = '∞';
+                timerEl.classList.add('disabled');
+                timerEl.classList.remove('warning');
+                return;
+            }
+
+            timer = 5;
+            timerEl.textContent = timer;
+            timerEl.classList.remove('warning', 'disabled');
+
+            timerInterval = setInterval(() => {
+                timer--;
+                timerEl.textContent = timer;
+
+                if (timer <= 2) {
+                    timerEl.classList.add('warning');
+                }
+
+                if (timer <= 0) {
+                    timeOut();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function timeOut() {
+            stopTimer();
+
+            if (gameOver) return;
+
+            if (currentTurn === PLAYER) {
+                // プレイヤーのタイムアウト: ランダム行動
+                if (phase === 1) {
+                    const emptyCells = [];
+                    for (let i = 0; i < 9; i++) {
+                        if (board[i] === EMPTY) emptyCells.push(i);
+                    }
+                    if (emptyCells.length > 0) {
+                        const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                        placePiece(randomCell, PLAYER);
+                        playerPieces++;
+                        checkPhaseTransition();
+                    }
+                } else {
+                    // ランダム移動
+                    const playerCells = [];
+                    for (let i = 0; i < 9; i++) {
+                        if (board[i] === PLAYER) playerCells.push(i);
+                    }
+                    const validMoves = [];
+                    for (const from of playerCells) {
+                        for (const to of ADJACENTS[from]) {
+                            if (board[to] === EMPTY) {
+                                validMoves.push({ from, to });
+                            }
+                        }
+                    }
+                    if (validMoves.length > 0) {
+                        const move = validMoves[Math.floor(Math.random() * validMoves.length)];
+                        movePiece(move.from, move.to);
+                    }
+                }
+
+                if (!gameOver) {
+                    endTurn();
+                }
+            }
+        }
+
+        // UI更新
+        function updateTurnIndicator() {
+            if (currentTurn === PLAYER) {
+                turnIndicatorEl.textContent = 'あなたの番';
+                turnIndicatorEl.className = 'turn-indicator player-turn';
+            } else {
+                turnIndicatorEl.textContent = 'AIの番';
+                turnIndicatorEl.className = 'turn-indicator ai-turn';
+            }
+        }
+
+        function updatePhaseIndicator() {
+            if (phase === 1) {
+                phaseIndicatorEl.textContent = `フェーズ1: 駒を配置 (あなた: ${playerPieces}/3, AI: ${aiPieces}/3)`;
+            } else {
+                phaseIndicatorEl.textContent = 'フェーズ2: 駒を移動';
+            }
+        }
+
+        // 紙吹雪エフェクト
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96e6a1', '#dda0dd', '#f7dc6f'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    document.body.appendChild(confetti);
+
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 50);
+            }
+        }
+
+        // ゲームリセット
+        function resetGame() {
+            board = Array(9).fill(EMPTY);
+            currentTurn = PLAYER;
+            phase = 1;
+            playerPieces = 0;
+            aiPieces = 0;
+            selectedCell = null;
+            gameOver = false;
+
+            stopTimer();
+
+            for (let i = 0; i < 9; i++) {
+                updateCell(i);
+                boardEl.children[i].classList.remove('reach-warning', 'selected', 'movable');
+            }
+
+            messageEl.textContent = '';
+            messageEl.className = 'message';
+
+            updateTurnIndicator();
+            updatePhaseIndicator();
+            resetTimer();
+        }
+
+        // イベントリスナー
+        restartBtn.addEventListener('click', resetGame);
+
+        timerToggleEl.addEventListener('change', () => {
+            timerEnabled = timerToggleEl.checked;
+            timerToggleEl.parentElement.querySelector('span:last-child').textContent =
+                timerEnabled ? '制限時間あり' : '制限時間なし';
+            resetTimer();
+        });
+
+        // 初期化
+        initBoard();
+        resetTimer();
+    </script>
+</body>
+</html>
