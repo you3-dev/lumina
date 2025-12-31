@@ -365,8 +365,8 @@
                     requiredBalls: 3,
                     timeLimit: 30,
                     platformCount: 3,
-                    ballSpawnMode: 'center',
-                    bucketPosition: 'center',
+                    ballSpawnMode: 'left',
+                    bucketPosition: 'right',
                     obstacles: [],
                     platformRestriction: null
                 },
@@ -375,8 +375,8 @@
                     timeLimit: 30,
                     platformCount: 3,
                     ballSpawnMode: 'random',
-                    bucketPosition: 'center',
-                    obstacles: [],
+                    bucketPosition: 'left',
+                    obstacles: [{ type: 'block', position: 'aboveBucket' }],
                     platformRestriction: null
                 },
                 3: {
@@ -942,8 +942,10 @@
             createObstacles(stageConfig.obstacles);
             createPlatforms(stageConfig.platformCount, stageConfig.platformRestriction);
 
-            // 物理エンジン開始
-            Runner.run(runner, engine);
+            // 物理エンジン開始（重複実行を防ぐ）
+            if (!runner.enabled) {
+                Runner.run(runner, engine);
+            }
 
             // タイマー開始
             timerInterval = setInterval(() => {
