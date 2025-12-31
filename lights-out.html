@@ -226,20 +226,20 @@
         // ステージ設定を取得
         function getStageConfig(stage) {
             // ステージ1: 3x3x3, シャッフル10回
-            // ステージ2: 3x3x3, シャッフル15回
-            // ステージ3: 4x4x4, シャッフル15回
-            // ステージ4: 4x4x4, シャッフル20回
-            // ステージ5以降: 5x5x5, シャッフル20+5*(stage-5)回
+            // ステージ2: 3x3x3, シャッフル30回
+            // ステージ3: 4x4x4, シャッフル30回
+            // ステージ4: 4x4x4, シャッフル50回
+            // ステージ5以降: 5x5x5, シャッフル50+20*(stage-5)回
             if (stage === 1) {
                 return { gridSize: 3, shuffleCount: 10 };
             } else if (stage === 2) {
-                return { gridSize: 3, shuffleCount: 15 };
+                return { gridSize: 3, shuffleCount: 30 };
             } else if (stage === 3) {
-                return { gridSize: 4, shuffleCount: 15 };
+                return { gridSize: 4, shuffleCount: 30 };
             } else if (stage === 4) {
-                return { gridSize: 4, shuffleCount: 20 };
+                return { gridSize: 4, shuffleCount: 50 };
             } else {
-                return { gridSize: 5, shuffleCount: 20 + 5 * (stage - 5) };
+                return { gridSize: 5, shuffleCount: 50 + 20 * (stage - 5) };
             }
         }
 
