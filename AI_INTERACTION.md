@@ -1,1 +1,1 @@
-git pushして
+C:\work\lumina_logic\numberlink.htmlなんだけど、マウスでしかリンクが繋がらない。スマホブラウザゲームなのでタッチでゲームできないとダメだ。修正できる？
