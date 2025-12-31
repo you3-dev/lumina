@@ -213,11 +213,13 @@
         // ステージ設定
         // ============================================
         function getStageConfig(stage) {
-            if (stage <= 2) return { gridSize: 5, pairCount: 4 + stage };
-            if (stage <= 4) return { gridSize: 6, pairCount: 5 + stage };
-            if (stage <= 6) return { gridSize: 7, pairCount: 6 + stage };
-            if (stage <= 9) return { gridSize: 8, pairCount: 8 + Math.floor(stage / 2) };
-            return { gridSize: 9, pairCount: Math.min(12 + Math.floor(stage / 3), 18) };
+            // 案1: ペア数を減らしてより長いパスを生成（難易度向上）
+            // グリッドサイズに対してペア数を抑える
+            if (stage <= 2) return { gridSize: 5, pairCount: 3 + stage };      // 4-5ペア → 25マス（5-6.3セル/パス）
+            if (stage <= 4) return { gridSize: 6, pairCount: 4 + stage };      // 6-8ペア → 36マス（4.5-6セル/パス）
+            if (stage <= 6) return { gridSize: 7, pairCount: 5 + stage };      // 10-11ペア → 49マス（4.5-4.9セル/パス）
+            if (stage <= 9) return { gridSize: 8, pairCount: 6 + Math.floor(stage / 2) };  // 9-10ペア → 64マス（6.4-7.1セル/パス）
+            return { gridSize: 9, pairCount: Math.min(8 + Math.floor(stage / 3), 14) };    // 11-14ペア → 81マス（5.8-7.4セル/パス）
         }
 
         // ============================================
@@ -552,6 +554,40 @@
 
             let pathId = 1;
 
+            // 案2: 方向選択で曲がりを優先する関数
+            function getPreferredDirections(lastDir) {
+                if (!lastDir) {
+                    // 最初の移動はランダム
+                    return [...directions].sort(() => Math.random() - 0.5);
+                }
+
+                // 前回と異なる方向（曲がり）を優先
+                const [lastDx, lastDy] = lastDir;
+                const perpendicular = directions.filter(([dx, dy]) =>
+                    (dx !== lastDx || dy !== lastDy) && (dx !== -lastDx || dy !== -lastDy)
+                );
+                const straight = directions.filter(([dx, dy]) => dx === lastDx && dy === lastDy);
+                const reverse = directions.filter(([dx, dy]) => dx === -lastDx && dy === -lastDy);
+
+                // 垂直方向 > 直進 > 逆方向 の優先順位（ランダム要素あり）
+                const shuffledPerp = [...perpendicular].sort(() => Math.random() - 0.5);
+                const result = [];
+
+                // 70%の確率で曲がりを優先、30%で直進を優先
+                if (Math.random() < 0.7) {
+                    result.push(...shuffledPerp);
+                    result.push(...straight);
+                } else {
+                    result.push(...straight);
+                    result.push(...shuffledPerp);
+                }
+                result.push(...reverse);
+                return result;
+            }
+
+            // 案3: 端点間の最小距離（マンハッタン距離）
+            const minEndpointDistance = Math.max(3, Math.floor(gridSize / 2));
+
             // フェーズ1: ランダムウォークでパスを生成し、グリッド全体を埋める
             while (pathId <= targetPairs) {
                 // 空きセルを探す
@@ -568,26 +604,29 @@
                 const startIdx = Math.floor(Math.random() * emptyCells.length);
                 const start = emptyCells[startIdx];
 
-                // パスを生成（ランダムウォーク）
+                // パスを生成（曲がりくねったランダムウォーク）
                 const path = [{ x: start.x, y: start.y }];
                 cellOwner[start.y][start.x] = pathId;
 
                 let current = { x: start.x, y: start.y };
-                const minLength = 3; // 最低3セル（端点2つ + 中間1つ以上）
-                const maxLength = Math.max(5, Math.floor(totalCells / targetPairs) + 2);
+                let lastDirection = null;
+                const minLength = Math.max(3, minEndpointDistance + 1); // 案3: 最小距離を満たすために長めに
+                const maxLength = Math.max(6, Math.floor(totalCells / targetPairs) + 3);
                 const targetLength = minLength + Math.floor(Math.random() * (maxLength - minLength + 1));
 
                 let stuck = false;
                 while (path.length < targetLength && !stuck) {
-                    const shuffledDirs = [...directions].sort(() => Math.random() - 0.5);
+                    // 案2: 曲がりを優先した方向選択
+                    const preferredDirs = getPreferredDirections(lastDirection);
                     stuck = true;
 
-                    for (const [dx, dy] of shuffledDirs) {
+                    for (const [dx, dy] of preferredDirs) {
                         const nx = current.x + dx;
                         const ny = current.y + dy;
 
                         if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize && cellOwner[ny][nx] === 0) {
                             cellOwner[ny][nx] = pathId;
+                            lastDirection = [dx, dy];
                             current = { x: nx, y: ny };
                             path.push({ x: nx, y: ny });
                             stuck = false;
@@ -596,8 +635,13 @@
                     }
                 }
 
-                // パスが短すぎる場合は取り消し
-                if (path.length < minLength) {
+                // パスの検証：最小長さと端点距離をチェック
+                const startCell = path[0];
+                const endCell = path[path.length - 1];
+                const endpointDist = Math.abs(startCell.x - endCell.x) + Math.abs(startCell.y - endCell.y);
+
+                // パスが短すぎる、または端点が近すぎる場合は取り消し
+                if (path.length < minLength || endpointDist < minEndpointDistance) {
                     for (const cell of path) {
                         cellOwner[cell.y][cell.x] = 0;
                     }
@@ -832,17 +876,19 @@
         // セーブデータの検証
         // ============================================
         function validateSaveData(savedGame) {
-            if (!savedGame || !savedGame.endpoints || !savedGame.grid) return false;
+            if (!savedGame || !savedGame.endpoints || !savedGame.grid || !savedGame.gridSize) return false;
 
-            // 各ペアの端点が隣接していないことを確認
-            // （隣接している場合は古い生成ロジックのデータなので再生成）
+            // 案3に基づく最小距離
+            const minEndpointDistance = Math.max(3, Math.floor(savedGame.gridSize / 2));
+
+            // 各ペアの端点が十分離れていることを確認
+            // （近すぎる場合は古い生成ロジックのデータなので再生成）
             for (const ep of savedGame.endpoints) {
                 if (!ep.cells || ep.cells.length !== 2) return false;
                 const [a, b] = ep.cells;
-                const dx = Math.abs(a.x - b.x);
-                const dy = Math.abs(a.y - b.y);
-                // 端点が隣接している（マンハッタン距離1）場合は無効
-                if (dx + dy <= 1) return false;
+                const dist = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+                // 端点が近すぎる場合は無効
+                if (dist < minEndpointDistance) return false;
             }
             return true;
         }
