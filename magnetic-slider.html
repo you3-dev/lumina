@@ -681,12 +681,16 @@
             // 移動前の状態を保存
             const beforeState = pieces.map(p => ({ ...p }));
 
+            // 移動元の位置を記録
+            const fromX = piece.x;
+            const fromY = piece.y;
+
             // ピースを移動
             piece.x = nx;
             piece.y = ny;
 
-            // 磁力効果を適用
-            applyMagneticEffects(piece, nx, ny);
+            // 磁力効果を適用（移動元の位置も渡す）
+            applyMagneticEffects(piece, fromX, fromY, nx, ny);
 
             // 移動履歴を保存
             moveHistory.push(beforeState);
@@ -700,7 +704,7 @@
             checkClear();
         }
 
-        function applyMagneticEffects(movedPiece, toX, toY) {
+        function applyMagneticEffects(movedPiece, fromX, fromY, toX, toY) {
             if (movedPiece.pole === POLE_NONE) return;
 
             // 移動先の隣接マスをチェック
@@ -711,30 +715,16 @@
                 const adjPiece = getPieceAt(adjX, adjY);
                 if (!adjPiece || adjPiece.pole === POLE_NONE) continue;
 
-                // 異なる極: 引き寄せ（movedPieceに向かって1マス移動）
+                // 異なる極: 引き寄せ
+                // 異極のピースは、movedPieceに吸い寄せられて「一緒に移動」する
+                // = movedPieceの元の位置に引き寄せられる
                 if (isOpposite(movedPiece.pole, adjPiece.pole)) {
-                    // adjPieceをmovedPieceの方向に引き寄せ
-                    // ただし、移動先がmovedPieceの位置なので実際には動けない
-                    // 代わりに、adjPieceの反対側から引き寄せるか確認
-                    // この実装では「隣接した異極は吸い寄せられて一緒に移動」
-                    // → movedPieceが移動した後の位置に向かってadjPieceを1マス近づける
-                    const pullX = adjX - dir.dx;
-                    const pullY = adjY - dir.dy;
-
-                    // movedPieceの位置には移動できないので、効果なし
-                    // ただし、movedPieceが移動する「前」の位置が空いていれば、そこに引き寄せる
-                    // この実装: 引き寄せは「movedPieceの元の位置」への移動
-                    // 仕様を再解釈: 異極が隣接したら、そのピースはmovedPieceの元の位置に吸い寄せられる
-
-                    // 実装方針: 移動後にadjPieceがmovedPieceの隣にある場合、
-                    // movedPieceの移動元（今は空）にadjPieceを引き寄せる
-                    // → これは少し複雑なので、シンプルに「異極が隣接 → 隣接ピースがこちら側に1マス移動」
-                    // pullX, pullYはmovedPieceの位置なので移動不可
-                    // 別アプローチ: 引き寄せは後続の手で自然に発生する動きとして表現
-
-                    // 最終実装: 引き寄せ効果 = adjPieceをmovedPieceの「手前」に移動
-                    // 移動方向の反対側が空いていれば、そこに引き寄せ
-                    showMagneticEffect(adjX, adjY, '♥');
+                    // movedPieceの元の位置が空いていて、壁でなければ引き寄せ
+                    if (!getPieceAt(fromX, fromY) && !isWall(fromX, fromY)) {
+                        adjPiece.x = fromX;
+                        adjPiece.y = fromY;
+                        showMagneticEffect(adjX, adjY, '♥');
+                    }
                 }
                 // 同じ極: 反発（押し出し）
                 else if (isSame(movedPiece.pole, adjPiece.pole)) {
@@ -745,7 +735,7 @@
                     if (pushX >= 0 && pushX < gridSize &&
                         pushY >= 0 && pushY < gridSize &&
                         !getPieceAt(pushX, pushY) &&
-                        !isWall(pushX, pushY)) {  // 壁には押し出せない
+                        !isWall(pushX, pushY)) {
                         adjPiece.x = pushX;
                         adjPiece.y = pushY;
                         showMagneticEffect(adjX, adjY, '⚡');
