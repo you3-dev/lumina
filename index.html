@@ -291,10 +291,15 @@
             // 古い立方体をクリア
             clearCubes();
 
-            // 新しい立方体を生成
+            // 新しい立方体を生成（表面のみ）
             for (let x = 0; x < gridSize; x++) {
                 for (let y = 0; y < gridSize; y++) {
                     for (let z = 0; z < gridSize; z++) {
+                        // 表面のブロックのみ生成（少なくとも1つの座標が端にある）
+                        const isSurface = x === 0 || x === gridSize - 1 ||
+                                          y === 0 || y === gridSize - 1 ||
+                                          z === 0 || z === gridSize - 1;
+                        if (!isSurface) continue;
                         createCube(x, y, z);
                     }
                 }
