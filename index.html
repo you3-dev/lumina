@@ -89,6 +89,36 @@
         #reset-btn:active {
             transform: translateX(-50%) scale(0.95);
         }
+        #hint-btn {
+            position: absolute;
+            bottom: 30px;
+            left: calc(50% + 100px);
+            background: rgba(100, 200, 255, 0.2);
+            border: 2px solid #66ccff;
+            color: #66ccff;
+            padding: 12px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            text-shadow: 0 0 10px #66ccff;
+            box-shadow: 0 0 15px rgba(100, 200, 255, 0.3);
+            z-index: 100;
+        }
+        #hint-btn:hover {
+            background: rgba(100, 200, 255, 0.4);
+            box-shadow: 0 0 25px rgba(100, 200, 255, 0.5);
+        }
+        #hint-btn:active {
+            transform: scale(0.95);
+        }
+        #reset-btn {
+            left: calc(50% - 100px);
+            transform: translateX(-100%);
+        }
+        #reset-btn:active {
+            transform: translateX(-100%) scale(0.95);
+        }
         canvas {
             display: block;
         }
@@ -102,6 +132,7 @@
         <div id="next-stage-hint">クリックで次のステージへ</div>
     </div>
     <button id="reset-btn">RESET</button>
+    <button id="hint-btn">HINT</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -448,6 +479,93 @@
             }
         }
 
+        // ヒント機能：解を探してブロックを点滅させる
+        let hintCube = null;
+        let hintBlinking = false;
+
+        function findHintCube() {
+            // 消灯しているブロックの中で、クリックすると最も効果的なものを探す
+            // シンプルに：消灯しているブロックを1つ見つけて、そこをクリックすると改善するか確認
+
+            let bestCube = null;
+            let bestScore = -Infinity;
+
+            cubes.forEach(cube => {
+                const { gridX, gridY, gridZ } = cube.userData;
+
+                // このブロックをクリックした場合の影響をシミュレート
+                const directions = [
+                    [0, 0, 0],
+                    [1, 0, 0],
+                    [-1, 0, 0],
+                    [0, 1, 0],
+                    [0, -1, 0],
+                    [0, 0, 1],
+                    [0, 0, -1]
+                ];
+
+                let litGain = 0;
+                directions.forEach(([dx, dy, dz]) => {
+                    const nx = gridX + dx;
+                    const ny = gridY + dy;
+                    const nz = gridZ + dz;
+                    const key = `${nx},${ny},${nz}`;
+
+                    if (cubeStates.hasOwnProperty(key)) {
+                        // 現在消灯なら点灯になる（+1）、点灯なら消灯になる（-1）
+                        litGain += cubeStates[key] ? -1 : 1;
+                    }
+                });
+
+                // 点灯が増えるブロックを優先
+                if (litGain > bestScore) {
+                    bestScore = litGain;
+                    bestCube = cube;
+                }
+            });
+
+            return bestCube;
+        }
+
+        function showHint() {
+            if (isCleared || hintBlinking) return;
+
+            hintCube = findHintCube();
+            if (!hintCube) return;
+
+            hintBlinking = true;
+            let blinkCount = 0;
+            const originalColor = hintCube.material.color.clone();
+            const originalEmissive = hintCube.material.emissive.clone();
+            const originalIntensity = hintCube.material.emissiveIntensity;
+
+            const blinkInterval = setInterval(() => {
+                if (blinkCount >= 6) {
+                    // 元に戻す
+                    hintCube.material.color.copy(originalColor);
+                    hintCube.material.emissive.copy(originalEmissive);
+                    hintCube.material.emissiveIntensity = originalIntensity;
+                    hintBlinking = false;
+                    clearInterval(blinkInterval);
+                    return;
+                }
+
+                if (blinkCount % 2 === 0) {
+                    // 黄色に光る
+                    hintCube.material.color.setHex(0xffff00);
+                    hintCube.material.emissive.setHex(0xffff00);
+                    hintCube.material.emissiveIntensity = 1.0;
+                } else {
+                    // 元の色に戻す
+                    hintCube.material.color.copy(originalColor);
+                    hintCube.material.emissive.copy(originalEmissive);
+                    hintCube.material.emissiveIntensity = originalIntensity;
+                }
+
+                blinkCount++;
+            }, 200);
+        }
+
         // シャッフル（ランダムにクリック、アニメーションなし）
         function shuffle(count) {
             for (let i = 0; i < count; i++) {
@@ -488,6 +606,11 @@
         // リセットボタン
         document.getElementById('reset-btn').addEventListener('click', () => {
             initStage(currentStage);
+        });
+
+        // ヒントボタン
+        document.getElementById('hint-btn').addEventListener('click', () => {
+            showHint();
         });
 
         // マウス・タッチ操作
