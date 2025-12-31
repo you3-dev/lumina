@@ -194,6 +194,7 @@
         // 立方体の配列と状態
         let cubes = [];
         let cubeStates = {}; // true = 点灯, false = 消灯
+        let initialCubeStates = {}; // ステージ開始時の状態を保存
         const cubeAnimations = {}; // アニメーション状態を管理
         let gridSize = 3;
         const CUBE_SIZE = 0.92;
@@ -313,6 +314,9 @@
 
             // シャッフル
             shuffle(config.shuffleCount);
+
+            // 初期状態を保存（リセット用）
+            initialCubeStates = {...cubeStates};
 
             // UI更新
             document.getElementById('stage-info').textContent = `STAGE ${stage}`;
@@ -608,9 +612,16 @@
         // 初期ステージを開始
         initStage(currentStage);
 
-        // リセットボタン
+        // リセットボタン（ステージの初期状態に戻す）
         document.getElementById('reset-btn').addEventListener('click', () => {
-            initStage(currentStage);
+            // 保存した初期状態に戻す
+            cubeStates = {...initialCubeStates};
+            // ビジュアルを更新
+            cubes.forEach(updateCubeVisualInstant);
+            // クリア状態をリセット
+            document.getElementById('clear-message').classList.remove('show');
+            document.getElementById('next-stage-hint').classList.remove('show');
+            isCleared = false;
         });
 
         // ヒントボタン
