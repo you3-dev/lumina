@@ -73,20 +73,21 @@
         }
 
         /* ============================================
-           ゲーム情報 - スコアとタイマー
+           ゲーム情報 - ステージ、スコア、タイマー
            ============================================ */
         .game-info {
             display: flex;
             justify-content: center;
-            gap: 30px;
+            gap: 20px;
             padding: 10px;
-            font-size: 18px;
+            font-size: 16px;
+            flex-wrap: wrap;
         }
 
         .info-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .info-label {
@@ -95,9 +96,14 @@
 
         .info-value {
             font-weight: bold;
-            font-size: 24px;
-            min-width: 40px;
+            font-size: 20px;
+            min-width: 30px;
             text-align: center;
+        }
+
+        .info-value.stage {
+            color: #ff88ff;
+            text-shadow: 0 0 10px #ff88ff;
         }
 
         .info-value.score {
@@ -114,6 +120,11 @@
             color: #ff6666;
             text-shadow: 0 0 10px #ff6666;
             animation: pulse 0.5s infinite;
+        }
+
+        .progress {
+            font-size: 14px;
+            color: #aaa;
         }
 
         @keyframes pulse {
@@ -147,9 +158,9 @@
         }
 
         /* ============================================
-           リザルト画面
+           オーバーレイ画面共通
            ============================================ */
-        #result-screen {
+        .overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -163,22 +174,35 @@
             z-index: 200;
         }
 
-        .result-title {
+        .overlay-title {
             font-size: 48px;
-            color: #00ffff;
-            text-shadow: 0 0 30px #00ffff;
             margin-bottom: 20px;
+            text-shadow: 0 0 30px currentColor;
         }
 
-        .result-score {
-            font-size: 72px;
+        .overlay-title.clear {
+            color: #00ff88;
+        }
+
+        .overlay-title.fail {
+            color: #ff6666;
+        }
+
+        .overlay-subtitle {
+            font-size: 24px;
+            color: #88ccff;
+            margin-bottom: 10px;
+        }
+
+        .overlay-score {
+            font-size: 64px;
             color: #ffcc00;
             text-shadow: 0 0 40px #ffcc00;
             margin-bottom: 10px;
         }
 
-        .result-label {
-            font-size: 24px;
+        .overlay-label {
+            font-size: 20px;
             color: #88ccff;
             margin-bottom: 40px;
         }
@@ -191,13 +215,28 @@
             cursor: pointer;
             transition: all 0.3s;
             font-weight: bold;
+            margin: 5px;
+        }
+
+        .btn.primary {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88;
+        }
+
+        .btn.primary:hover {
+            background: rgba(0, 255, 136, 0.4);
+        }
+
+        .btn.secondary {
             background: rgba(255, 200, 100, 0.2);
             border-color: #ffcc66;
             color: #ffcc66;
             text-shadow: 0 0 10px #ffcc66;
         }
 
-        .btn:hover {
+        .btn.secondary:hover {
             background: rgba(255, 200, 100, 0.4);
         }
 
@@ -205,17 +244,7 @@
            スタート画面
            ============================================ */
         #start-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 200;
         }
 
         .start-title {
@@ -266,8 +295,13 @@
 
     <div class="game-info">
         <div class="info-item">
-            <span class="info-label">SCORE:</span>
+            <span class="info-label">STAGE:</span>
+            <span class="info-value stage" id="stage">1</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">GOAL:</span>
             <span class="info-value score" id="score">0</span>
+            <span class="progress">/ <span id="required">3</span></span>
         </div>
         <div class="info-item">
             <span class="info-label">TIME:</span>
@@ -284,36 +318,147 @@
     </div>
 
     <!-- スタート画面 -->
-    <div id="start-screen">
+    <div id="start-screen" class="overlay">
         <h1 class="start-title">BUCKET SHOOT</h1>
         <div class="instructions">
             板を動かしてボールをバケツに入れよう！<br>
             ドラッグ：板を移動<br>
             タップ：板を45°回転<br>
-            制限時間：30秒
+            ステージごとにクリア条件が変化！
         </div>
-        <button class="btn" id="start-btn">START</button>
+        <button class="btn primary" id="start-btn">START</button>
     </div>
 
-    <!-- リザルト画面 -->
-    <div id="result-screen">
-        <div class="result-title">TIME UP!</div>
-        <div class="result-score" id="final-score">0</div>
-        <div class="result-label">ボールをゴール</div>
-        <button class="btn" id="retry-btn">RETRY</button>
+    <!-- クリア画面 -->
+    <div id="clear-screen" class="overlay">
+        <div class="overlay-title clear">STAGE CLEAR!</div>
+        <div class="overlay-subtitle">STAGE <span id="cleared-stage">1</span></div>
+        <div class="overlay-score" id="clear-score">5</div>
+        <div class="overlay-label">ボールをゴール</div>
+        <button class="btn primary" id="next-btn">NEXT STAGE</button>
+    </div>
+
+    <!-- ゲームオーバー画面 -->
+    <div id="fail-screen" class="overlay">
+        <div class="overlay-title fail">TIME UP!</div>
+        <div class="overlay-subtitle">STAGE <span id="failed-stage">1</span></div>
+        <div class="overlay-score" id="fail-score">2</div>
+        <div class="overlay-label">/ <span id="fail-required">3</span> ボール</div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn secondary" id="retry-btn">RETRY</button>
+            <button class="btn primary" id="restart-btn">STAGE 1</button>
+        </div>
     </div>
 
     <script>
         // ============================================
         // Matter.js モジュールの取得
         // ============================================
-        const { Engine, Render, Runner, Bodies, Body, Composite, Events, Mouse, MouseConstraint, Vector } = Matter;
+        const { Engine, Render, Runner, Bodies, Body, Composite, Events, Mouse, Vector } = Matter;
+
+        // ============================================
+        // ステージ設定
+        // ============================================
+        function getStageConfig(stage) {
+            const configs = {
+                1: {
+                    requiredBalls: 3,
+                    timeLimit: 30,
+                    platformCount: 3,
+                    ballSpawnMode: 'center',
+                    bucketPosition: 'center',
+                    obstacles: [],
+                    platformRestriction: null
+                },
+                2: {
+                    requiredBalls: 4,
+                    timeLimit: 30,
+                    platformCount: 3,
+                    ballSpawnMode: 'random',
+                    bucketPosition: 'center',
+                    obstacles: [],
+                    platformRestriction: null
+                },
+                3: {
+                    requiredBalls: 5,
+                    timeLimit: 30,
+                    platformCount: 3,
+                    ballSpawnMode: 'random',
+                    bucketPosition: 'center',
+                    obstacles: [{ type: 'block', position: 'aboveBucket' }],
+                    platformRestriction: null
+                },
+                4: {
+                    requiredBalls: 5,
+                    timeLimit: 25,
+                    platformCount: 2,
+                    ballSpawnMode: 'random',
+                    bucketPosition: 'center',
+                    obstacles: [
+                        { type: 'block', position: 'aboveBucket' },
+                        { type: 'slope', position: 'left' }
+                    ],
+                    platformRestriction: null
+                },
+                5: {
+                    requiredBalls: 5,
+                    timeLimit: 25,
+                    platformCount: 3,
+                    ballSpawnMode: 'random',
+                    bucketPosition: 'left',
+                    obstacles: [{ type: 'block', position: 'aboveBucket' }],
+                    platformRestriction: null
+                },
+                6: {
+                    requiredBalls: 6,
+                    timeLimit: 25,
+                    platformCount: 2,
+                    ballSpawnMode: 'random',
+                    bucketPosition: 'right',
+                    obstacles: [
+                        { type: 'slope', position: 'center' }
+                    ],
+                    platformRestriction: 'vertical'
+                },
+                7: {
+                    requiredBalls: 6,
+                    timeLimit: 20,
+                    platformCount: 2,
+                    ballSpawnMode: 'random',
+                    bucketPosition: 'center',
+                    obstacles: [
+                        { type: 'block', position: 'aboveBucket' },
+                        { type: 'slope', position: 'left' },
+                        { type: 'slope', position: 'right' }
+                    ],
+                    platformRestriction: null
+                }
+            };
+
+            // ステージ8以降はランダム生成
+            if (stage > 7) {
+                const positions = ['left', 'center', 'right'];
+                return {
+                    requiredBalls: 6 + Math.floor((stage - 7) / 2),
+                    timeLimit: 20,
+                    platformCount: 2,
+                    ballSpawnMode: 'random',
+                    bucketPosition: positions[Math.floor(Math.random() * 3)],
+                    obstacles: [
+                        { type: 'block', position: 'aboveBucket' },
+                        { type: 'slope', position: positions[Math.floor(Math.random() * 3)] }
+                    ],
+                    platformRestriction: Math.random() > 0.5 ? 'vertical' : null
+                };
+            }
+
+            return configs[stage];
+        }
 
         // ============================================
         // ゲーム設定
         // ============================================
-        const GAME_TIME = 30; // 制限時間（秒）
-        const BALL_SPAWN_INTERVAL = 2000; // ボール発射間隔（ミリ秒）
+        const BALL_SPAWN_INTERVAL = 2000;
         const BALL_RADIUS = 15;
         const PLATFORM_WIDTH = 120;
         const PLATFORM_HEIGHT = 12;
@@ -321,29 +466,44 @@
         // ============================================
         // ゲーム状態
         // ============================================
+        let currentStage = 1;
         let score = 0;
-        let timeLeft = GAME_TIME;
+        let requiredBalls = 3;
+        let timeLimit = 30;
+        let timeLeft = 30;
         let gameRunning = false;
         let timerInterval = null;
         let ballSpawnInterval = null;
-        let platforms = []; // 操作可能な板
-        let balls = []; // 現在のボール
-        let engine, render, runner, mouse, mouseConstraint;
+        let platforms = [];
+        let obstacles = [];
+        let balls = [];
+        let engine, render, runner;
         let canvasWidth, canvasHeight;
-        let bucket; // バケツのボディ
+        let bucket;
         let selectedPlatform = null;
         let dragStartTime = 0;
+        let dragStartPos = null;
+        let stageConfig = null;
 
         // ============================================
         // DOM要素
         // ============================================
+        const stageEl = document.getElementById('stage');
         const scoreEl = document.getElementById('score');
+        const requiredEl = document.getElementById('required');
         const timeEl = document.getElementById('time');
         const startScreen = document.getElementById('start-screen');
-        const resultScreen = document.getElementById('result-screen');
-        const finalScoreEl = document.getElementById('final-score');
+        const clearScreen = document.getElementById('clear-screen');
+        const failScreen = document.getElementById('fail-screen');
+        const clearedStageEl = document.getElementById('cleared-stage');
+        const clearScoreEl = document.getElementById('clear-score');
+        const failedStageEl = document.getElementById('failed-stage');
+        const failScoreEl = document.getElementById('fail-score');
+        const failRequiredEl = document.getElementById('fail-required');
         const startBtn = document.getElementById('start-btn');
+        const nextBtn = document.getElementById('next-btn');
         const retryBtn = document.getElementById('retry-btn');
+        const restartBtn = document.getElementById('restart-btn');
         const gameContainer = document.getElementById('game-container');
         const canvas = document.getElementById('game-canvas');
 
@@ -363,192 +523,198 @@
         function initPhysics() {
             calculateCanvasSize();
 
-            // エンジン作成
             engine = Engine.create();
-            engine.world.gravity.y = 1; // 重力
+            engine.world.gravity.y = 1;
 
-            // レンダラー作成
             render = Render.create({
                 canvas: canvas,
                 engine: engine,
                 options: {
                     width: canvasWidth,
                     height: canvasHeight,
-                    wireframes: false, // ワイヤーフレームモードOFF
+                    wireframes: false,
                     background: 'transparent'
                 }
             });
 
-            // ランナー作成
             runner = Runner.create();
 
-            // 壁の作成（左右と上）
+            // 壁の作成
             const wallThickness = 20;
             const walls = [
-                // 左壁
                 Bodies.rectangle(-wallThickness/2, canvasHeight/2, wallThickness, canvasHeight, {
-                    isStatic: true,
-                    render: { fillStyle: 'transparent' }
+                    isStatic: true, render: { fillStyle: 'transparent' }
                 }),
-                // 右壁
                 Bodies.rectangle(canvasWidth + wallThickness/2, canvasHeight/2, wallThickness, canvasHeight, {
-                    isStatic: true,
-                    render: { fillStyle: 'transparent' }
+                    isStatic: true, render: { fillStyle: 'transparent' }
                 }),
-                // 上壁（発射口以外）
                 Bodies.rectangle(canvasWidth/4, -wallThickness/2, canvasWidth/2 - 30, wallThickness, {
-                    isStatic: true,
-                    render: { fillStyle: 'transparent' }
+                    isStatic: true, render: { fillStyle: 'transparent' }
                 }),
                 Bodies.rectangle(canvasWidth*3/4, -wallThickness/2, canvasWidth/2 - 30, wallThickness, {
-                    isStatic: true,
-                    render: { fillStyle: 'transparent' }
+                    isStatic: true, render: { fillStyle: 'transparent' }
                 })
             ];
             Composite.add(engine.world, walls);
 
-            // バケツ（ゴール）の作成
-            createBucket();
-
-            // 操作可能な板の作成
-            createPlatforms();
-
-            // マウス/タッチ制御の設定
             setupMouseControl();
-
-            // 衝突イベントの設定
             setupCollisionEvents();
-
-            // レンダリング開始
             Render.run(render);
         }
 
         // ============================================
-        // バケツ（ゴール）の作成
+        // バケツの作成
         // ============================================
-        function createBucket() {
+        function createBucket(position) {
+            // 既存のバケツを削除
+            if (bucket) {
+                bucket.parts.forEach(p => Composite.remove(engine.world, p));
+                Composite.remove(engine.world, bucket.sensor);
+            }
+
             const bucketWidth = 80;
             const bucketHeight = 50;
             const wallThick = 8;
-            const bucketX = canvasWidth / 2;
+
+            let bucketX;
+            if (position === 'left') {
+                bucketX = bucketWidth / 2 + 20;
+            } else if (position === 'right') {
+                bucketX = canvasWidth - bucketWidth / 2 - 20;
+            } else {
+                bucketX = canvasWidth / 2;
+            }
+
             const bucketY = canvasHeight - bucketHeight / 2 - 10;
 
-            // バケツの壁（左・右・底）
             const bucketParts = [
-                // 左壁
-                Bodies.rectangle(
-                    bucketX - bucketWidth/2 + wallThick/2,
-                    bucketY,
-                    wallThick,
-                    bucketHeight,
-                    { isStatic: true, render: { fillStyle: '#4a9eff' }, label: 'bucketWall' }
-                ),
-                // 右壁
-                Bodies.rectangle(
-                    bucketX + bucketWidth/2 - wallThick/2,
-                    bucketY,
-                    wallThick,
-                    bucketHeight,
-                    { isStatic: true, render: { fillStyle: '#4a9eff' }, label: 'bucketWall' }
-                ),
-                // 底
-                Bodies.rectangle(
-                    bucketX,
-                    bucketY + bucketHeight/2 - wallThick/2,
-                    bucketWidth,
-                    wallThick,
-                    { isStatic: true, render: { fillStyle: '#4a9eff' }, label: 'bucketBottom' }
-                )
+                Bodies.rectangle(bucketX - bucketWidth/2 + wallThick/2, bucketY, wallThick, bucketHeight, {
+                    isStatic: true, render: { fillStyle: '#4a9eff' }, label: 'bucketWall'
+                }),
+                Bodies.rectangle(bucketX + bucketWidth/2 - wallThick/2, bucketY, wallThick, bucketHeight, {
+                    isStatic: true, render: { fillStyle: '#4a9eff' }, label: 'bucketWall'
+                }),
+                Bodies.rectangle(bucketX, bucketY + bucketHeight/2 - wallThick/2, bucketWidth, wallThick, {
+                    isStatic: true, render: { fillStyle: '#4a9eff' }, label: 'bucketBottom'
+                })
             ];
 
-            // ゴール判定用のセンサー（透明、衝突検知のみ）
-            const goalSensor = Bodies.rectangle(
-                bucketX,
-                bucketY + 10,
-                bucketWidth - wallThick * 2 - 10,
-                bucketHeight - 20,
-                {
-                    isStatic: true,
-                    isSensor: true, // 衝突しないが検知する
-                    render: { fillStyle: 'rgba(0, 255, 100, 0.2)' },
-                    label: 'goal'
-                }
-            );
+            const goalSensor = Bodies.rectangle(bucketX, bucketY + 10, bucketWidth - wallThick * 2 - 10, bucketHeight - 20, {
+                isStatic: true, isSensor: true,
+                render: { fillStyle: 'rgba(0, 255, 100, 0.2)' },
+                label: 'goal'
+            });
 
             bucket = { parts: bucketParts, sensor: goalSensor, x: bucketX, y: bucketY };
             Composite.add(engine.world, [...bucketParts, goalSensor]);
         }
 
         // ============================================
+        // 障害物の作成
+        // ============================================
+        function createObstacles(obstacleConfigs) {
+            obstacles.forEach(o => Composite.remove(engine.world, o));
+            obstacles = [];
+
+            obstacleConfigs.forEach(config => {
+                let obstacle;
+
+                if (config.type === 'block') {
+                    let x, y;
+                    if (config.position === 'aboveBucket') {
+                        x = bucket.x;
+                        y = bucket.y - 100;
+                    } else {
+                        x = canvasWidth / 2;
+                        y = canvasHeight / 2;
+                    }
+
+                    obstacle = Bodies.rectangle(x, y, 60, 20, {
+                        isStatic: true,
+                        render: { fillStyle: '#666688' },
+                        label: 'obstacle'
+                    });
+                } else if (config.type === 'slope') {
+                    let x, angle;
+                    if (config.position === 'left') {
+                        x = canvasWidth * 0.25;
+                        angle = Math.PI / 6;
+                    } else if (config.position === 'right') {
+                        x = canvasWidth * 0.75;
+                        angle = -Math.PI / 6;
+                    } else {
+                        x = canvasWidth / 2;
+                        angle = Math.PI / 8;
+                    }
+
+                    obstacle = Bodies.rectangle(x, canvasHeight * 0.35, 100, 12, {
+                        isStatic: true,
+                        angle: angle,
+                        render: { fillStyle: '#666688' },
+                        label: 'obstacle'
+                    });
+                }
+
+                if (obstacle) {
+                    obstacles.push(obstacle);
+                    Composite.add(engine.world, obstacle);
+                }
+            });
+        }
+
+        // ============================================
         // 操作可能な板の作成
         // ============================================
-        function createPlatforms() {
+        function createPlatforms(count, restriction) {
+            platforms.forEach(p => Composite.remove(engine.world, p));
             platforms = [];
 
-            // 3枚の板を配置
-            const platformPositions = [
+            const basePositions = [
                 { x: canvasWidth * 0.3, y: canvasHeight * 0.3, angle: Math.PI / 6 },
                 { x: canvasWidth * 0.7, y: canvasHeight * 0.45, angle: -Math.PI / 6 },
                 { x: canvasWidth * 0.4, y: canvasHeight * 0.6, angle: 0 }
             ];
 
-            platformPositions.forEach((pos, index) => {
-                const platform = Bodies.rectangle(
-                    pos.x,
-                    pos.y,
-                    PLATFORM_WIDTH,
-                    PLATFORM_HEIGHT,
-                    {
-                        isStatic: true,
-                        angle: pos.angle,
-                        render: {
-                            fillStyle: '#ff8844',
-                            strokeStyle: '#ffaa66',
-                            lineWidth: 2
-                        },
-                        label: 'platform',
-                        friction: 0.3,
-                        restitution: 0.4
-                    }
-                );
-                platform.platformIndex = index;
+            for (let i = 0; i < count && i < basePositions.length; i++) {
+                const pos = basePositions[i];
+                const platform = Bodies.rectangle(pos.x, pos.y, PLATFORM_WIDTH, PLATFORM_HEIGHT, {
+                    isStatic: true,
+                    angle: pos.angle,
+                    render: {
+                        fillStyle: '#ff8844',
+                        strokeStyle: '#ffaa66',
+                        lineWidth: 2
+                    },
+                    label: 'platform',
+                    friction: 0.3,
+                    restitution: 0.4
+                });
+                platform.platformIndex = i;
+                platform.restriction = restriction;
+                platform.originalY = pos.y;
                 platforms.push(platform);
                 Composite.add(engine.world, platform);
-            });
+            }
         }
 
         // ============================================
-        // マウス/タッチ制御の設定
+        // マウス/タッチ制御
         // ============================================
         function setupMouseControl() {
-            mouse = Mouse.create(canvas);
-
-            // タッチイベントの処理
             canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
             canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
             canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-
-            // マウスイベント（PC用）
             canvas.addEventListener('mousedown', handleMouseDown);
             canvas.addEventListener('mousemove', handleMouseMove);
             canvas.addEventListener('mouseup', handleMouseUp);
         }
 
-        // ============================================
-        // タッチ/マウスイベントハンドラー
-        // ============================================
         function getEventPosition(e) {
             const rect = canvas.getBoundingClientRect();
             if (e.touches && e.touches.length > 0) {
-                return {
-                    x: e.touches[0].clientX - rect.left,
-                    y: e.touches[0].clientY - rect.top
-                };
+                return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
             }
-            return {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
-            };
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
         }
 
         function findPlatformAtPosition(pos) {
@@ -568,6 +734,7 @@
             const pos = getEventPosition(e);
             selectedPlatform = findPlatformAtPosition(pos);
             dragStartTime = Date.now();
+            dragStartPos = pos;
             if (selectedPlatform) {
                 selectedPlatform.dragOffset = {
                     x: pos.x - selectedPlatform.position.x,
@@ -580,30 +747,32 @@
             e.preventDefault();
             if (selectedPlatform) {
                 const pos = getEventPosition(e);
-                const newX = Math.max(PLATFORM_WIDTH/2, Math.min(canvasWidth - PLATFORM_WIDTH/2, pos.x - selectedPlatform.dragOffset.x));
-                const newY = Math.max(50, Math.min(canvasHeight - 100, pos.y - selectedPlatform.dragOffset.y));
-                Body.setPosition(selectedPlatform, { x: newX, y: newY });
+                movePlatform(selectedPlatform, pos);
             }
         }
 
         function handleTouchEnd(e) {
             e.preventDefault();
             const dragDuration = Date.now() - dragStartTime;
-            // 短いタップなら回転
-            if (selectedPlatform && dragDuration < 200) {
-                const pos = getEventPosition(e.changedTouches ? { touches: e.changedTouches } : e);
-                const platform = findPlatformAtPosition(pos);
-                if (platform) {
-                    Body.setAngle(platform, platform.angle + Math.PI / 4);
+            if (selectedPlatform && dragDuration < 200 && dragStartPos) {
+                const endPos = e.changedTouches ?
+                    { x: e.changedTouches[0].clientX - canvas.getBoundingClientRect().left,
+                      y: e.changedTouches[0].clientY - canvas.getBoundingClientRect().top } : dragStartPos;
+                const dx = endPos.x - dragStartPos.x;
+                const dy = endPos.y - dragStartPos.y;
+                if (Math.sqrt(dx*dx + dy*dy) < 10) {
+                    Body.setAngle(selectedPlatform, selectedPlatform.angle + Math.PI / 4);
                 }
             }
             selectedPlatform = null;
+            dragStartPos = null;
         }
 
         function handleMouseDown(e) {
             const pos = getEventPosition(e);
             selectedPlatform = findPlatformAtPosition(pos);
             dragStartTime = Date.now();
+            dragStartPos = pos;
             if (selectedPlatform) {
                 selectedPlatform.dragOffset = {
                     x: pos.x - selectedPlatform.position.x,
@@ -615,30 +784,47 @@
         function handleMouseMove(e) {
             if (selectedPlatform) {
                 const pos = getEventPosition(e);
-                const newX = Math.max(PLATFORM_WIDTH/2, Math.min(canvasWidth - PLATFORM_WIDTH/2, pos.x - selectedPlatform.dragOffset.x));
-                const newY = Math.max(50, Math.min(canvasHeight - 100, pos.y - selectedPlatform.dragOffset.y));
-                Body.setPosition(selectedPlatform, { x: newX, y: newY });
+                movePlatform(selectedPlatform, pos);
             }
         }
 
         function handleMouseUp(e) {
             const dragDuration = Date.now() - dragStartTime;
-            // 短いクリックなら回転
-            if (selectedPlatform && dragDuration < 200) {
-                Body.setAngle(selectedPlatform, selectedPlatform.angle + Math.PI / 4);
+            if (selectedPlatform && dragDuration < 200 && dragStartPos) {
+                const pos = getEventPosition(e);
+                const dx = pos.x - dragStartPos.x;
+                const dy = pos.y - dragStartPos.y;
+                if (Math.sqrt(dx*dx + dy*dy) < 10) {
+                    Body.setAngle(selectedPlatform, selectedPlatform.angle + Math.PI / 4);
+                }
             }
             selectedPlatform = null;
+            dragStartPos = null;
+        }
+
+        function movePlatform(platform, pos) {
+            let newX = pos.x - platform.dragOffset.x;
+            let newY = pos.y - platform.dragOffset.y;
+
+            // 移動制限
+            newX = Math.max(PLATFORM_WIDTH/2, Math.min(canvasWidth - PLATFORM_WIDTH/2, newX));
+            newY = Math.max(50, Math.min(canvasHeight - 100, newY));
+
+            // 垂直方向のみ制限
+            if (platform.restriction === 'vertical') {
+                newX = platform.position.x; // X座標は固定
+            }
+
+            Body.setPosition(platform, { x: newX, y: newY });
         }
 
         // ============================================
-        // 衝突イベントの設定
+        // 衝突イベント
         // ============================================
         function setupCollisionEvents() {
             Events.on(engine, 'collisionStart', (event) => {
                 event.pairs.forEach(pair => {
                     const { bodyA, bodyB } = pair;
-
-                    // ゴールセンサーとボールの衝突
                     if ((bodyA.label === 'goal' && bodyB.label === 'ball') ||
                         (bodyB.label === 'goal' && bodyA.label === 'ball')) {
                         const ball = bodyA.label === 'ball' ? bodyA : bodyB;
@@ -655,23 +841,21 @@
             if (!gameRunning || ball.scored) return;
             ball.scored = true;
 
-            // スコア加算
             score++;
             scoreEl.textContent = score;
-
-            // エフェクト表示
             showGoalEffect(ball.position.x, ball.position.y);
 
-            // ボール削除
             setTimeout(() => {
                 Composite.remove(engine.world, ball);
                 balls = balls.filter(b => b !== ball);
             }, 100);
+
+            // クリア判定
+            if (score >= requiredBalls) {
+                stageClear();
+            }
         }
 
-        // ============================================
-        // ゴールエフェクト
-        // ============================================
         function showGoalEffect(x, y) {
             const effect = document.createElement('div');
             effect.className = 'goal-effect';
@@ -680,7 +864,6 @@
             effect.style.top = (gameContainer.offsetTop + y) + 'px';
             effect.style.color = '#ffcc00';
             document.body.appendChild(effect);
-
             setTimeout(() => effect.remove(), 800);
         }
 
@@ -690,22 +873,28 @@
         function spawnBall() {
             if (!gameRunning) return;
 
-            const ball = Bodies.circle(
-                canvasWidth / 2 + (Math.random() - 0.5) * 40, // 少しランダムな位置
-                -BALL_RADIUS,
-                BALL_RADIUS,
-                {
-                    restitution: 0.6, // 反発係数
-                    friction: 0.1,
-                    frictionAir: 0.01,
-                    render: {
-                        fillStyle: '#00ff88',
-                        strokeStyle: '#44ffaa',
-                        lineWidth: 2
-                    },
-                    label: 'ball'
-                }
-            );
+            let spawnX;
+            if (stageConfig.ballSpawnMode === 'center') {
+                spawnX = canvasWidth / 2 + (Math.random() - 0.5) * 40;
+            } else if (stageConfig.ballSpawnMode === 'random') {
+                spawnX = 50 + Math.random() * (canvasWidth - 100);
+            } else if (stageConfig.ballSpawnMode === 'left') {
+                spawnX = 50 + Math.random() * 100;
+            } else {
+                spawnX = canvasWidth - 150 + Math.random() * 100;
+            }
+
+            const ball = Bodies.circle(spawnX, -BALL_RADIUS, BALL_RADIUS, {
+                restitution: 0.6,
+                friction: 0.1,
+                frictionAir: 0.01,
+                render: {
+                    fillStyle: '#00ff88',
+                    strokeStyle: '#44ffaa',
+                    lineWidth: 2
+                },
+                label: 'ball'
+            });
 
             balls.push(ball);
             Composite.add(engine.world, ball);
@@ -720,28 +909,38 @@
         }
 
         // ============================================
-        // ゲーム開始
+        // ステージ開始
         // ============================================
-        function startGame() {
+        function startStage(stage) {
+            currentStage = stage;
+            stageConfig = getStageConfig(stage);
+
             score = 0;
-            timeLeft = GAME_TIME;
+            requiredBalls = stageConfig.requiredBalls;
+            timeLimit = stageConfig.timeLimit;
+            timeLeft = timeLimit;
             gameRunning = true;
 
+            // UI更新
+            stageEl.textContent = stage;
             scoreEl.textContent = '0';
-            timeEl.textContent = GAME_TIME;
+            requiredEl.textContent = requiredBalls;
+            timeEl.textContent = timeLeft;
             timeEl.classList.remove('warning');
 
+            // 画面を隠す
             startScreen.style.display = 'none';
-            resultScreen.style.display = 'none';
+            clearScreen.style.display = 'none';
+            failScreen.style.display = 'none';
 
             // 既存のボールを削除
             balls.forEach(ball => Composite.remove(engine.world, ball));
             balls = [];
 
-            // 板をリセット
-            platforms.forEach(p => Composite.remove(engine.world, p));
-            platforms = [];
-            createPlatforms();
+            // ステージ構築
+            createBucket(stageConfig.bucketPosition);
+            createObstacles(stageConfig.obstacles);
+            createPlatforms(stageConfig.platformCount, stageConfig.platformRestriction);
 
             // 物理エンジン開始
             Runner.run(runner, engine);
@@ -756,7 +955,7 @@
                 }
 
                 if (timeLeft <= 0) {
-                    endGame();
+                    stageFail();
                 }
             }, 1000);
 
@@ -766,24 +965,41 @@
         }
 
         // ============================================
-        // ゲーム終了
+        // ステージクリア
         // ============================================
-        function endGame() {
+        function stageClear() {
             gameRunning = false;
-
             clearInterval(timerInterval);
             clearInterval(ballSpawnInterval);
             Runner.stop(runner);
 
-            finalScoreEl.textContent = score;
-            resultScreen.style.display = 'flex';
+            clearedStageEl.textContent = currentStage;
+            clearScoreEl.textContent = score;
+            clearScreen.style.display = 'flex';
+        }
+
+        // ============================================
+        // ステージ失敗
+        // ============================================
+        function stageFail() {
+            gameRunning = false;
+            clearInterval(timerInterval);
+            clearInterval(ballSpawnInterval);
+            Runner.stop(runner);
+
+            failedStageEl.textContent = currentStage;
+            failScoreEl.textContent = score;
+            failRequiredEl.textContent = requiredBalls;
+            failScreen.style.display = 'flex';
         }
 
         // ============================================
         // イベントリスナー
         // ============================================
-        startBtn.addEventListener('click', startGame);
-        retryBtn.addEventListener('click', startGame);
+        startBtn.addEventListener('click', () => startStage(1));
+        nextBtn.addEventListener('click', () => startStage(currentStage + 1));
+        retryBtn.addEventListener('click', () => startStage(currentStage));
+        restartBtn.addEventListener('click', () => startStage(1));
 
         // ウィンドウリサイズ対応
         window.addEventListener('resize', () => {
