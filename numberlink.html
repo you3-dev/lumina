@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Number Link - Lumina</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 25%, #0d1b2a 50%, #1b0a28 75%, #0a0a1a 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            padding: 10px;
+            overflow: hidden;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 15px #00ffff;
+            letter-spacing: 4px;
+        }
+        .stage-info {
+            font-size: 18px;
+            color: #ffcc00;
+            text-shadow: 0 0 10px #ffcc00;
+            margin-top: 5px;
+        }
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #88ccff;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 12px;
+            border: 1px solid #88ccff;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        .back-link:hover {
+            background: rgba(136, 204, 255, 0.2);
+        }
+        #game-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #grid {
+            display: grid;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px;
+            border-radius: 10px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+        }
+        .cell {
+            background: rgba(30, 30, 50, 0.8);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: relative;
+            transition: background 0.15s;
+        }
+        .cell.endpoint {
+            z-index: 10;
+        }
+        .cell .number {
+            position: relative;
+            z-index: 5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+        }
+        .cell .line-segment {
+            position: absolute;
+            background: currentColor;
+            opacity: 0.7;
+            border-radius: 3px;
+        }
+        .cell .line-segment.half-left {
+            height: 25%;
+            width: 50%;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+        .cell .line-segment.half-right {
+            height: 25%;
+            width: 50%;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+        }
+        .cell .line-segment.half-top {
+            width: 25%;
+            height: 50%;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+        }
+        .cell .line-segment.half-bottom {
+            width: 25%;
+            height: 50%;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+        }
+        .cell .line-center {
+            position: absolute;
+            width: 25%;
+            height: 25%;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.7;
+        }
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: 2px solid;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        .btn-reset {
+            background: rgba(255, 100, 100, 0.2);
+            border-color: #ff6666;
+            color: #ff6666;
+            text-shadow: 0 0 10px #ff6666;
+        }
+        .btn-reset:hover {
+            background: rgba(255, 100, 100, 0.4);
+        }
+        .btn-new {
+            background: rgba(255, 200, 100, 0.2);
+            border-color: #ffcc66;
+            color: #ffcc66;
+            text-shadow: 0 0 10px #ffcc66;
+        }
+        .btn-new:hover {
+            background: rgba(255, 200, 100, 0.4);
+        }
+        #clear-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        #clear-popup.show {
+            display: flex;
+        }
+        .clear-content {
+            text-align: center;
+            animation: popIn 0.5s ease;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .clear-text {
+            font-size: 64px;
+            font-weight: bold;
+            color: #00ffcc;
+            text-shadow: 0 0 30px #00ffcc, 0 0 60px #00ffcc;
+            margin-bottom: 30px;
+        }
+        .clear-btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            background: rgba(0, 255, 204, 0.2);
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .clear-btn:hover {
+            background: rgba(0, 255, 204, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Back</a>
+
+    <div class="header">
+        <h1 class="title">NUMBER LINK</h1>
+        <div class="stage-info" id="stage-info">STAGE 1</div>
+    </div>
+
+    <div id="game-container">
+        <div id="grid"></div>
+        <div class="buttons">
+            <button class="btn btn-reset" id="reset-btn">RESET</button>
+            <button class="btn btn-new" id="new-btn">NEW GAME</button>
+        </div>
+    </div>
+
+    <div id="clear-popup">
+        <div class="clear-content">
+            <div class="clear-text">CLEAR!</div>
+            <button class="clear-btn" id="next-btn">Next Stage</button>
+        </div>
+    </div>
+
+    <script>
+        // ステージ設定
+        let currentStage = 1;
+
+        // localStorage キー
+        const STORAGE_KEY = 'numberlink_save';
+
+        // ゲーム状態を保存
+        function saveGame() {
+            const saveData = {
+                currentStage: currentStage,
+                gridSize: gridSize,
+                grid: grid,
+                endpoints: endpoints,
+                paths: paths
+            };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData));
+            } catch (e) {
+                console.warn('Failed to save game:', e);
+            }
+        }
+
+        // ゲーム状態を読み込み
+        function loadGame() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+            } catch (e) {
+                console.warn('Failed to load game:', e);
+            }
+            return null;
+        }
+
+        // 保存データを削除
+        function clearSave() {
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+            } catch (e) {
+                console.warn('Failed to clear save:', e);
+            }
+        }
+
+        function getStageConfig(stage) {
+            // ステージに応じてグリッドサイズとペア数を調整
+            if (stage <= 2) {
+                return { gridSize: 5, pairCount: 4 + stage };
+            } else if (stage <= 4) {
+                return { gridSize: 6, pairCount: 5 + stage };
+            } else if (stage <= 6) {
+                return { gridSize: 7, pairCount: 6 + stage };
+            } else if (stage <= 9) {
+                return { gridSize: 8, pairCount: 8 + Math.floor(stage / 2) };
+            } else {
+                return { gridSize: 9, pairCount: Math.min(12 + Math.floor(stage / 3), 18) };
+            }
+        }
+
+        // 画面サイズに応じたセルサイズを計算
+        function getCellSize(gridSize) {
+            const maxWidth = Math.min(window.innerWidth - 40, 400);
+            const maxHeight = window.innerHeight - 200;
+            const maxGridSize = Math.min(maxWidth, maxHeight);
+            const cellSize = Math.floor((maxGridSize - 20) / gridSize);
+            return Math.max(cellSize, 30); // 最小30px
+        }
+
+        const COLORS = [
+            '#ff6b6b', // 赤
+            '#4ecdc4', // シアン
+            '#ffe66d', // 黄
+            '#95e1d3', // ミント
+            '#dda0dd', // プラム
+            '#87ceeb', // スカイブルー
+            '#ffa07a', // ライトサーモン
+            '#98fb98', // ペールグリーン
+            '#f0e68c', // カーキ
+            '#deb887', // バーリーウッド
+            '#bc8f8f', // ローズブラウン
+            '#add8e6', // ライトブルー
+            '#ffb6c1', // ライトピンク
+            '#e6e6fa', // ラベンダー
+            '#ffdab9', // ピーチパフ
+            '#b0c4de', // ライトスチールブルー
+            '#98d8c8', // アクアマリン
+            '#f5deb3', // ウィート
+        ];
+
+        let gridSize = 5;
+        let grid = [];
+        let endpoints = [];
+        let paths = {};
+        let currentPath = null;
+        let currentPathId = null;
+        let isDrawing = false;
+
+        // グリッドを初期化
+        function initGrid() {
+            grid = [];
+            for (let y = 0; y < gridSize; y++) {
+                grid[y] = [];
+                for (let x = 0; x < gridSize; x++) {
+                    grid[y][x] = { pathId: null, isEndpoint: false, endpointId: null };
+                }
+            }
+        }
+
+        // 解けるパズルを生成
+        function generatePuzzle() {
+            const config = getStageConfig(currentStage);
+            gridSize = config.gridSize;
+            const targetPairs = config.pairCount;
+
+            initGrid();
+            endpoints = [];
+            paths = {};
+
+            const visited = Array(gridSize).fill(null).map(() => Array(gridSize).fill(false));
+            const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+
+            let pathId = 1;
+            let attempts = 0;
+            const maxAttempts = 200;
+
+            while (pathId <= targetPairs && attempts < maxAttempts) {
+                attempts++;
+
+                const emptyCells = [];
+                for (let y = 0; y < gridSize; y++) {
+                    for (let x = 0; x < gridSize; x++) {
+                        if (!visited[y][x]) {
+                            emptyCells.push({ x, y });
+                        }
+                    }
+                }
+
+                if (emptyCells.length < 3) break;
+
+                const startIdx = Math.floor(Math.random() * emptyCells.length);
+                const start = emptyCells[startIdx];
+
+                const path = [{ x: start.x, y: start.y }];
+                const tempVisited = JSON.parse(JSON.stringify(visited));
+                tempVisited[start.y][start.x] = true;
+
+                let current = { x: start.x, y: start.y };
+                const minLength = 2;
+                const maxLength = Math.max(3, Math.floor(gridSize * 1.5));
+                const targetLength = minLength + Math.floor(Math.random() * (maxLength - minLength + 1));
+
+                while (path.length < targetLength) {
+                    const shuffledDirs = [...directions].sort(() => Math.random() - 0.5);
+                    let moved = false;
+
+                    for (const [dx, dy] of shuffledDirs) {
+                        const nx = current.x + dx;
+                        const ny = current.y + dy;
+
+                        if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize && !tempVisited[ny][nx]) {
+                            tempVisited[ny][nx] = true;
+                            current = { x: nx, y: ny };
+                            path.push({ x: nx, y: ny });
+                            moved = true;
+                            break;
+                        }
+                    }
+
+                    if (!moved) break;
+                }
+
+                if (path.length >= minLength) {
+                    for (const cell of path) {
+                        visited[cell.y][cell.x] = true;
+                        grid[cell.y][cell.x].pathId = pathId;
+                    }
+
+                    const startCell = path[0];
+                    const endCell = path[path.length - 1];
+                    grid[startCell.y][startCell.x].isEndpoint = true;
+                    grid[startCell.y][startCell.x].endpointId = pathId;
+                    grid[endCell.y][endCell.x].isEndpoint = true;
+                    grid[endCell.y][endCell.x].endpointId = pathId;
+
+                    endpoints.push({
+                        id: pathId,
+                        color: COLORS[(pathId - 1) % COLORS.length],
+                        cells: [startCell, endCell]
+                    });
+
+                    paths[pathId] = [...path];
+                    pathId++;
+                    attempts = 0;
+                }
+            }
+
+            fillRemainingCells(visited);
+            resetGridKeepEndpoints();
+        }
+
+        function fillRemainingCells(visited) {
+            const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+            let changed = true;
+
+            while (changed) {
+                changed = false;
+                for (let y = 0; y < gridSize; y++) {
+                    for (let x = 0; x < gridSize; x++) {
+                        if (!visited[y][x]) {
+                            for (const [dx, dy] of directions) {
+                                const nx = x + dx;
+                                const ny = y + dy;
+                                if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
+                                    const pathId = grid[ny][nx].pathId;
+                                    if (pathId && !grid[ny][nx].isEndpoint) {
+                                        visited[y][x] = true;
+                                        grid[y][x].pathId = pathId;
+                                        paths[pathId].push({ x, y });
+                                        changed = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function resetGridKeepEndpoints() {
+            const endpointInfo = [];
+            for (const ep of endpoints) {
+                endpointInfo.push({
+                    id: ep.id,
+                    color: ep.color,
+                    cells: [...ep.cells]
+                });
+            }
+
+            initGrid();
+            endpoints = endpointInfo;
+            paths = {};
+
+            for (const ep of endpoints) {
+                for (const cell of ep.cells) {
+                    grid[cell.y][cell.x].isEndpoint = true;
+                    grid[cell.y][cell.x].endpointId = ep.id;
+                }
+                paths[ep.id] = [];
+            }
+        }
+
+        function renderGrid() {
+            const gridEl = document.getElementById('grid');
+            gridEl.innerHTML = '';
+
+            const cellSize = getCellSize(gridSize);
+            const numberSize = Math.floor(cellSize * 0.65);
+            const fontSize = Math.floor(cellSize * 0.4);
+
+            gridEl.style.gridTemplateColumns = `repeat(${gridSize}, ${cellSize}px)`;
+
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.style.width = `${cellSize}px`;
+                    cell.style.height = `${cellSize}px`;
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+
+                    const cellData = grid[y][x];
+
+                    if (cellData.isEndpoint) {
+                        cell.classList.add('endpoint');
+                        const ep = endpoints.find(e => e.id === cellData.endpointId);
+                        if (ep) {
+                            const number = document.createElement('div');
+                            number.className = 'number';
+                            number.textContent = ep.id;
+                            number.style.backgroundColor = ep.color;
+                            number.style.width = `${numberSize}px`;
+                            number.style.height = `${numberSize}px`;
+                            number.style.fontSize = `${fontSize}px`;
+                            cell.appendChild(number);
+                        }
+                    }
+
+                    if (cellData.pathId) {
+                        const ep = endpoints.find(e => e.id === cellData.pathId);
+                        if (ep) {
+                            cell.style.color = ep.color;
+                            renderLineSegments(cell, x, y, cellData.pathId);
+                        }
+                    }
+
+                    gridEl.appendChild(cell);
+                }
+            }
+
+            document.getElementById('stage-info').textContent = `STAGE ${currentStage}`;
+        }
+
+        function renderLineSegments(cell, x, y, pathId) {
+            const path = paths[pathId];
+            if (!path || path.length === 0) return;
+
+            const idx = path.findIndex(p => p.x === x && p.y === y);
+            if (idx === -1) return;
+
+            const prev = idx > 0 ? path[idx - 1] : null;
+            const next = idx < path.length - 1 ? path[idx + 1] : null;
+
+            const connections = [];
+            if (prev) {
+                if (prev.x < x) connections.push('left');
+                if (prev.x > x) connections.push('right');
+                if (prev.y < y) connections.push('top');
+                if (prev.y > y) connections.push('bottom');
+            }
+            if (next) {
+                if (next.x < x) connections.push('left');
+                if (next.x > x) connections.push('right');
+                if (next.y < y) connections.push('top');
+                if (next.y > y) connections.push('bottom');
+            }
+
+            if (connections.length > 0) {
+                const center = document.createElement('div');
+                center.className = 'line-center';
+                center.style.backgroundColor = 'currentColor';
+                cell.appendChild(center);
+            }
+
+            for (const conn of connections) {
+                const segment = document.createElement('div');
+                segment.className = `line-segment half-${conn}`;
+                cell.appendChild(segment);
+            }
+        }
+
+        function getGridPosition(e) {
+            const gridEl = document.getElementById('grid');
+            const rect = gridEl.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const cellSize = getCellSize(gridSize);
+            const gap = 2;
+            const padding = 6;
+
+            const x = Math.floor((clientX - rect.left - padding) / (cellSize + gap));
+            const y = Math.floor((clientY - rect.top - padding) / (cellSize + gap));
+
+            if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
+                return { x, y };
+            }
+            return null;
+        }
+
+        function startDrawing(e) {
+            e.preventDefault();
+            const pos = getGridPosition(e);
+            if (!pos) return;
+
+            const cellData = grid[pos.y][pos.x];
+
+            if (cellData.isEndpoint) {
+                currentPathId = cellData.endpointId;
+                clearPath(currentPathId);
+                currentPath = [{ x: pos.x, y: pos.y }];
+                paths[currentPathId] = currentPath;
+                grid[pos.y][pos.x].pathId = currentPathId;
+                isDrawing = true;
+                renderGrid();
+            } else if (cellData.pathId) {
+                currentPathId = cellData.pathId;
+                const path = paths[currentPathId];
+                const idx = path.findIndex(p => p.x === pos.x && p.y === pos.y);
+                if (idx !== -1) {
+                    const removed = path.splice(idx + 1);
+                    for (const cell of removed) {
+                        if (!grid[cell.y][cell.x].isEndpoint || grid[cell.y][cell.x].endpointId !== currentPathId) {
+                            grid[cell.y][cell.x].pathId = null;
+                        }
+                    }
+                    currentPath = path;
+                    isDrawing = true;
+                    renderGrid();
+                }
+            }
+        }
+
+        function continueDrawing(e) {
+            if (!isDrawing || !currentPath) return;
+            e.preventDefault();
+
+            const pos = getGridPosition(e);
+            if (!pos) return;
+
+            const lastPos = currentPath[currentPath.length - 1];
+            if (pos.x === lastPos.x && pos.y === lastPos.y) return;
+
+            const dx = Math.abs(pos.x - lastPos.x);
+            const dy = Math.abs(pos.y - lastPos.y);
+            if (dx + dy !== 1) return;
+
+            const cellData = grid[pos.y][pos.x];
+
+            if (currentPath.length >= 2) {
+                const prevPos = currentPath[currentPath.length - 2];
+                if (pos.x === prevPos.x && pos.y === prevPos.y) {
+                    const removed = currentPath.pop();
+                    if (!grid[removed.y][removed.x].isEndpoint || grid[removed.y][removed.x].endpointId !== currentPathId) {
+                        grid[removed.y][removed.x].pathId = null;
+                    }
+                    renderGrid();
+                    return;
+                }
+            }
+
+            if (cellData.pathId === currentPathId) return;
+
+            if (cellData.pathId && cellData.pathId !== currentPathId) {
+                clearPath(cellData.pathId);
+            }
+
+            if (cellData.isEndpoint) {
+                if (cellData.endpointId === currentPathId) {
+                    currentPath.push({ x: pos.x, y: pos.y });
+                    grid[pos.y][pos.x].pathId = currentPathId;
+                    isDrawing = false;
+                    renderGrid();
+                    checkClear();
+                    return;
+                } else {
+                    return;
+                }
+            }
+
+            currentPath.push({ x: pos.x, y: pos.y });
+            grid[pos.y][pos.x].pathId = currentPathId;
+            renderGrid();
+        }
+
+        function stopDrawing(e) {
+            if (isDrawing) {
+                // 描画終了時に保存
+                saveGame();
+            }
+            isDrawing = false;
+            currentPath = null;
+            currentPathId = null;
+        }
+
+        function clearPath(pathId) {
+            const path = paths[pathId];
+            if (path) {
+                for (const cell of path) {
+                    if (!grid[cell.y][cell.x].isEndpoint || grid[cell.y][cell.x].endpointId !== pathId) {
+                        grid[cell.y][cell.x].pathId = null;
+                    }
+                }
+            }
+            paths[pathId] = [];
+        }
+
+        function checkClear() {
+            // すべてのマスが埋まっているか（端点も線でカバーされているかチェック）
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const cell = grid[y][x];
+                    // 端点でないセルはpathIdが必要
+                    if (!cell.isEndpoint && !cell.pathId) {
+                        return false;
+                    }
+                }
+            }
+
+            // すべてのペアが繋がっているか
+            for (const ep of endpoints) {
+                const path = paths[ep.id];
+                if (!path || path.length < 2) return false;
+
+                const start = path[0];
+                const end = path[path.length - 1];
+                const epCells = ep.cells;
+
+                // パスの両端が両方の端点セルに到達しているか
+                const startsAtEndpoint = epCells.some(c => c.x === start.x && c.y === start.y);
+                const endsAtEndpoint = epCells.some(c => c.x === end.x && c.y === end.y);
+
+                // 両端点を結んでいるか（始点と終点が異なる端点であること）
+                if (!startsAtEndpoint || !endsAtEndpoint) return false;
+                if (start.x === end.x && start.y === end.y) return false;
+            }
+
+            // クリア！
+            document.getElementById('clear-popup').classList.add('show');
+            return true;
+        }
+
+        function resetPuzzle() {
+            resetGridKeepEndpoints();
+            renderGrid();
+            saveGame();
+        }
+
+        function newGame() {
+            if (confirm('最初からやり直しますか？')) {
+                clearSave();
+                currentStage = 1;
+                document.getElementById('clear-popup').classList.remove('show');
+                generatePuzzle();
+                renderGrid();
+                saveGame();
+            }
+        }
+
+        function nextStage() {
+            currentStage++;
+            document.getElementById('clear-popup').classList.remove('show');
+            generatePuzzle();
+            renderGrid();
+            saveGame();
+        }
+
+        // ウィンドウリサイズ対応
+        window.addEventListener('resize', () => {
+            renderGrid();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const gridEl = document.getElementById('grid');
+
+            gridEl.addEventListener('mousedown', startDrawing);
+            gridEl.addEventListener('mousemove', continueDrawing);
+            document.addEventListener('mouseup', stopDrawing);
+
+            gridEl.addEventListener('touchstart', startDrawing, { passive: false });
+            gridEl.addEventListener('touchmove', continueDrawing, { passive: false });
+            document.addEventListener('touchend', stopDrawing);
+
+            document.getElementById('reset-btn').addEventListener('click', resetPuzzle);
+            document.getElementById('new-btn').addEventListener('click', newGame);
+            document.getElementById('next-btn').addEventListener('click', nextStage);
+
+            // 初期化：保存データがあれば復元、なければ新規開始
+            const savedGame = loadGame();
+            if (savedGame) {
+                currentStage = savedGame.currentStage;
+                gridSize = savedGame.gridSize;
+                grid = savedGame.grid;
+                endpoints = savedGame.endpoints;
+                paths = savedGame.paths;
+                renderGrid();
+            } else {
+                generatePuzzle();
+                renderGrid();
+                saveGame();
+            }
+        });
+    </script>
+</body>
+</html>
