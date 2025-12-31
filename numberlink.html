@@ -493,7 +493,7 @@
         }
 
         // ============================================
-        // パズル生成
+        // パズル生成（解が必ず存在することを保証）
         // ============================================
         function initGrid() {
             grid = [];
@@ -511,39 +511,65 @@
             const targetPairs = config.pairCount;
 
             calculateSizes();
+
+            // 解が存在するパズルが生成されるまで繰り返す
+            let maxGlobalAttempts = 50;
+            while (maxGlobalAttempts > 0) {
+                maxGlobalAttempts--;
+
+                if (tryGeneratePuzzle(targetPairs)) {
+                    return; // 成功
+                }
+            }
+
+            // 最終手段：より少ないペア数で生成
+            for (let pairs = targetPairs - 1; pairs >= 3; pairs--) {
+                if (tryGeneratePuzzle(pairs)) {
+                    return;
+                }
+            }
+        }
+
+        function tryGeneratePuzzle(targetPairs) {
             initGrid();
             endpoints = [];
             paths = {};
 
-            const visited = Array(gridSize).fill(null).map(() => Array(gridSize).fill(false));
+            // 全セルを管理する配列
+            const cellOwner = Array(gridSize).fill(null).map(() => Array(gridSize).fill(0));
             const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 
             let pathId = 1;
             let attempts = 0;
-            const maxAttempts = 200;
+            const maxAttempts = 300;
 
+            // フェーズ1: パスを生成してグリッド全体を埋める
             while (pathId <= targetPairs && attempts < maxAttempts) {
                 attempts++;
 
+                // 空きセルを探す
                 const emptyCells = [];
                 for (let y = 0; y < gridSize; y++) {
                     for (let x = 0; x < gridSize; x++) {
-                        if (!visited[y][x]) emptyCells.push({ x, y });
+                        if (cellOwner[y][x] === 0) emptyCells.push({ x, y });
                     }
                 }
 
-                if (emptyCells.length < 3) break;
+                if (emptyCells.length < 2) break;
 
+                // ランダムな開始点
                 const startIdx = Math.floor(Math.random() * emptyCells.length);
                 const start = emptyCells[startIdx];
 
                 const path = [{ x: start.x, y: start.y }];
-                const tempVisited = JSON.parse(JSON.stringify(visited));
-                tempVisited[start.y][start.x] = true;
+                const tempOwner = cellOwner.map(row => [...row]);
+                tempOwner[start.y][start.x] = pathId;
 
                 let current = { x: start.x, y: start.y };
+
+                // パスを延ばす
                 const minLength = 2;
-                const maxLength = Math.max(3, Math.floor(gridSize * 1.5));
+                const maxLength = Math.max(4, Math.floor(gridSize * 2));
                 const targetLength = minLength + Math.floor(Math.random() * (maxLength - minLength + 1));
 
                 while (path.length < targetLength) {
@@ -554,8 +580,8 @@
                         const nx = current.x + dx;
                         const ny = current.y + dy;
 
-                        if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize && !tempVisited[ny][nx]) {
-                            tempVisited[ny][nx] = true;
+                        if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize && tempOwner[ny][nx] === 0) {
+                            tempOwner[ny][nx] = pathId;
                             current = { x: nx, y: ny };
                             path.push({ x: nx, y: ny });
                             moved = true;
@@ -566,23 +592,21 @@
                     if (!moved) break;
                 }
 
+                // 最低2セル必要
                 if (path.length >= minLength) {
+                    // cellOwnerを更新
                     for (const cell of path) {
-                        visited[cell.y][cell.x] = true;
-                        grid[cell.y][cell.x].pathId = pathId;
+                        cellOwner[cell.y][cell.x] = pathId;
                     }
 
                     const startCell = path[0];
                     const endCell = path[path.length - 1];
-                    grid[startCell.y][startCell.x].isEndpoint = true;
-                    grid[startCell.y][startCell.x].endpointId = pathId;
-                    grid[endCell.y][endCell.x].isEndpoint = true;
-                    grid[endCell.y][endCell.x].endpointId = pathId;
 
                     endpoints.push({
                         id: pathId,
                         color: COLORS[(pathId - 1) % COLORS.length],
-                        cells: [startCell, endCell]
+                        cells: [startCell, endCell],
+                        solutionPath: [...path]
                     });
 
                     paths[pathId] = [...path];
@@ -591,37 +615,63 @@
                 }
             }
 
-            fillRemainingCells(visited);
-            resetGridKeepEndpoints();
-        }
-
-        function fillRemainingCells(visited) {
-            const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+            // フェーズ2: 残りの空きセルを既存のパスに割り当てる
             let changed = true;
-
             while (changed) {
                 changed = false;
                 for (let y = 0; y < gridSize; y++) {
                     for (let x = 0; x < gridSize; x++) {
-                        if (!visited[y][x]) {
+                        if (cellOwner[y][x] === 0) {
+                            // 隣接するパスを探す
+                            const neighbors = [];
                             for (const [dx, dy] of directions) {
                                 const nx = x + dx;
                                 const ny = y + dy;
-                                if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
-                                    const pathId = grid[ny][nx].pathId;
-                                    if (pathId && !grid[ny][nx].isEndpoint) {
-                                        visited[y][x] = true;
-                                        grid[y][x].pathId = pathId;
-                                        paths[pathId].push({ x, y });
-                                        changed = true;
-                                        break;
-                                    }
+                                if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize && cellOwner[ny][nx] > 0) {
+                                    neighbors.push(cellOwner[ny][nx]);
                                 }
+                            }
+
+                            if (neighbors.length > 0) {
+                                // ランダムに選択
+                                const chosenPathId = neighbors[Math.floor(Math.random() * neighbors.length)];
+                                cellOwner[y][x] = chosenPathId;
+
+                                // パスに追加（解の経路を更新）
+                                const ep = endpoints.find(e => e.id === chosenPathId);
+                                if (ep) {
+                                    ep.solutionPath.push({ x, y });
+                                }
+                                paths[chosenPathId].push({ x, y });
+                                changed = true;
                             }
                         }
                     }
                 }
             }
+
+            // フェーズ3: まだ空きセルがあるか確認
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    if (cellOwner[y][x] === 0) {
+                        // 空きセルが残っている - 失敗
+                        return false;
+                    }
+                }
+            }
+
+            // フェーズ4: グリッドを設定して端点のみ残す
+            initGrid();
+            for (const ep of endpoints) {
+                for (const cell of ep.cells) {
+                    grid[cell.y][cell.x].isEndpoint = true;
+                    grid[cell.y][cell.x].endpointId = ep.id;
+                }
+                // パスをクリア（端点情報は保持）
+                paths[ep.id] = [];
+            }
+
+            return true;
         }
 
         function resetGridKeepEndpoints() {
