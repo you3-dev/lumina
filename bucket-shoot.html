@@ -539,19 +539,15 @@
 
             runner = Runner.create();
 
-            // 壁の作成
+            // 壁の作成（左右のみ、天井は無し - ボールが上から落ちてくるため）
             const wallThickness = 20;
             const walls = [
+                // 左壁
                 Bodies.rectangle(-wallThickness/2, canvasHeight/2, wallThickness, canvasHeight, {
                     isStatic: true, render: { fillStyle: 'transparent' }
                 }),
+                // 右壁
                 Bodies.rectangle(canvasWidth + wallThickness/2, canvasHeight/2, wallThickness, canvasHeight, {
-                    isStatic: true, render: { fillStyle: 'transparent' }
-                }),
-                Bodies.rectangle(canvasWidth/4, -wallThickness/2, canvasWidth/2 - 30, wallThickness, {
-                    isStatic: true, render: { fillStyle: 'transparent' }
-                }),
-                Bodies.rectangle(canvasWidth*3/4, -wallThickness/2, canvasWidth/2 - 30, wallThickness, {
                     isStatic: true, render: { fillStyle: 'transparent' }
                 })
             ];
@@ -912,6 +908,16 @@
         // ステージ開始
         // ============================================
         function startStage(stage) {
+            // 前のステージのタイマーをクリア
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            if (ballSpawnInterval) {
+                clearInterval(ballSpawnInterval);
+                ballSpawnInterval = null;
+            }
+
             currentStage = stage;
             stageConfig = getStageConfig(stage);
 
@@ -942,10 +948,8 @@
             createObstacles(stageConfig.obstacles);
             createPlatforms(stageConfig.platformCount, stageConfig.platformRestriction);
 
-            // 物理エンジン開始（重複実行を防ぐ）
-            if (!runner.enabled) {
-                Runner.run(runner, engine);
-            }
+            // 物理エンジン開始
+            Runner.run(runner, engine);
 
             // タイマー開始
             timerInterval = setInterval(() => {
