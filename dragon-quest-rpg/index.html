@@ -2950,8 +2950,9 @@
             const targetMapPath = isNewFormat ? targetMap : getMapPathFromId(targetMap);
             const targetMapId = isNewFormat ? getMapIdFromPath(targetMap) : targetMap;
 
-            // キャッシュ済みマップがあれば再利用（宝箱状態を保持するため）
-            if (maps[targetMapId]) {
+            // 旧形式マップを直接参照できるか確認
+            if (!isNewFormat && maps[targetMapId]) {
+                // 旧形式の直接遷移
                 performLegacyWarp(targetMapId, targetX, targetY);
                 return;
             }
