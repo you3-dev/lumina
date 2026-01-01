@@ -3477,9 +3477,13 @@
 
         // 連続移動の開始
         function startContinuousMove(dx, dy) {
+            // 既存のインターバルをクリア（方向はリセットしない）
+            if (moveInterval) {
+                clearInterval(moveInterval);
+                moveInterval = null;
+            }
             currentMoveDirection = { dx, dy };
             movePlayer(dx, dy);  // 即座に1回移動
-            stopContinuousMove();  // 既存のインターバルをクリア
             moveInterval = setInterval(() => {
                 if (gameMode === MODE.FIELD && !isTransitioning && !dialog.active &&
                     !menu.active && !inn.active && !shop.active) {
