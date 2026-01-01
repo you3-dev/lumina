@@ -273,6 +273,9 @@
     <div id="hud">
         <div id="mapName">フィールド</div>
 
+        <!-- デバッグ表示（開発用、コメントアウトで非表示） -->
+        <div id="encounterDebug" style="position: fixed; top: 40px; right: 10px; background: rgba(0,0,0,0.7); color: #0f0; padding: 5px 10px; font-size: 12px; font-family: monospace; border-radius: 4px; z-index: 1000;"></div>
+
         <div id="dpad">
             <div class="dpad-btn" id="dpad-up">▲</div>
             <div class="dpad-btn" id="dpad-left">◀</div>
@@ -706,6 +709,12 @@
         let currentMapId = 'field';
         let currentMap = maps[currentMapId];
         let isTransitioning = false;
+
+        // エンカウントシステム
+        let stepsSinceLastBattle = 0;  // 前回バトル後からの歩数
+        const SAFE_STEPS = 5;          // 不感地帯（この歩数まではエンカウントしない）
+        const ENCOUNTER_RATE_PER_STEP = 0.02;  // 歩数あたりの確率上昇率（2%）
+        const MAX_ENCOUNTER_RATE = 0.95;       // 最大エンカウント率
 
         // プレイヤー
         const player = {
@@ -2262,6 +2271,8 @@
 
         function endBattle(result) {
             battle.result = result;
+            // バトル終了時に歩数カウントをリセット
+            stepsSinceLastBattle = 0;
             setTimeout(() => {
                 gameMode = MODE.FIELD;
                 battle.active = false;
@@ -2479,16 +2490,46 @@
         }
 
         function checkRandomEncounter() {
+            // エンカウントが発生しないマップ（街・城など）
             if (currentMap.encounterRate <= 0) return;
 
+            // エンカウントタイル以外はスキップ
             const tile = currentMap.data[player.y][player.x];
             if (!ENCOUNTER_TILES.includes(tile)) return;
 
-            if (Math.random() < currentMap.encounterRate) {
+            // 歩数カウント
+            stepsSinceLastBattle++;
+
+            // 不感地帯の判定（safeSteps以下はエンカウントしない）
+            if (stepsSinceLastBattle <= SAFE_STEPS) {
+                // console.log(`[DEBUG] 不感地帯: ${stepsSinceLastBattle}/${SAFE_STEPS}歩`);
+                return;
+            }
+
+            // 確率の計算（歩くほど上昇）
+            const stepsOverSafe = stepsSinceLastBattle - SAFE_STEPS;
+            const currentEncounterRate = Math.min(
+                stepsOverSafe * ENCOUNTER_RATE_PER_STEP,
+                MAX_ENCOUNTER_RATE
+            );
+
+            // デバッグ表示（コメントアウトで無効化可能）
+            // console.log(`[DEBUG] 歩数: ${stepsSinceLastBattle}, 確率: ${(currentEncounterRate * 100).toFixed(1)}%`);
+
+            // エンカウント判定
+            if (Math.random() < currentEncounterRate) {
                 const table = encounterTables[currentMap.type] || encounterTables.field;
                 const monsterType = table[Math.floor(Math.random() * table.length)];
                 startBattle(monsterType);
             }
+        }
+
+        // 現在のエンカウント確率を取得（デバッグ表示用）
+        function getCurrentEncounterRate() {
+            if (currentMap.encounterRate <= 0) return 0;
+            if (stepsSinceLastBattle <= SAFE_STEPS) return 0;
+            const stepsOverSafe = stepsSinceLastBattle - SAFE_STEPS;
+            return Math.min(stepsOverSafe * ENCOUNTER_RATE_PER_STEP, MAX_ENCOUNTER_RATE);
         }
 
         // ========================================
@@ -2935,6 +2976,11 @@
                 updateCamera();
                 saveGame();
 
+                // 安全なマップ（街・城など）に入ったら歩数リセット
+                if (currentMap.encounterRate <= 0) {
+                    stepsSinceLastBattle = 0;
+                }
+
                 // フェードイン
                 await new Promise(resolve => setTimeout(resolve, 100));
                 fadeOverlay.classList.remove('active');
@@ -2973,6 +3019,11 @@
                 mapNameElement.textContent = currentMap.name;
                 updateCamera();
                 saveGame();
+
+                // 安全なマップ（街・城など）に入ったら歩数リセット
+                if (currentMap.encounterRate <= 0) {
+                    stepsSinceLastBattle = 0;
+                }
 
                 setTimeout(() => {
                     fadeOverlay.classList.remove('active');
@@ -3490,9 +3541,21 @@
         // ========================================
         // ゲームループ
         // ========================================
+
+        // デバッグ表示更新（コメントアウトで無効化可能）
+        const encounterDebugElement = document.getElementById('encounterDebug');
+        function updateEncounterDebug() {
+            if (!encounterDebugElement) return;
+            const rate = getCurrentEncounterRate();
+            encounterDebugElement.textContent = `歩数: ${stepsSinceLastBattle} | 確率: ${(rate * 100).toFixed(1)}%`;
+        }
+
         function gameLoop() {
             // エンディングのスタッフロール更新
             updateStaffRoll();
+
+            // デバッグ表示更新
+            updateEncounterDebug();
 
             draw();
             requestAnimationFrame(gameLoop);
