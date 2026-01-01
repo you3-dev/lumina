@@ -470,31 +470,14 @@
 
         function shufflePuzzle(moves) {
             for (let i = 0; i < moves; i++) {
-                // シャッフル用: 1ユニットずつ移動できるペアを取得
-                const validMoves = getShuffleMoves();
+                // ゲームルールに従った有効な移動を取得
+                const validMoves = getValidMoves();
                 if (validMoves.length === 0) break;
 
                 const move = validMoves[Math.floor(Math.random() * validMoves.length)];
-                // 1ユニットだけ移動
+                // 1ユニットだけ移動（まとめて移動しない）
                 tubes[move.to].push(tubes[move.from].pop());
             }
-        }
-
-        // シャッフル用: どこからでも1ユニット移動できるペアを取得
-        function getShuffleMoves() {
-            const moves = [];
-            for (let from = 0; from < tubes.length; from++) {
-                if (tubes[from].length === 0) continue;
-
-                for (let to = 0; to < tubes.length; to++) {
-                    if (from === to) continue;
-                    if (tubes[to].length >= TUBE_CAPACITY) continue;
-
-                    // シャッフル時は色の制限なしに移動可能（逆再生なので）
-                    moves.push({ from, to });
-                }
-            }
-            return moves;
         }
 
         function getValidMoves() {
