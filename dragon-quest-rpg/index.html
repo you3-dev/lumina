@@ -1147,7 +1147,10 @@
             // ストーリー進行フラグ
             storyFlags: {
                 reportedMidBossDefeat: false,  // 中ボス撃破を王様に報告
-                portalRoomUnlocked: false      // 旅の扉の部屋への通行許可
+                portalRoomUnlocked: false,     // 旅の扉の部屋への通行許可
+                bazaarUnlocked: false,         // バザールの町への通行許可
+                desertPortalUnlocked: false,   // 砂漠の旅の扉開放
+                desertCastleUnlocked: false    // 太陽の城塞への通行許可
             },
             // クエストフラグ（エリア2）
             quests: {
@@ -1739,7 +1742,8 @@
                 gameProgress: {
                     bossDefeated: { ...gameProgress.bossDefeated },
                     storyFlags: { ...gameProgress.storyFlags },
-                    areas: { ...gameProgress.areas }
+                    areas: { ...gameProgress.areas },
+                    quests: JSON.parse(JSON.stringify(gameProgress.quests))
                 }
             };
 
@@ -1903,6 +1907,14 @@
                     }
                     if (data.gameProgress.areas) {
                         gameProgress.areas = { ...data.gameProgress.areas };
+                    }
+                    // クエストフラグの復元
+                    if (data.gameProgress.quests) {
+                        for (const questName in data.gameProgress.quests) {
+                            if (gameProgress.quests[questName]) {
+                                Object.assign(gameProgress.quests[questName], data.gameProgress.quests[questName]);
+                            }
+                        }
                     }
                 } else {
                     // 旧セーブデータからの移行：gameClearedからmaou撃破フラグを推測
@@ -5716,9 +5728,9 @@
             gameMode = MODE.FIELD;
             worldMapOverlay.classList.remove('active');
 
-            // アニメーション停止
+            // アニメーション停止（setTimeoutを使用しているためclearTimeoutで停止）
             if (worldMapAnimationId) {
-                cancelAnimationFrame(worldMapAnimationId);
+                clearTimeout(worldMapAnimationId);
                 worldMapAnimationId = null;
             }
         }
