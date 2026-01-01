@@ -68,9 +68,5 @@
     { "id": "traveler1", "x": 15, "y": 8, "sprite": "🧳", "type": "villager", "messages": ["ここは広大なフィールドだ。", "東に洞窟、南に森があるらしい。", "中央には小さな村もあるぞ。"] },
     { "id": "merchant", "x": 20, "y": 20, "sprite": "🧔", "type": "villager", "messages": ["やあ、旅の商人だ。", "この辺りは魔物が多いから気をつけな。", "南の森には珍しいアイテムがあるとか..."] }
   ],
-  "chests": [
-    { "id": "field_chest1", "x": 7, "y": 3, "itemId": 1, "isOpened": false },
-    { "id": "field_chest2", "x": 35, "y": 15, "itemId": 2, "isOpened": false },
-    { "id": "field_chest3", "x": 12, "y": 32, "itemId": 3, "isOpened": false }
-  ]
+  "chests": []
 }
