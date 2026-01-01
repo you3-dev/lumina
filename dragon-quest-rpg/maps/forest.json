@@ -49,6 +49,6 @@
   "chests": [
     { "id": "forest_chest1", "x": 25, "y": 25, "itemId": 1, "isOpened": false },
     { "id": "forest_chest2", "x": 5, "y": 25, "itemId": 13, "isOpened": false },
-    { "id": "forest_chest3", "x": 15, "y": 10, "itemId": 1, "isOpened": false }
+    { "id": "forest_chest3", "x": 15, "y": 10, "itemId": 23, "isOpened": false }
   ]
 }
