@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Water Sort - Lumina</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 25%, #0d1b2a 50%, #1b0a28 75%, #0a0a1a 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+            margin-top: 30px;
+        }
+        .title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 15px #00ffff;
+            letter-spacing: 3px;
+        }
+        .back-link {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #88ccff;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 12px;
+            border: 1px solid #88ccff;
+            border-radius: 6px;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+        .back-link:hover {
+            background: rgba(136, 204, 255, 0.2);
+        }
+        .info-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .info-item {
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+        .info-item span {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+        #game-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            max-width: 400px;
+            padding: 15px;
+        }
+        .tube {
+            width: 50px;
+            height: 160px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 3px solid rgba(150, 200, 255, 0.4);
+            border-radius: 0 0 25px 25px;
+            border-top: none;
+            display: flex;
+            flex-direction: column-reverse;
+            padding: 4px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .tube::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: -3px;
+            right: -3px;
+            height: 12px;
+            background: transparent;
+            border: 3px solid rgba(150, 200, 255, 0.4);
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+        }
+        .tube:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(100, 200, 255, 0.3);
+        }
+        .tube.selected {
+            transform: translateY(-15px);
+            box-shadow: 0 10px 30px rgba(255, 200, 100, 0.5);
+            border-color: rgba(255, 200, 100, 0.8);
+        }
+        .tube.selected::before {
+            border-color: rgba(255, 200, 100, 0.8);
+        }
+        .liquid {
+            width: 100%;
+            height: 35px;
+            border-radius: 3px;
+            margin-bottom: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .liquid:first-child {
+            border-radius: 0 0 20px 20px;
+        }
+        /* 色と模様の定義 */
+        .liquid.color-0 { background: linear-gradient(180deg, #ff6b6b 0%, #ee5a5a 100%); }
+        .liquid.color-1 { background: linear-gradient(180deg, #4ecdc4 0%, #3dbdb5 100%); }
+        .liquid.color-2 { background: linear-gradient(180deg, #ffe66d 0%, #f0d85d 100%); }
+        .liquid.color-3 { background: linear-gradient(180deg, #a66cff 0%, #9555ee 100%); }
+        .liquid.color-4 { background: linear-gradient(180deg, #6bcb77 0%, #5aba66 100%); }
+        .liquid.color-5 { background: linear-gradient(180deg, #ff9f43 0%, #ee8e32 100%); }
+        .liquid.color-6 { background: linear-gradient(180deg, #ff6b9d 0%, #ee5a8c 100%); }
+        .liquid.color-7 { background: linear-gradient(180deg, #54a0ff 0%, #438fee 100%); }
+
+        /* 模様 - ドット */
+        .liquid.color-0::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.4) 3px, transparent 3px);
+            background-size: 10px 10px;
+        }
+        /* 模様 - 横ストライプ */
+        .liquid.color-1::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 4px,
+                rgba(255,255,255,0.3) 4px,
+                rgba(255,255,255,0.3) 7px
+            );
+        }
+        /* 模様 - チェック */
+        .liquid.color-2::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(0,0,0,0.15) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(0,0,0,0.15) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(0,0,0,0.15) 75%);
+            background-size: 10px 10px;
+            background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+        }
+        /* 模様 - 斜めストライプ */
+        .liquid.color-3::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 5px,
+                rgba(255,255,255,0.25) 5px,
+                rgba(255,255,255,0.25) 10px
+            );
+        }
+        /* 模様 - 波線 */
+        .liquid.color-4::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 3px,
+                rgba(255,255,255,0.3) 3px,
+                rgba(255,255,255,0.3) 6px
+            );
+        }
+        /* 模様 - 十字 */
+        .liquid.color-5::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.3) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(255,255,255,0.3) 2px, transparent 2px);
+            background-size: 12px 12px;
+        }
+        /* 模様 - ダイヤ */
+        .liquid.color-6::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(45deg, rgba(255,255,255,0.25) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.25) 75%);
+            background-size: 14px 14px;
+        }
+        /* 模様 - 小さいドット */
+        .liquid.color-7::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.5) 2px, transparent 2px);
+            background-size: 8px 8px;
+            background-position: 4px 4px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn {
+            padding: 10px 18px;
+            font-size: 14px;
+            border: 2px solid;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            background: transparent;
+        }
+        .btn-undo {
+            border-color: #ffcc66;
+            color: #ffcc66;
+        }
+        .btn-undo:hover {
+            background: rgba(255, 200, 100, 0.2);
+        }
+        .btn-reset {
+            border-color: #ff6666;
+            color: #ff6666;
+        }
+        .btn-reset:hover {
+            background: rgba(255, 100, 100, 0.2);
+        }
+        .btn-new {
+            border-color: #66ff99;
+            color: #66ff99;
+        }
+        .btn-new:hover {
+            background: rgba(100, 255, 150, 0.2);
+        }
+        #clear-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        #clear-popup.show {
+            display: flex;
+        }
+        .clear-content {
+            text-align: center;
+            animation: popIn 0.5s ease;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .clear-text {
+            font-size: 48px;
+            font-weight: bold;
+            color: #00ffcc;
+            text-shadow: 0 0 30px #00ffcc;
+            margin-bottom: 15px;
+        }
+        .clear-moves {
+            font-size: 24px;
+            color: #ffcc00;
+            margin-bottom: 25px;
+        }
+        .clear-btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            background: rgba(0, 255, 204, 0.2);
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0 10px;
+        }
+        .clear-btn:hover {
+            background: rgba(0, 255, 204, 0.4);
+        }
+        .legend {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            max-width: 350px;
+        }
+        .legend-item {
+            width: 30px;
+            height: 25px;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        /* アニメーション用 */
+        .pouring {
+            animation: pour 0.4s ease-out;
+        }
+        @keyframes pour {
+            0% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 400px) {
+            .tube {
+                width: 45px;
+                height: 140px;
+            }
+            .liquid {
+                height: 30px;
+            }
+            #game-container {
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Back</a>
+
+    <div class="header">
+        <h1 class="title">WATER SORT</h1>
+    </div>
+
+    <div class="info-bar">
+        <div class="info-item">手数: <span id="move-count">0</span></div>
+        <div class="info-item">ベスト: <span id="best-count">-</span></div>
+    </div>
+
+    <div id="game-container"></div>
+
+    <div class="buttons">
+        <button class="btn btn-undo" id="undo-btn">UNDO</button>
+        <button class="btn btn-reset" id="reset-btn">RESET</button>
+        <button class="btn btn-new" id="new-btn">NEW GAME</button>
+    </div>
+
+    <div class="legend" id="legend"></div>
+
+    <div id="clear-popup">
+        <div class="clear-content">
+            <div class="clear-text">CLEAR!</div>
+            <div class="clear-moves" id="clear-moves">10手でクリア！</div>
+            <button class="clear-btn" id="retry-btn">もう一度</button>
+            <button class="clear-btn" id="next-btn">新しいゲーム</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // 設定
+        // ============================================
+        const TUBE_CAPACITY = 4;      // 各チューブの容量
+        const FILLED_TUBES = 5;       // 液体入りチューブ数
+        const EMPTY_TUBES = 2;        // 空チューブ数
+        const SHUFFLE_MOVES = 100;    // シャッフル回数
+
+        // ============================================
+        // ゲーム状態
+        // ============================================
+        let tubes = [];               // チューブの状態 (配列の配列)
+        let initialState = [];        // 初期状態（リセット用）
+        let selectedTube = null;      // 選択中のチューブインデックス
+        let moveCount = 0;
+        let moveHistory = [];
+        let bestScore = null;
+
+        // DOM要素
+        const gameContainer = document.getElementById('game-container');
+        const moveCountEl = document.getElementById('move-count');
+        const bestCountEl = document.getElementById('best-count');
+        const clearPopup = document.getElementById('clear-popup');
+        const clearMovesEl = document.getElementById('clear-moves');
+        const legendEl = document.getElementById('legend');
+
+        // ============================================
+        // 初期化
+        // ============================================
+        function init() {
+            loadBestScore();
+            setupEventListeners();
+            generateNewPuzzle();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('undo-btn').addEventListener('click', undoMove);
+            document.getElementById('reset-btn').addEventListener('click', resetPuzzle);
+            document.getElementById('new-btn').addEventListener('click', generateNewPuzzle);
+            document.getElementById('retry-btn').addEventListener('click', () => {
+                clearPopup.classList.remove('show');
+                resetPuzzle();
+            });
+            document.getElementById('next-btn').addEventListener('click', () => {
+                clearPopup.classList.remove('show');
+                generateNewPuzzle();
+            });
+        }
+
+        // ============================================
+        // パズル生成（逆順シャッフル方式）
+        // ============================================
+        function generateNewPuzzle() {
+            // 1. 完成状態を作成
+            tubes = [];
+            for (let i = 0; i < FILLED_TUBES; i++) {
+                const tube = [];
+                for (let j = 0; j < TUBE_CAPACITY; j++) {
+                    tube.push(i); // 色番号
+                }
+                tubes.push(tube);
+            }
+            // 空チューブを追加
+            for (let i = 0; i < EMPTY_TUBES; i++) {
+                tubes.push([]);
+            }
+
+            // 2. 逆順にランダム移動してシャッフル
+            shufflePuzzle(SHUFFLE_MOVES);
+
+            // 初期状態を保存
+            initialState = tubes.map(t => [...t]);
+            moveCount = 0;
+            moveHistory = [];
+            selectedTube = null;
+
+            updateMoveCount();
+            render();
+            renderLegend();
+        }
+
+        function shufflePuzzle(moves) {
+            for (let i = 0; i < moves; i++) {
+                // 有効な移動をランダムに選択
+                const validMoves = getValidMoves();
+                if (validMoves.length === 0) break;
+
+                const move = validMoves[Math.floor(Math.random() * validMoves.length)];
+                executeMoveSilent(move.from, move.to);
+            }
+        }
+
+        function getValidMoves() {
+            const moves = [];
+            for (let from = 0; from < tubes.length; from++) {
+                if (tubes[from].length === 0) continue;
+
+                for (let to = 0; to < tubes.length; to++) {
+                    if (from === to) continue;
+                    if (canPour(from, to)) {
+                        moves.push({ from, to });
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function canPour(from, to) {
+            if (tubes[from].length === 0) return false;
+            if (tubes[to].length >= TUBE_CAPACITY) return false;
+
+            const fromColor = tubes[from][tubes[from].length - 1];
+
+            // 空のチューブには注げる
+            if (tubes[to].length === 0) return true;
+
+            // 同じ色なら注げる
+            const toColor = tubes[to][tubes[to].length - 1];
+            return fromColor === toColor;
+        }
+
+        function executeMoveSilent(from, to) {
+            const color = tubes[from][tubes[from].length - 1];
+
+            // 同じ色が連続している分をすべて移動
+            let count = 0;
+            for (let i = tubes[from].length - 1; i >= 0; i--) {
+                if (tubes[from][i] === color) {
+                    count++;
+                } else {
+                    break;
+                }
+            }
+
+            // 移動先の空き容量を確認
+            const available = TUBE_CAPACITY - tubes[to].length;
+            const toMove = Math.min(count, available);
+
+            for (let i = 0; i < toMove; i++) {
+                tubes[to].push(tubes[from].pop());
+            }
+        }
+
+        // ============================================
+        // ゲームロジック
+        // ============================================
+        function handleTubeClick(index) {
+            if (selectedTube === null) {
+                // チューブを選択
+                if (tubes[index].length > 0) {
+                    selectedTube = index;
+                    render();
+                }
+            } else if (selectedTube === index) {
+                // 選択解除
+                selectedTube = null;
+                render();
+            } else {
+                // 移動を試みる
+                if (canPour(selectedTube, index)) {
+                    // 移動前の状態を保存
+                    moveHistory.push(tubes.map(t => [...t]));
+
+                    executeMove(selectedTube, index);
+                    moveCount++;
+                    updateMoveCount();
+
+                    selectedTube = null;
+                    render();
+
+                    // クリア判定
+                    if (checkClear()) {
+                        setTimeout(showClearPopup, 500);
+                    }
+                } else {
+                    // 移動できない場合、新しいチューブを選択
+                    if (tubes[index].length > 0) {
+                        selectedTube = index;
+                    } else {
+                        selectedTube = null;
+                    }
+                    render();
+                }
+            }
+        }
+
+        function executeMove(from, to) {
+            const color = tubes[from][tubes[from].length - 1];
+
+            // 同じ色が連続している分をすべて移動
+            let count = 0;
+            for (let i = tubes[from].length - 1; i >= 0; i--) {
+                if (tubes[from][i] === color) {
+                    count++;
+                } else {
+                    break;
+                }
+            }
+
+            // 移動先の空き容量を確認
+            const available = TUBE_CAPACITY - tubes[to].length;
+            const toMove = Math.min(count, available);
+
+            for (let i = 0; i < toMove; i++) {
+                tubes[to].push(tubes[from].pop());
+            }
+        }
+
+        function undoMove() {
+            if (moveHistory.length === 0) return;
+
+            tubes = moveHistory.pop();
+            moveCount--;
+            updateMoveCount();
+            selectedTube = null;
+            render();
+        }
+
+        function resetPuzzle() {
+            tubes = initialState.map(t => [...t]);
+            moveCount = 0;
+            moveHistory = [];
+            selectedTube = null;
+            updateMoveCount();
+            render();
+        }
+
+        function checkClear() {
+            for (const tube of tubes) {
+                if (tube.length === 0) continue;
+                if (tube.length !== TUBE_CAPACITY) return false;
+
+                // すべて同じ色か確認
+                const color = tube[0];
+                for (let i = 1; i < tube.length; i++) {
+                    if (tube[i] !== color) return false;
+                }
+            }
+            return true;
+        }
+
+        // ============================================
+        // 描画
+        // ============================================
+        function render() {
+            gameContainer.innerHTML = '';
+
+            for (let i = 0; i < tubes.length; i++) {
+                const tubeEl = document.createElement('div');
+                tubeEl.className = 'tube';
+                if (selectedTube === i) {
+                    tubeEl.classList.add('selected');
+                }
+
+                // 液体を追加（下から順に）
+                for (let j = 0; j < tubes[i].length; j++) {
+                    const liquidEl = document.createElement('div');
+                    liquidEl.className = `liquid color-${tubes[i][j]}`;
+                    tubeEl.appendChild(liquidEl);
+                }
+
+                tubeEl.addEventListener('click', () => handleTubeClick(i));
+                tubeEl.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    handleTubeClick(i);
+                }, { passive: false });
+
+                gameContainer.appendChild(tubeEl);
+            }
+        }
+
+        function renderLegend() {
+            legendEl.innerHTML = '';
+            for (let i = 0; i < FILLED_TUBES; i++) {
+                const item = document.createElement('div');
+                item.className = `legend-item liquid color-${i}`;
+                legendEl.appendChild(item);
+            }
+        }
+
+        // ============================================
+        // UI更新
+        // ============================================
+        function updateMoveCount() {
+            moveCountEl.textContent = moveCount;
+        }
+
+        function showClearPopup() {
+            clearMovesEl.textContent = `${moveCount}手でクリア！`;
+            clearPopup.classList.add('show');
+            saveBestScore();
+        }
+
+        function loadBestScore() {
+            try {
+                const saved = localStorage.getItem('water_sort_best');
+                if (saved) {
+                    bestScore = parseInt(saved);
+                    bestCountEl.textContent = bestScore;
+                }
+            } catch (e) {
+                console.warn('Failed to load best score:', e);
+            }
+        }
+
+        function saveBestScore() {
+            if (bestScore === null || moveCount < bestScore) {
+                bestScore = moveCount;
+                bestCountEl.textContent = bestScore;
+                try {
+                    localStorage.setItem('water_sort_best', bestScore.toString());
+                } catch (e) {
+                    console.warn('Failed to save best score:', e);
+                }
+            }
+        }
+
+        // ============================================
+        // 開始
+        // ============================================
+        init();
+    </script>
+</body>
+</html>
