@@ -400,61 +400,119 @@
         // モンスターデータ
         // ========================================
         const monsters = {
+            // ===== 序盤の敵（フィールド・森 Lv1~3想定）=====
             slime: {
                 name: 'スライム',
                 sprite: '🟢',
+                level: 1,
                 hp: 8,
                 atk: 5,
                 def: 2,
                 speed: 3,
-                exp: 3,
+                exp: 2,
                 gold: 2,
-                // 状態異常耐性（1.0=効きやすい、0=完全耐性）
                 resistances: { sleep: 1.0, blind: 1.0, poison: 1.0 }
+            },
+            dracky: {
+                name: 'ドラキー',
+                sprite: '🦇',
+                level: 2,
+                hp: 10,
+                atk: 7,
+                def: 3,
+                speed: 6,
+                exp: 3,
+                gold: 3,
+                resistances: { sleep: 0.8, blind: 0.6, poison: 1.0 }
             },
             bat: {
                 name: 'おおこうもり',
                 sprite: '🦇',
-                hp: 12,
-                atk: 8,
-                def: 3,
+                hueRotate: 180, // 色違い（青系）
+                level: 3,
+                hp: 14,
+                atk: 9,
+                def: 4,
                 speed: 8,
                 exp: 5,
-                gold: 4,
-                resistances: { sleep: 0.8, blind: 0.5, poison: 1.0 } // 幻惑に強い
+                gold: 5,
+                resistances: { sleep: 0.8, blind: 0.5, poison: 1.0 }
             },
+            // ===== 中盤の敵（洞窟B1・森の奥 Lv4~6想定）=====
             ghost: {
                 name: 'ゴースト',
                 sprite: '👻',
-                hp: 15,
-                atk: 10,
+                level: 4,
+                hp: 18,
+                atk: 12,
                 def: 5,
                 speed: 5,
-                exp: 8,
-                gold: 6,
-                resistances: { sleep: 0.3, blind: 1.0, poison: 0 } // 眠りに強い、毒無効
+                exp: 10,
+                gold: 8,
+                resistances: { sleep: 0.3, blind: 1.0, poison: 0 }
             },
+            scorpion: {
+                name: 'おおさそり',
+                sprite: '🦂',
+                level: 5,
+                hp: 22,
+                atk: 14,
+                def: 8,
+                speed: 7,
+                exp: 15,
+                gold: 12,
+                resistances: { sleep: 0.7, blind: 0.8, poison: 0 } // 毒無効
+            },
+            // ===== 後半の敵（洞窟深部 Lv7~9想定）=====
             skeleton: {
                 name: 'がいこつ',
                 sprite: '💀',
-                hp: 25,
-                atk: 15,
-                def: 8,
+                level: 6,
+                hp: 28,
+                atk: 18,
+                def: 10,
                 speed: 4,
-                exp: 15,
-                gold: 12,
-                resistances: { sleep: 0, blind: 0.8, poison: 0 } // 眠り・毒無効
+                exp: 25,
+                gold: 20,
+                resistances: { sleep: 0, blind: 0.8, poison: 0 }
             },
+            armoredKnight: {
+                name: 'さまようよろい',
+                sprite: '🛡️',
+                level: 7,
+                hp: 40,
+                atk: 22,
+                def: 18,
+                speed: 3,
+                exp: 35,
+                gold: 30,
+                resistances: { sleep: 0.2, blind: 0.5, poison: 0 }
+            },
+            deathKnight: {
+                name: 'しりょうのきし',
+                sprite: '🛡️',
+                hueRotate: 270, // 色違い（紫系）
+                level: 8,
+                hp: 55,
+                atk: 28,
+                def: 22,
+                speed: 5,
+                exp: 50,
+                gold: 45,
+                resistances: { sleep: 0, blind: 0.3, poison: 0 }
+            },
+            // ===== ボス級 =====
             dragon: {
                 name: 'ドラゴン',
                 sprite: '🐉',
+                level: 10,
                 hp: 80,
                 atk: 35,
                 def: 20,
                 speed: 10,
                 exp: 100,
                 gold: 150,
-                resistances: { sleep: 0.1, blind: 0.3, poison: 0.5 } // ボス級：全体的に強い耐性
+                resistances: { sleep: 0.1, blind: 0.3, poison: 0.5 }
             },
             maou: {
                 name: '魔王',
@@ -481,10 +539,21 @@
             ionazun: { name: 'イオナズン', type: 'attack', power: 55, flashColor: 'rgba(255, 255, 0, 0.7)' }
         };
 
-        // エリア別エンカウントテーブル
+        // エリア別エンカウントテーブル（mapIdベース）
+        // 同じモンスターを複数回入れると出現率が上がる
         const encounterTables = {
-            field: ['slime', 'slime', 'bat'],
-            dungeon: ['bat', 'ghost', 'skeleton', 'skeleton']
+            // フィールド（Lv1~3）- 初心者向け
+            field: ['slime', 'slime', 'slime', 'dracky', 'dracky', 'bat'],
+            // 深い森（Lv3~5）- やや強め
+            forest: ['dracky', 'bat', 'bat', 'ghost', 'scorpion'],
+            // 暗黒の洞窟（Lv5~8）- 中盤〜後半
+            dungeon: ['ghost', 'scorpion', 'skeleton', 'skeleton', 'armoredKnight', 'deathKnight']
+        };
+
+        // 旧type名との互換用フォールバック
+        const encounterTableFallback = {
+            field: 'field',
+            dungeon: 'dungeon'
         };
 
         // ========================================
@@ -536,11 +605,13 @@
         // ロード済みマップのキャッシュ
         const maps = {
             field: {
+                mapId: 'field',
                 name: 'フィールド',
                 type: 'field',
                 cols: 20,
                 rows: 20,
                 encounterRate: 0.08,
+                isSafe: false,
                 data: [
                     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
                     [2,2,2,0,0,0,0,0,2,2,2,2,0,0,0,0,0,0,2,2],
@@ -572,11 +643,13 @@
                 chests: []
             },
             castle: {
+                mapId: 'castle',
                 name: '城',
                 type: 'castle',
                 cols: 15,
                 rows: 15,
                 encounterRate: 0,
+                isSafe: true,
                 data: [
                     [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
                     [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
@@ -607,11 +680,13 @@
                 ]
             },
             town: {
+                mapId: 'town',
                 name: '街',
                 type: 'town',
                 cols: 15,
                 rows: 15,
                 encounterRate: 0,
+                isSafe: true,
                 data: [
                     [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
                     [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
@@ -645,11 +720,13 @@
                 ]
             },
             dungeon: {
+                mapId: 'dungeon',
                 name: '洞窟',
                 type: 'dungeon',
                 cols: 12,
                 rows: 12,
                 encounterRate: 0.12,
+                isSafe: false,
                 data: [
                     [7,7,7,7,7,7,7,7,7,7,7,7],
                     [7,5,6,6,6,6,6,6,6,6,6,7],
@@ -677,11 +754,13 @@
                 ]
             },
             maouRoom: {
+                mapId: 'maouRoom',
                 name: '魔王の間',
                 type: 'dungeon',
                 cols: 11,
                 rows: 10,
                 encounterRate: 0,
+                isSafe: false,
                 data: [
                     [7,7,7,7,7,7,7,7,7,7,7],
                     [7,6,6,6,6,6,6,6,6,6,7],
@@ -1680,7 +1759,16 @@
                 ctx.font = `${tileSize * 4}px serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(battle.enemy.sprite, canvasWidth / 2, canvasHeight * 0.35);
+
+                // 色違いモンスター対応（hueRotateフィルタ）
+                if (battle.enemy.hueRotate) {
+                    ctx.save();
+                    ctx.filter = `hue-rotate(${battle.enemy.hueRotate}deg)`;
+                    ctx.fillText(battle.enemy.sprite, canvasWidth / 2, canvasHeight * 0.35);
+                    ctx.restore();
+                } else {
+                    ctx.fillText(battle.enemy.sprite, canvasWidth / 2, canvasHeight * 0.35);
+                }
 
                 // モンスター名と状態異常バッジ
                 ctx.fillStyle = '#fff';
@@ -2123,7 +2211,24 @@
                 return;
             }
 
-            const escapeChance = player.speed / (player.speed + battle.enemy.speed);
+            // レベル差による逃走成功率の計算
+            const enemyLevel = battle.enemy.level || 1;
+            const levelDiff = player.level - enemyLevel;
+
+            let escapeChance;
+            if (levelDiff >= 5) {
+                // 5レベル以上高ければ確定逃走
+                escapeChance = 1.0;
+            } else if (levelDiff >= 3) {
+                // 3レベル以上高ければ高確率
+                escapeChance = 0.9;
+            } else if (levelDiff >= 1) {
+                // 1~2レベル高ければやや有利
+                escapeChance = 0.7;
+            } else {
+                // 同レベル以下はスピード比で判定
+                escapeChance = player.speed / (player.speed + battle.enemy.speed);
+            }
 
             if (Math.random() < escapeChance) {
                 showBattleMessage('うまく にげきれた！', () => {
@@ -2499,7 +2604,16 @@
         }
 
         function checkRandomEncounter() {
-            // エンカウントが発生しないマップ（街・城など）
+            // 安全地帯ではエンカウントしない
+            if (currentMap.isSafe === true) {
+                // 安全地帯に入ったら歩数リセット
+                if (stepsSinceLastBattle > 0) {
+                    stepsSinceLastBattle = 0;
+                }
+                return;
+            }
+
+            // encounterRate=0のマップもスキップ（isSafe未定義の旧マップ互換）
             if (currentMap.encounterRate <= 0) return;
 
             // エンカウントタイル以外はスキップ
@@ -2527,7 +2641,14 @@
 
             // エンカウント判定
             if (Math.random() < currentEncounterRate) {
-                const table = encounterTables[currentMap.type] || encounterTables.field;
+                // mapIdベースでエンカウントテーブルを選択（フォールバック付き）
+                const mapId = currentMap.mapId || '';
+                let table = encounterTables[mapId];
+                if (!table) {
+                    // mapIdで見つからなければtypeで探す
+                    const fallbackType = encounterTableFallback[currentMap.type] || 'field';
+                    table = encounterTables[fallbackType] || encounterTables.field;
+                }
                 const monsterType = table[Math.floor(Math.random() * table.length)];
                 startBattle(monsterType);
             }

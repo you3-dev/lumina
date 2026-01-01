@@ -4,6 +4,7 @@
   "type": "town",
   "cols": 20,
   "rows": 18,
+  "isSafe": true,
   "encounterRate": 0,
   "data": [
     [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],

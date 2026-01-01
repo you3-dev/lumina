@@ -4,6 +4,7 @@
   "type": "dungeon",
   "cols": 25,
   "rows": 25,
+  "isSafe": false,
   "encounterRate": 0.12,
   "data": [
     [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
