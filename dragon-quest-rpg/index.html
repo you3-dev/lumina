@@ -1001,24 +1001,54 @@
                     currentMapPath = `maps/${currentMapId}.json`;
                 }
 
-                // マップの読み込み（非同期対応）
-                if (maps[currentMapId]) {
-                    currentMap = maps[currentMapId];
-                } else if (MapDatabase[currentMapPath]) {
-                    // 新形式マップを非同期でロード
-                    try {
-                        const mapData = await loadMapFromDatabase(currentMapPath);
-                        maps[mapData.mapId] = mapData;
-                        currentMap = mapData;
-                        currentMapId = mapData.mapId;
-                    } catch (err) {
-                        console.error('マップロードエラー:', err);
-                        currentMap = maps['castle'];
-                        currentMapId = 'castle';
+                // マップの読み込み（外部JSONを優先してロード）
+                try {
+                    const mapData = await loadMapFromDatabase(currentMapPath);
+                    currentMap = {
+                        data: mapData.data.map(row => [...row]),
+                        cols: mapData.cols,
+                        rows: mapData.rows,
+                        npcs: JSON.parse(JSON.stringify(mapData.npcs || [])),
+                        chests: JSON.parse(JSON.stringify(mapData.chests || [])),
+                        warps: mapData.warps ? [...mapData.warps] : [],
+                        name: mapData.name,
+                        type: mapData.type,
+                        encounterRate: mapData.encounterRate,
+                        mapId: mapData.mapId
+                    };
+                    maps[mapData.mapId] = mapData;
+                    currentMapId = mapData.mapId;
+                } catch (err) {
+                    console.error('マップロードエラー、内蔵マップを使用:', err);
+                    // フォールバック: 内蔵マップを使用
+                    if (maps[currentMapId]) {
+                        const sourceMap = maps[currentMapId];
+                        currentMap = {
+                            data: sourceMap.data.map(row => [...row]),
+                            cols: sourceMap.cols,
+                            rows: sourceMap.rows,
+                            npcs: JSON.parse(JSON.stringify(sourceMap.npcs || [])),
+                            chests: JSON.parse(JSON.stringify(sourceMap.chests || [])),
+                            warps: sourceMap.warps ? [...sourceMap.warps] : [],
+                            name: sourceMap.name,
+                            type: sourceMap.type,
+                            encounterRate: sourceMap.encounterRate
+                        };
+                    } else {
+                        const fieldMap = maps['field'];
+                        currentMap = {
+                            data: fieldMap.data.map(row => [...row]),
+                            cols: fieldMap.cols,
+                            rows: fieldMap.rows,
+                            npcs: JSON.parse(JSON.stringify(fieldMap.npcs || [])),
+                            chests: JSON.parse(JSON.stringify(fieldMap.chests || [])),
+                            warps: fieldMap.warps ? [...fieldMap.warps] : [],
+                            name: fieldMap.name,
+                            type: fieldMap.type,
+                            encounterRate: fieldMap.encounterRate
+                        };
+                        currentMapId = 'field';
                     }
-                } else {
-                    currentMap = maps['castle'];
-                    currentMapId = 'castle';
                 }
                 mapNameElement.textContent = currentMap.name;
 
@@ -3546,7 +3576,7 @@
                 // はじめから（セーブデータをクリア）
                 console.log('[DEBUG] はじめからを選択');
                 localStorage.removeItem(SAVE_KEY);
-                resetGameState();
+                await resetGameState();
                 updateActualStats();
                 console.log('[DEBUG] resetGameState完了');
                 console.log('[DEBUG] currentMap:', currentMap);
@@ -3569,7 +3599,7 @@
             console.log('[DEBUG] フェードイン完了, gameMode:', gameMode);
         }
 
-        function resetGameState() {
+        async function resetGameState() {
             // プレイヤーを初期状態にリセット
             player.x = 4;
             player.y = 11;
@@ -3595,21 +3625,40 @@
             // インベントリをリセット
             player.inventory = [{ id: 1, quantity: 3 }];
 
-            // マップをリセット
+            // マップをリセット（外部JSONを優先してロード）
             currentMapId = 'field';
-            currentMapPath = null;
-            const fieldMap = maps.field;
-            currentMap = {
-                data: fieldMap.data.map(row => [...row]),
-                cols: fieldMap.cols,
-                rows: fieldMap.rows,
-                npcs: JSON.parse(JSON.stringify(fieldMap.npcs)),
-                chests: JSON.parse(JSON.stringify(fieldMap.chests)),
-                warps: fieldMap.warps ? [...fieldMap.warps] : [],
-                name: fieldMap.name,
-                type: fieldMap.type,
-                encounterRate: fieldMap.encounterRate
-            };
+            currentMapPath = 'maps/field.json';
+
+            try {
+                const mapData = await loadMapFromDatabase(currentMapPath);
+                currentMap = {
+                    data: mapData.data.map(row => [...row]),
+                    cols: mapData.cols,
+                    rows: mapData.rows,
+                    npcs: JSON.parse(JSON.stringify(mapData.npcs || [])),
+                    chests: JSON.parse(JSON.stringify(mapData.chests || [])),
+                    warps: mapData.warps ? [...mapData.warps] : [],
+                    name: mapData.name,
+                    type: mapData.type,
+                    encounterRate: mapData.encounterRate,
+                    mapId: mapData.mapId
+                };
+                maps[mapData.mapId] = mapData;
+            } catch (err) {
+                console.error('マップロードエラー、内蔵マップを使用:', err);
+                const fieldMap = maps.field;
+                currentMap = {
+                    data: fieldMap.data.map(row => [...row]),
+                    cols: fieldMap.cols,
+                    rows: fieldMap.rows,
+                    npcs: JSON.parse(JSON.stringify(fieldMap.npcs)),
+                    chests: JSON.parse(JSON.stringify(fieldMap.chests)),
+                    warps: fieldMap.warps ? [...fieldMap.warps] : [],
+                    name: fieldMap.name,
+                    type: fieldMap.type,
+                    encounterRate: fieldMap.encounterRate
+                };
+            }
 
             // 宝箱の開封状態をリセット（内部マップ用）
             for (const mapId in maps) {
