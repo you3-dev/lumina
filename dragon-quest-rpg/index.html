@@ -4331,8 +4331,8 @@
         let worldMapOffscreen = null;
         let worldMapOffscreenCtx = null;
 
-        // 地図の色設定
-        const MAP_TILE_COLORS = {
+        // 地図の色設定（ワールドマップ用）
+        const WORLD_MAP_COLORS = {
             0: '#44aa44', // 草原/平地
             1: '#886644', // 山/岩場
             2: '#2244aa', // 海/水域
@@ -4411,7 +4411,7 @@
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
                     const tile = mapData[row][col];
-                    const color = MAP_TILE_COLORS[tile] || '#333333';
+                    const color = WORLD_MAP_COLORS[tile] || '#333333';
                     worldMapOffscreenCtx.fillStyle = color;
                     worldMapOffscreenCtx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
                 }
