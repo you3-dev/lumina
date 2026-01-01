@@ -39,6 +39,6 @@
   ],
   "chests": [
     { "id": "town_chest1", "x": 18, "y": 1, "itemId": 1, "isOpened": false },
-    { "id": "town_chest2", "x": 1, "y": 14, "itemId": 2, "isOpened": false }
+    { "id": "town_chest2", "x": 1, "y": 14, "itemId": 1, "isOpened": false }
   ]
 }

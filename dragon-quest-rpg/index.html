@@ -705,7 +705,7 @@
             hyado: { id: 'hyado', name: 'ヒャド', mp: 4, type: 'attack', power: 25, learnLevel: 4, element: 'ice', flashColor: 'rgba(100, 200, 255, 0.6)' },
             gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', power: 35, learnLevel: 6, element: 'light', flashColor: 'rgba(255, 255, 100, 0.6)' },
             // 状態異常呪文
-            rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 2, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
+            rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 3, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
             manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 5, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' }
         };
 
@@ -887,7 +887,7 @@
                     { id: 'hermit', x: 10, y: 10, sprite: '🧙', type: 'hermit', messages: ['ほほう、ここまで来たか。', 'わしは昔、勇者だった。', 'この奥に伝説の剣がある。', '魔王を倒すのに必要じゃ。', '心して進むがよい。'] }
                 ],
                 chests: [
-                    { id: 'dungeon_chest1', x: 4, y: 3, itemId: 3, isOpened: false },
+                    { id: 'dungeon_chest1', x: 4, y: 3, itemId: 1, isOpened: false },  // 薬草
                     { id: 'dungeon_chest2', x: 1, y: 7, itemId: 14, isOpened: false }  // でんせつのつるぎ
                 ]
             },
@@ -4688,7 +4688,7 @@
             player.shield = null;
             player.helmet = null;
             player.accessory = null;
-            player.spells = [];
+            player.spells = ['hoimi', 'mera']; // 初期呪文
             player.statusEffects = [];
 
             // インベントリをリセット
