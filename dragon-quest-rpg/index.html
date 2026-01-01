@@ -1003,8 +1003,20 @@
 
                 // マップの読み込み（非同期対応）
                 if (maps[currentMapId]) {
-                    currentMap = maps[currentMapId];
-                } else if (MapDatabase[currentMapPath]) {
+                    // 内蔵マップをディープコピーして使用
+                    const sourceMap = maps[currentMapId];
+                    currentMap = {
+                        data: sourceMap.data.map(row => [...row]),
+                        cols: sourceMap.cols,
+                        rows: sourceMap.rows,
+                        npcs: JSON.parse(JSON.stringify(sourceMap.npcs || [])),
+                        chests: JSON.parse(JSON.stringify(sourceMap.chests || [])),
+                        warps: sourceMap.warps ? [...sourceMap.warps] : [],
+                        name: sourceMap.name,
+                        type: sourceMap.type,
+                        encounterRate: sourceMap.encounterRate
+                    };
+                } else if (currentMapPath) {
                     // 新形式マップを非同期でロード
                     try {
                         const mapData = await loadMapFromDatabase(currentMapPath);
@@ -1013,12 +1025,12 @@
                         currentMapId = mapData.mapId;
                     } catch (err) {
                         console.error('マップロードエラー:', err);
-                        currentMap = maps['castle'];
-                        currentMapId = 'castle';
+                        currentMap = maps['field'];
+                        currentMapId = 'field';
                     }
                 } else {
-                    currentMap = maps['castle'];
-                    currentMapId = 'castle';
+                    currentMap = maps['field'];
+                    currentMapId = 'field';
                 }
                 mapNameElement.textContent = currentMap.name;
 
