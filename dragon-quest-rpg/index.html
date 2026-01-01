@@ -1300,6 +1300,16 @@
                     }
                 }
 
+                // 呪文習得レベル変更に対応：現在のレベル以下で習得すべき呪文を補完
+                if (data.player.spells && data.player.level) {
+                    for (const spellId in spells) {
+                        const spell = spells[spellId];
+                        if (spell.learnLevel <= data.player.level && !data.player.spells.includes(spellId)) {
+                            data.player.spells.push(spellId);
+                        }
+                    }
+                }
+
                 Object.assign(player, data.player);
                 currentMapId = data.currentMapId;
 
