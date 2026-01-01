@@ -1,0 +1,3663 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ドラクエ風RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            background: #000;
+            font-family: 'MS Gothic', 'Courier New', monospace;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        #fadeOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 5;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #fadeOverlay.active {
+            opacity: 1;
+        }
+
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #mapName {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 12px;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        #dpad {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 150px;
+            height: 150px;
+            pointer-events: auto;
+        }
+
+        .dpad-btn {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .dpad-btn:active, .dpad-btn.pressed {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        #dpad-up { top: 0; left: 50px; }
+        #dpad-down { bottom: 0; left: 50px; }
+        #dpad-left { top: 50px; left: 0; }
+        #dpad-right { top: 50px; right: 0; }
+
+        #dpad-center {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+        }
+
+        #action-buttons {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            display: flex;
+            gap: 15px;
+            pointer-events: auto;
+        }
+
+        .action-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .action-btn:active, .action-btn.pressed {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        #btn-b {
+            margin-top: 30px;
+        }
+
+        /* タイトル画面 */
+        #titleScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #0a0a2e 0%, #1a1a4e 50%, #2a2a6e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        #titleScreen.hidden {
+            display: none;
+        }
+
+        .title-content {
+            text-align: center;
+            color: #fff;
+        }
+
+        .game-title {
+            font-size: 2.5rem;
+            color: #ffd700;
+            text-shadow:
+                0 0 10px #ffd700,
+                0 0 20px #ff8c00,
+                3px 3px 0 #8b4513;
+            margin-bottom: 10px;
+            animation: titleGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { text-shadow: 0 0 10px #ffd700, 0 0 20px #ff8c00, 3px 3px 0 #8b4513; }
+            50% { text-shadow: 0 0 20px #ffd700, 0 0 40px #ff8c00, 3px 3px 0 #8b4513; }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #87ceeb;
+            margin-bottom: 60px;
+        }
+
+        .title-menu {
+            margin-bottom: 40px;
+        }
+
+        .menu-item {
+            font-size: 1.4rem;
+            padding: 15px 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .menu-item:hover {
+            color: #ffd700;
+            transform: scale(1.05);
+        }
+
+        .menu-item .cursor {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .menu-item.selected .cursor,
+        .menu-item:hover .cursor {
+            opacity: 1;
+        }
+
+        .menu-item.selected {
+            color: #ffd700;
+        }
+
+        .press-start {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .title-menu.active ~ .press-start {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="fadeOverlay"></div>
+
+    <!-- タイトル画面 -->
+    <div id="titleScreen">
+        <div class="title-content">
+            <h1 class="game-title">ドラゴンクエスト</h1>
+            <p class="subtitle">〜 勇者の冒険 〜</p>
+            <div class="title-menu">
+                <div class="menu-item" id="menu-continue" style="display: none;">
+                    <span class="cursor">▶</span>
+                    <span>つづきから</span>
+                </div>
+                <div class="menu-item" id="menu-newgame">
+                    <span class="cursor">▶</span>
+                    <span>はじめから</span>
+                </div>
+            </div>
+            <p class="press-start" id="pressStart">Press ENTER or Tap to Start</p>
+        </div>
+    </div>
+
+    <div id="hud">
+        <div id="mapName">フィールド</div>
+
+        <div id="dpad">
+            <div class="dpad-btn" id="dpad-up">▲</div>
+            <div class="dpad-btn" id="dpad-left">◀</div>
+            <div id="dpad-center"></div>
+            <div class="dpad-btn" id="dpad-right">▶</div>
+            <div class="dpad-btn" id="dpad-down">▼</div>
+        </div>
+
+        <div id="action-buttons">
+            <div class="action-btn" id="btn-b">B</div>
+            <div class="action-btn" id="btn-a">A</div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // ゲーム設定
+        // ========================================
+        const VISIBLE_TILES = 10;
+        const SAVE_KEY = 'dragonquest_rpg_save';
+
+        // ゲームモード
+        const MODE = {
+            TITLE: 'title',
+            FIELD: 'field',
+            BATTLE: 'battle',
+            MENU: 'menu',
+            INN: 'inn',
+            SHOP: 'shop',
+            DIALOG: 'dialog',
+            ENDING: 'ending'
+        };
+
+        let gameMode = MODE.TITLE;
+        let titleMenuIndex = 0;
+        let titleMenuActive = false;
+        let hasSaveData = false;
+
+        // タイルタイプ
+        const TILE = {
+            GRASS: 0,
+            MOUNTAIN: 1,
+            SEA: 2,
+            CASTLE: 3,
+            TOWN: 4,
+            STAIRS: 5,
+            FLOOR: 6,
+            WALL: 7
+        };
+
+        // マップタイプ別のタイル色
+        const MAP_TILE_COLORS = {
+            field: {
+                [TILE.GRASS]: '#2d5a27',
+                [TILE.MOUNTAIN]: '#6b4423',
+                [TILE.SEA]: '#1a4a7a',
+                [TILE.CASTLE]: '#2d5a27',
+                [TILE.TOWN]: '#2d5a27',
+                [TILE.STAIRS]: '#4a4a4a',
+                [TILE.FLOOR]: '#8b7355',
+                [TILE.WALL]: '#4a4a5a'
+            },
+            castle: {
+                [TILE.FLOOR]: '#5a5a6a',
+                [TILE.WALL]: '#3a3a4a',
+                [TILE.STAIRS]: '#4a4a4a'
+            },
+            town: {
+                [TILE.FLOOR]: '#a0a0a0',
+                [TILE.WALL]: '#6a6a7a',
+                [TILE.STAIRS]: '#4a4a4a'
+            },
+            dungeon: {
+                [TILE.FLOOR]: '#4a4a3a',
+                [TILE.WALL]: '#2a2a2a',
+                [TILE.STAIRS]: '#5a5a4a'
+            }
+        };
+
+        const DEFAULT_TILE_COLORS = {
+            [TILE.GRASS]: '#2d5a27',
+            [TILE.MOUNTAIN]: '#6b4423',
+            [TILE.SEA]: '#1a4a7a',
+            [TILE.CASTLE]: '#2d5a27',
+            [TILE.TOWN]: '#2d5a27',
+            [TILE.STAIRS]: '#4a4a4a',
+            [TILE.FLOOR]: '#8b7355',
+            [TILE.WALL]: '#4a4a5a'
+        };
+
+        const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR];
+        const ENCOUNTER_TILES = [TILE.GRASS]; // エンカウントが発生するタイル
+
+        // ========================================
+        // アイテムデータ
+        // ========================================
+        const items = {
+            // 消費アイテム
+            1: { id: 1, name: '薬草', description: 'HPを30回復する', type: 'heal', value: 30, price: 8 },
+            2: { id: 2, name: '毒消し草', description: '毒を治療する', type: 'cure', price: 10 },
+            3: { id: 3, name: '聖水', description: '弱い敵を退ける', type: 'holy', price: 20 },
+            8: { id: 8, name: '魔法の鍵', description: '扉を開けることができる', type: 'key', price: 0 },
+            // 武器 (equippable: 装備可能なジョブリスト)
+            10: { id: 10, name: 'こんぼう', type: 'weapon', value: 2, price: 10, equippable: ['hero'] },
+            11: { id: 11, name: 'どうのつるぎ', type: 'weapon', value: 10, price: 100, equippable: ['hero'] },
+            12: { id: 12, name: 'てつのつるぎ', type: 'weapon', value: 20, price: 300, equippable: ['hero'] },
+            13: { id: 13, name: 'はがねのつるぎ', type: 'weapon', value: 35, price: 700, equippable: ['hero'] },
+            14: { id: 14, name: 'でんせつのつるぎ', type: 'weapon', value: 50, price: 0, equippable: ['hero'] },
+            // 防具
+            20: { id: 20, name: 'たびびとのふく', type: 'armor', value: 1, price: 10, equippable: ['hero'] },
+            21: { id: 21, name: 'かわのよろい', type: 'armor', value: 5, price: 80, equippable: ['hero'] },
+            22: { id: 22, name: 'くさりかたびら', type: 'armor', value: 12, price: 250, equippable: ['hero'] },
+            23: { id: 23, name: 'てつのよろい', type: 'armor', value: 22, price: 600, equippable: ['hero'] },
+            24: { id: 24, name: 'まほうのよろい', type: 'armor', value: 35, price: 1200, equippable: ['hero'] }
+        };
+
+        // ショップ商品リスト
+        const shopItems = [11, 12, 13, 21, 22, 23, 24]; // どうのつるぎ〜まほうのよろい
+
+        // ========================================
+        // モンスターデータ
+        // ========================================
+        const monsters = {
+            slime: {
+                name: 'スライム',
+                sprite: '🟢',
+                hp: 8,
+                atk: 5,
+                def: 2,
+                speed: 3,
+                exp: 3,
+                gold: 2,
+                // 状態異常耐性（1.0=効きやすい、0=完全耐性）
+                resistances: { sleep: 1.0, blind: 1.0, poison: 1.0 }
+            },
+            bat: {
+                name: 'おおこうもり',
+                sprite: '🦇',
+                hp: 12,
+                atk: 8,
+                def: 3,
+                speed: 8,
+                exp: 5,
+                gold: 4,
+                resistances: { sleep: 0.8, blind: 0.5, poison: 1.0 } // 幻惑に強い
+            },
+            ghost: {
+                name: 'ゴースト',
+                sprite: '👻',
+                hp: 15,
+                atk: 10,
+                def: 5,
+                speed: 5,
+                exp: 8,
+                gold: 6,
+                resistances: { sleep: 0.3, blind: 1.0, poison: 0 } // 眠りに強い、毒無効
+            },
+            skeleton: {
+                name: 'がいこつ',
+                sprite: '💀',
+                hp: 25,
+                atk: 15,
+                def: 8,
+                speed: 4,
+                exp: 15,
+                gold: 12,
+                resistances: { sleep: 0, blind: 0.8, poison: 0 } // 眠り・毒無効
+            },
+            dragon: {
+                name: 'ドラゴン',
+                sprite: '🐉',
+                hp: 80,
+                atk: 35,
+                def: 20,
+                speed: 10,
+                exp: 100,
+                gold: 150,
+                resistances: { sleep: 0.1, blind: 0.3, poison: 0.5 } // ボス級：全体的に強い耐性
+            },
+            maou: {
+                name: '魔王',
+                sprite: '👿',
+                hp: 200,
+                mp: 100,
+                atk: 50,
+                def: 30,
+                speed: 15,
+                exp: 500,
+                gold: 0,
+                isBoss: true,
+                actions: 2, // 2回行動
+                resistances: { sleep: 0, blind: 0, poison: 0 }, // 完全耐性
+                // 魔王専用スキル
+                skills: ['attack', 'hageshiiHonoo', 'behoma', 'ionazun']
+            }
+        };
+
+        // 魔王専用スキル
+        const bossSkills = {
+            hageshiiHonoo: { name: 'はげしいほのお', type: 'attack', power: 40, flashColor: 'rgba(255, 50, 0, 0.7)' },
+            behoma: { name: 'ベホマ', type: 'heal', power: 9999, flashColor: 'rgba(0, 255, 100, 0.5)' },
+            ionazun: { name: 'イオナズン', type: 'attack', power: 55, flashColor: 'rgba(255, 255, 0, 0.7)' }
+        };
+
+        // エリア別エンカウントテーブル
+        const encounterTables = {
+            field: ['slime', 'slime', 'bat'],
+            dungeon: ['bat', 'ghost', 'skeleton', 'skeleton']
+        };
+
+        // ========================================
+        // 呪文データ
+        // ========================================
+        const spells = {
+            // 回復呪文
+            hoimi: { id: 'hoimi', name: 'ホイミ', mp: 3, type: 'heal', power: 30, learnLevel: 1, element: 'heal', flashColor: 'rgba(0, 255, 100, 0.5)' },
+            // 攻撃呪文
+            mera: { id: 'mera', name: 'メラ', mp: 2, type: 'attack', power: 15, learnLevel: 1, element: 'fire', flashColor: 'rgba(255, 100, 0, 0.6)' },
+            hyado: { id: 'hyado', name: 'ヒャド', mp: 4, type: 'attack', power: 25, learnLevel: 4, element: 'ice', flashColor: 'rgba(100, 200, 255, 0.6)' },
+            gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', power: 35, learnLevel: 6, element: 'light', flashColor: 'rgba(255, 255, 100, 0.6)' },
+            // 状態異常呪文
+            rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 2, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
+            manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 5, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' }
+        };
+
+        // 状態異常の定義
+        const STATUS_EFFECTS = {
+            sleep: { name: '眠り', icon: '💤', badge: '眠', duration: { min: 2, max: 3 } },
+            poison: { name: '毒', icon: '☠️', badge: '毒', damageRate: 0.1 },
+            blind: { name: '幻惑', icon: '💫', badge: '幻', hitRateModifier: 0.5 }
+        };
+
+        // 呪文フラッシュ演出用
+        let spellFlash = { active: false, color: '', alpha: 0 };
+
+        // ボス戦演出用
+        let screenShake = { active: false, intensity: 0, duration: 0 };
+        let gameCleared = false;  // 魔王討伐フラグ
+        let endingPhase = null;   // エンディング進行状態
+
+        // ========================================
+        // マップシステム（外部JSONファイル連携）
+        // ========================================
+
+        // 現在のマップパスを保持
+        let currentMapPath = 'maps/castle.json';
+
+        // マップロード状態
+        let mapLoadState = {
+            loading: false,
+            fadeAlpha: 0,
+            targetMapPath: null,
+            targetX: 0,
+            targetY: 0
+        };
+
+        // ロード済みマップのキャッシュ
+        const maps = {
+            field: {
+                name: 'フィールド',
+                type: 'field',
+                cols: 20,
+                rows: 20,
+                encounterRate: 0.08,
+                data: [
+                    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+                    [2,2,2,0,0,0,0,0,2,2,2,2,0,0,0,0,0,0,2,2],
+                    [2,2,0,0,0,0,0,0,0,2,2,0,0,0,0,1,1,0,0,2],
+                    [2,0,0,0,1,1,0,0,0,0,0,0,0,0,1,1,1,0,0,2],
+                    [2,0,0,1,1,1,1,0,0,0,0,0,0,0,0,1,0,0,0,2],
+                    [2,0,0,0,1,1,0,0,0,3,0,0,0,0,0,0,0,0,0,2],
+                    [2,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,2],
+                    [2,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,2],
+                    [2,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,2],
+                    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                    [2,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,5,0,0,2],
+                    [2,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                    [2,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,0,0,0,2],
+                    [2,0,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,2],
+                    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,2],
+                    [2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+                    [2,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,2],
+                    [2,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,2,2],
+                    [2,2,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,2,2,2],
+                    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+                ],
+                warps: [
+                    { x: 9, y: 5, targetMap: 'maps/castle.json', targetX: 7, targetY: 12 },
+                    { x: 4, y: 10, targetMap: 'maps/town.json', targetX: 7, targetY: 13 },
+                    { x: 16, y: 10, targetMap: 'maps/dungeon.json', targetX: 1, targetY: 1 }
+                ],
+                npcs: [],
+                chests: [
+                    { id: 'field_chest1', x: 7, y: 3, itemId: 1, isOpened: false }
+                ]
+            },
+            castle: {
+                name: '城',
+                type: 'castle',
+                cols: 15,
+                rows: 15,
+                encounterRate: 0,
+                data: [
+                    [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,7,7,7,6,6,6,7,7,7,6,6,7],
+                    [7,6,6,7,6,6,6,6,6,6,6,7,6,6,7],
+                    [7,6,6,7,6,6,6,6,6,6,6,7,6,6,7],
+                    [7,6,6,7,6,6,6,6,6,6,6,7,6,6,7],
+                    [7,6,6,7,7,6,6,6,6,6,7,7,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,5,6,6,6,6,6,6,7],
+                    [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
+                    [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7]
+                ],
+                warps: [
+                    { x: 7, y: 12, targetMap: 'maps/field.json', targetX: 9, targetY: 6 }
+                ],
+                npcs: [
+                    { id: 'king', x: 7, y: 2, sprite: '👑', type: 'king', messages: ['おお、勇者よ！', 'よくぞ参った。', '魔王が世界を闇で覆おうとしておる。', 'どうか世界を救ってくれ！', '東の洞窟に伝説の剣があるという。', '旅立つがよい！'], clearedMessages: ['おお、勇者よ！', 'よくぞ魔王を倒してくれた！', 'これで世界に平和が戻った。', 'そなたは真の英雄じゃ！'] },
+                    { id: 'guard1', x: 3, y: 10, sprite: '💂', type: 'guard', messages: ['王様をお守りするのが', '我々の務めです。'], clearedMessages: ['勇者様！', 'あなたのおかげで平和になりました！'] },
+                    { id: 'guard2', x: 11, y: 10, sprite: '💂', type: 'guard', messages: ['この城は安全です。', 'ご安心ください。'], clearedMessages: ['魔王が倒されたと聞きました！', 'ありがとうございます、勇者様！'] }
+                ],
+                chests: [
+                    { id: 'castle_chest1', x: 4, y: 5, itemId: 8, isOpened: false }
+                ]
+            },
+            town: {
+                name: '街',
+                type: 'town',
+                cols: 15,
+                rows: 15,
+                encounterRate: 0,
+                data: [
+                    [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,7,7,6,6,6,6,6,6,6,7,7,6,7],
+                    [7,6,7,7,6,6,6,6,6,6,6,7,7,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,7,7,7,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,7,7,7,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,7,7,6,6,6,6,6,6,6,7,7,6,7],
+                    [7,6,7,7,6,6,6,6,6,6,6,7,7,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,5,6,6,6,6,6,6,7],
+                    [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7]
+                ],
+                warps: [
+                    { x: 7, y: 13, targetMap: 'maps/field.json', targetX: 4, targetY: 11 }
+                ],
+                npcs: [
+                    { id: 'villager1', x: 5, y: 4, sprite: '👨', type: 'villager', messages: ['ようこそ我が街へ！', '東の洞窟には魔物がいるらしい。', '気をつけてな。'], clearedMessages: ['平和になったなあ！', 'これもあんたのおかげだ！', 'ありがとう、勇者さま！'] },
+                    { id: 'villager2', x: 10, y: 4, sprite: '👩', type: 'villager', messages: ['あら、旅の方？', '城の王様に会いましたか？', '大切な話があるそうですよ。'], clearedMessages: ['あら、勇者様！', '魔王を倒したって本当？', 'すごいわ！ありがとう！'] },
+                    { id: 'innkeeper', x: 12, y: 2, sprite: '🏨', type: 'inn', innCost: 10, messages: [] },
+                    { id: 'shopkeeper', x: 2, y: 2, sprite: '⚔️', type: 'shop', messages: [] },
+                    { id: 'child', x: 3, y: 11, sprite: '👦', type: 'villager', messages: ['ねえねえ、勇者さん？', 'ぼくも大きくなったら', '勇者になりたいな！'], clearedMessages: ['わあ！本物の勇者だ！', '魔王を倒したんでしょ？', 'かっこいい～！'] }
+                ],
+                chests: [
+                    { id: 'town_chest1', x: 13, y: 1, itemId: 1, isOpened: false },
+                    { id: 'town_chest2', x: 1, y: 12, itemId: 2, isOpened: false }
+                ]
+            },
+            dungeon: {
+                name: '洞窟',
+                type: 'dungeon',
+                cols: 12,
+                rows: 12,
+                encounterRate: 0.12,
+                data: [
+                    [7,7,7,7,7,7,7,7,7,7,7,7],
+                    [7,5,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,7,7,7,6,6,7,7,6,7],
+                    [7,6,6,7,6,6,6,6,6,7,6,7],
+                    [7,6,6,7,6,7,7,7,6,7,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,5,7],
+                    [7,7,7,7,6,7,7,7,6,6,6,7],
+                    [7,6,6,6,6,6,6,7,6,7,6,7],
+                    [7,6,7,7,7,7,6,7,6,7,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,6,7],
+                    [7,7,7,7,7,7,7,7,7,7,7,7]
+                ],
+                warps: [
+                    { x: 1, y: 1, targetMap: 'maps/field.json', targetX: 16, targetY: 11 },
+                    { x: 10, y: 5, targetMap: 'maps/maou_room.json', targetX: 7, targetY: 12 }
+                ],
+                npcs: [
+                    { id: 'hermit', x: 10, y: 10, sprite: '🧙', type: 'hermit', messages: ['ほほう、ここまで来たか。', 'わしは昔、勇者だった。', 'この奥に伝説の剣がある。', '魔王を倒すのに必要じゃ。', '心して進むがよい。'] }
+                ],
+                chests: [
+                    { id: 'dungeon_chest1', x: 4, y: 3, itemId: 3, isOpened: false },
+                    { id: 'dungeon_chest2', x: 1, y: 7, itemId: 14, isOpened: false }  // でんせつのつるぎ
+                ]
+            },
+            maouRoom: {
+                name: '魔王の間',
+                type: 'dungeon',
+                cols: 11,
+                rows: 10,
+                encounterRate: 0,
+                data: [
+                    [7,7,7,7,7,7,7,7,7,7,7],
+                    [7,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,6,6,6,6,6,7],
+                    [7,6,6,6,6,5,6,6,6,6,7],
+                    [7,7,7,7,7,7,7,7,7,7,7]
+                ],
+                warps: [
+                    { x: 5, y: 8, targetMap: 'maps/dungeon.json', targetX: 23, targetY: 21 }
+                ],
+                npcs: [
+                    { id: 'maou', x: 5, y: 2, sprite: '👿', type: 'maou', messages: [] }
+                ],
+                chests: []
+            }
+        };
+
+        // ========================================
+        // ゲーム状態
+        // ========================================
+        let currentMapId = 'field';
+        let currentMap = maps[currentMapId];
+        let isTransitioning = false;
+
+        // プレイヤー
+        const player = {
+            x: 3,
+            y: 3,
+            direction: 'down',
+            moving: false,
+            moveDelay: 120,
+            hp: 50,
+            maxHp: 50,
+            mp: 20,
+            maxMp: 20,
+            baseAtk: 10,  // ちから（基礎攻撃力）
+            baseDef: 5,   // みのまもり（基礎防御力）
+            speed: 6,
+            level: 1,
+            exp: 0,
+            gold: 0,
+            inventory: [],
+            spells: ['hoimi', 'mera'],
+            job: 'hero',  // 将来のパーティシステム用
+            equipment: {
+                weapon: 10,  // こんぼう（初期装備）
+                armor: 20    // たびびとのふく（初期装備）
+            },
+            // 計算済みステータス（updateActualStatsで更新）
+            actualAtk: 12,
+            actualDef: 6,
+            // 状態異常（残りターン数、0なら正常）
+            status: {
+                sleep: 0,
+                poison: 0,
+                blind: 0
+            }
+        };
+
+        // 装備込みのステータスを計算して更新
+        function updateActualStats() {
+            const weapon = items[player.equipment.weapon];
+            const armor = items[player.equipment.armor];
+            player.actualAtk = player.baseAtk + (weapon ? weapon.value : 0);
+            player.actualDef = player.baseDef + (armor ? armor.value : 0);
+        }
+
+        // 装備込みのステータスを取得
+        function getPlayerAtk() {
+            return player.actualAtk;
+        }
+
+        function getPlayerDef() {
+            return player.actualDef;
+        }
+
+        // ========================================
+        // 状態異常システム
+        // ========================================
+
+        // 状態異常を付与
+        function applyStatusEffect(target, effect) {
+            if (effect === 'sleep') {
+                const duration = STATUS_EFFECTS.sleep.duration;
+                target.status.sleep = duration.min + Math.floor(Math.random() * (duration.max - duration.min + 1));
+                return true;
+            } else if (effect === 'poison') {
+                target.status.poison = 99; // 毒は戦闘終了まで継続
+                return true;
+            } else if (effect === 'blind') {
+                target.status.blind = 99; // 幻惑は戦闘終了まで継続
+                return true;
+            }
+            return false;
+        }
+
+        // 状態異常アイコンを取得
+        function getStatusIcons(target) {
+            let icons = '';
+            if (target.status.sleep > 0) icons += STATUS_EFFECTS.sleep.icon;
+            if (target.status.poison > 0) icons += STATUS_EFFECTS.poison.icon;
+            if (target.status.blind > 0) icons += STATUS_EFFECTS.blind.icon;
+            return icons;
+        }
+
+        // バッジ形式の状態異常表示（「眠」「毒」など）
+        function getStatusBadges(target) {
+            let badges = [];
+            if (target.status.sleep > 0) badges.push(STATUS_EFFECTS.sleep.badge);
+            if (target.status.poison > 0) badges.push(STATUS_EFFECTS.poison.badge);
+            if (target.status.blind > 0) badges.push(STATUS_EFFECTS.blind.badge);
+            return badges.length > 0 ? '（' + badges.join('') + '）' : '';
+        }
+
+        // 眠りから起きるかチェック（ターン開始時）
+        function checkWakeUp(target, name) {
+            if (target.status.sleep > 0) {
+                target.status.sleep--;
+                if (target.status.sleep <= 0) {
+                    return { awake: true, message: `${name} は めをさました！` };
+                } else {
+                    return { awake: false, message: `${name} は ねむっている...` };
+                }
+            }
+            return { awake: true, message: null };
+        }
+
+        // 毒ダメージを処理（ターン終了時）
+        function processPoisonDamage(target, name, maxHp) {
+            if (target.status.poison > 0) {
+                const damage = Math.max(1, Math.floor(maxHp * STATUS_EFFECTS.poison.damageRate));
+                target.hp = Math.max(1, target.hp - damage); // 毒では死なない
+                return { damage, message: `${name} は どくの ダメージを うけた！（${damage}）` };
+            }
+            return null;
+        }
+
+        // 攻撃命中率を取得（幻惑考慮）
+        function getHitRate(attacker) {
+            const baseRate = 0.9; // 通常90%
+            if (attacker.status && attacker.status.blind > 0) {
+                return baseRate * STATUS_EFFECTS.blind.hitRateModifier;
+            }
+            return baseRate;
+        }
+
+        // レベルアップに必要な経験値（指数関数的増加）
+        // 計算式: Math.floor(10 * Math.pow(2.5, level-1))
+        function getExpForLevel(level) {
+            if (level <= 1) return 0;
+            return Math.floor(10 * Math.pow(2.5, level - 2));
+        }
+
+        // レベル1-10の必要経験値テーブル（累積）
+        const expTable = [];
+        let totalExp = 0;
+        for (let i = 0; i <= 10; i++) {
+            expTable[i] = totalExp;
+            totalExp += getExpForLevel(i + 1);
+        }
+        // expTable = [0, 0, 10, 35, 97, 253, 643, 1618, 4056, 10150, 25386]
+
+        // 会話状態
+        const dialog = {
+            active: false,
+            messages: [],
+            currentIndex: 0,
+            displayedText: '',
+            charIndex: 0,
+            isTyping: false,
+            typingSpeed: 50
+        };
+
+        // メニュー状態
+        const menu = {
+            active: false,
+            selectedIndex: 0,
+            mode: 'items' // 'items' or 'status'
+        };
+
+        // 宿屋状態
+        const inn = {
+            active: false,
+            cost: 0,
+            selectedIndex: 0 // 0: はい, 1: いいえ
+        };
+
+        // ショップ状態
+        const shop = {
+            active: false,
+            mode: 'menu',  // 'menu', 'buy', 'sell'
+            phase: 'list', // 'list', 'confirm', 'equip', 'sold'
+            menuIndex: 0,  // 0: かう, 1: うる, 2: やめる
+            selectedIndex: 0,
+            confirmIndex: 0, // 0: はい, 1: いいえ
+            equipIndex: 0,   // 0: はい, 1: いいえ
+            selectedItem: null,
+            sellableItems: [] // 売却可能アイテムリスト
+        };
+
+        // バトル状態
+        const battle = {
+            active: false,
+            enemy: null,
+            phase: 'start', // start, command, playerTurn, enemyTurn, result
+            commandIndex: 0,
+            spellIndex: 0,
+            showSpells: false,
+            message: '',
+            messageQueue: [],
+            animationFrame: 0,
+            flashCount: 0,
+            result: null // 'win', 'lose', 'escape'
+        };
+
+        // ========================================
+        // Canvas & カメラ
+        // ========================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const fadeOverlay = document.getElementById('fadeOverlay');
+        const mapNameElement = document.getElementById('mapName');
+
+        let tileSize = 32;
+        let cameraX = 0;
+        let cameraY = 0;
+        let canvasWidth = 0;
+        let canvasHeight = 0;
+
+        function resize() {
+            canvasWidth = window.innerWidth;
+            canvasHeight = window.innerHeight;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            tileSize = Math.floor(canvasWidth / VISIBLE_TILES);
+            updateCamera();
+        }
+
+        function updateCamera() {
+            cameraX = player.x * tileSize - canvasWidth / 2 + tileSize / 2;
+            cameraY = player.y * tileSize - canvasHeight / 2 + tileSize / 2;
+            const mapPixelWidth = currentMap.cols * tileSize;
+            const mapPixelHeight = currentMap.rows * tileSize;
+            cameraX = Math.max(0, Math.min(cameraX, mapPixelWidth - canvasWidth));
+            cameraY = Math.max(0, Math.min(cameraY, mapPixelHeight - canvasHeight));
+        }
+
+        // ========================================
+        // セーブ/ロード
+        // ========================================
+        function saveGame() {
+            const chestStates = {};
+            for (const mapId in maps) {
+                if (maps[mapId].chests) {
+                    chestStates[mapId] = maps[mapId].chests.map(c => ({ id: c.id, isOpened: c.isOpened }));
+                }
+            }
+
+            const saveData = {
+                player: {
+                    x: player.x, y: player.y, direction: player.direction,
+                    hp: player.hp, maxHp: player.maxHp, mp: player.mp, maxMp: player.maxMp,
+                    baseAtk: player.baseAtk, baseDef: player.baseDef, speed: player.speed,
+                    level: player.level, exp: player.exp, gold: player.gold,
+                    inventory: player.inventory, spells: player.spells,
+                    equipment: player.equipment  // 新形式
+                },
+                currentMapId: currentMapId,
+                currentMapPath: currentMapPath,  // マルチマップシステム用
+                chestStates: chestStates,
+                gameCleared: gameCleared  // 魔王討伐フラグ
+            };
+
+            try {
+                localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+            } catch (e) {
+                console.error('セーブに失敗しました', e);
+            }
+        }
+
+        async function loadGame() {
+            try {
+                const savedData = localStorage.getItem(SAVE_KEY);
+                if (!savedData) return false;
+
+                const data = JSON.parse(savedData);
+
+                // 旧セーブデータとの互換性（atk/defをbaseAtk/baseDefに変換）
+                if (data.player.atk !== undefined && data.player.baseAtk === undefined) {
+                    data.player.baseAtk = data.player.atk;
+                    delete data.player.atk;
+                }
+                if (data.player.def !== undefined && data.player.baseDef === undefined) {
+                    data.player.baseDef = data.player.def;
+                    delete data.player.def;
+                }
+
+                // 旧装備形式からの変換（equippedWeapon/equippedArmor → equipment）
+                if (data.player.equipment === undefined) {
+                    data.player.equipment = {
+                        weapon: data.player.equippedWeapon || 10,  // こんぼう
+                        armor: data.player.equippedArmor || 20     // たびびとのふく
+                    };
+                    delete data.player.equippedWeapon;
+                    delete data.player.equippedArmor;
+                }
+
+                Object.assign(player, data.player);
+                currentMapId = data.currentMapId;
+
+                // マップパスの読み込み（新形式対応）
+                if (data.currentMapPath) {
+                    currentMapPath = data.currentMapPath;
+                } else {
+                    // 旧セーブデータの場合はIDからパスを生成
+                    currentMapPath = `maps/${currentMapId}.json`;
+                }
+
+                // マップの読み込み（非同期対応）
+                if (maps[currentMapId]) {
+                    currentMap = maps[currentMapId];
+                } else if (MapDatabase[currentMapPath]) {
+                    // 新形式マップを非同期でロード
+                    try {
+                        const mapData = await loadMapFromDatabase(currentMapPath);
+                        maps[mapData.mapId] = mapData;
+                        currentMap = mapData;
+                        currentMapId = mapData.mapId;
+                    } catch (err) {
+                        console.error('マップロードエラー:', err);
+                        currentMap = maps['castle'];
+                        currentMapId = 'castle';
+                    }
+                } else {
+                    currentMap = maps['castle'];
+                    currentMapId = 'castle';
+                }
+                mapNameElement.textContent = currentMap.name;
+
+                if (data.chestStates) {
+                    for (const mapId in data.chestStates) {
+                        if (maps[mapId] && maps[mapId].chests) {
+                            for (const savedChest of data.chestStates[mapId]) {
+                                const chest = maps[mapId].chests.find(c => c.id === savedChest.id);
+                                if (chest) chest.isOpened = savedChest.isOpened;
+                            }
+                        }
+                    }
+                }
+
+                // 魔王討伐フラグの読み込み
+                if (data.gameCleared !== undefined) {
+                    gameCleared = data.gameCleared;
+                }
+
+                // ロード後にステータスを再計算
+                updateActualStats();
+                return true;
+            } catch (e) {
+                console.error('ロードに失敗しました', e);
+                return false;
+            }
+        }
+
+        // ========================================
+        // 描画関数
+        // ========================================
+        function getTileColor(tile) {
+            const mapColors = MAP_TILE_COLORS[currentMap.type];
+            if (mapColors && mapColors[tile] !== undefined) return mapColors[tile];
+            return DEFAULT_TILE_COLORS[tile] || '#333';
+        }
+
+        let drawMapDebugCount = 0;
+        function drawMap() {
+            if (drawMapDebugCount < 3) {
+                console.log('[DEBUG drawMap] tileSize:', tileSize, 'cameraX:', cameraX, 'cameraY:', cameraY);
+                console.log('[DEBUG drawMap] currentMap.cols:', currentMap.cols, 'currentMap.rows:', currentMap.rows);
+                drawMapDebugCount++;
+            }
+
+            // tileSizeが0の場合は描画しない
+            if (tileSize <= 0) {
+                console.warn('[DEBUG drawMap] tileSize is 0 or negative!');
+                return;
+            }
+
+            const startCol = Math.floor(cameraX / tileSize);
+            const startRow = Math.floor(cameraY / tileSize);
+            const endCol = Math.min(currentMap.cols, startCol + Math.ceil(canvasWidth / tileSize) + 2);
+            const endRow = Math.min(currentMap.rows, startRow + Math.ceil(canvasHeight / tileSize) + 2);
+
+            for (let row = Math.max(0, startRow); row < endRow; row++) {
+                for (let col = Math.max(0, startCol); col < endCol; col++) {
+                    const tile = currentMap.data[row][col];
+                    const screenX = col * tileSize - cameraX;
+                    const screenY = row * tileSize - cameraY;
+                    ctx.fillStyle = getTileColor(tile);
+                    ctx.fillRect(screenX, screenY, tileSize + 1, tileSize + 1);
+                    drawTileDecoration(tile, screenX, screenY, col, row);
+                }
+            }
+        }
+
+        function drawTileDecoration(tile, x, y, col, row) {
+            ctx.save();
+            ctx.font = `${tileSize * 0.7}px serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            if (tile === TILE.GRASS) {
+                const seed = (col * 7 + row * 13) % 100;
+                if (seed < 25) {
+                    ctx.font = `${tileSize * 0.3}px serif`;
+                    ctx.fillText('🌿', x + tileSize * 0.5, y + tileSize * 0.5);
+                }
+            } else if (tile === TILE.MOUNTAIN) {
+                ctx.fillText('⛰️', x + tileSize / 2, y + tileSize / 2);
+            } else if (tile === TILE.SEA) {
+                ctx.strokeStyle = 'rgba(100, 180, 255, 0.4)';
+                ctx.lineWidth = 2;
+                const waveOffset = (Date.now() / 500) % (Math.PI * 2);
+                for (let i = 0; i < 3; i++) {
+                    const waveY = y + tileSize * (0.3 + i * 0.25);
+                    ctx.beginPath();
+                    ctx.moveTo(x, waveY);
+                    for (let wx = 0; wx <= tileSize; wx += 4) {
+                        ctx.lineTo(x + wx, waveY + Math.sin(waveOffset + wx * 0.1 + i) * 2);
+                    }
+                    ctx.stroke();
+                }
+            } else if (tile === TILE.CASTLE) {
+                ctx.fillText('🏰', x + tileSize / 2, y + tileSize / 2);
+            } else if (tile === TILE.TOWN) {
+                ctx.fillText('🏘️', x + tileSize / 2, y + tileSize / 2);
+            } else if (tile === TILE.STAIRS) {
+                ctx.fillText('🪜', x + tileSize / 2, y + tileSize / 2);
+            } else if (tile === TILE.FLOOR) {
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+                ctx.strokeRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+            } else if (tile === TILE.WALL) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(x, y + tileSize - 4, tileSize, 4);
+            }
+            ctx.restore();
+        }
+
+        function drawChests() {
+            if (!currentMap.chests) return;
+            for (const chest of currentMap.chests) {
+                const screenX = chest.x * tileSize - cameraX;
+                const screenY = chest.y * tileSize - cameraY;
+                if (screenX < -tileSize || screenX > canvasWidth || screenY < -tileSize || screenY > canvasHeight) continue;
+                ctx.font = `${tileSize * 0.7}px serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(chest.isOpened ? '📦' : '🎁', screenX + tileSize / 2, screenY + tileSize / 2);
+            }
+        }
+
+        function drawNPCs() {
+            if (!currentMap.npcs) return;
+            for (const npc of currentMap.npcs) {
+                const screenX = npc.x * tileSize - cameraX;
+                const screenY = npc.y * tileSize - cameraY;
+                if (screenX < -tileSize || screenX > canvasWidth || screenY < -tileSize || screenY > canvasHeight) continue;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(screenX + tileSize / 2, screenY + tileSize * 0.9, tileSize * 0.3, tileSize * 0.1, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.font = `${tileSize * 0.7}px serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(npc.sprite, screenX + tileSize / 2, screenY + tileSize / 2);
+            }
+        }
+
+        function drawPlayer() {
+            const screenX = player.x * tileSize - cameraX;
+            const screenY = player.y * tileSize - cameraY;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.ellipse(screenX + tileSize / 2, screenY + tileSize * 0.9, tileSize * 0.35, tileSize * 0.12, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffcc00';
+            ctx.fillRect(screenX + tileSize * 0.25, screenY + tileSize * 0.2, tileSize * 0.5, tileSize * 0.6);
+            ctx.fillStyle = '#000';
+            if (player.direction !== 'up') {
+                ctx.fillRect(screenX + tileSize * 0.35, screenY + tileSize * 0.35, tileSize * 0.08, tileSize * 0.08);
+                ctx.fillRect(screenX + tileSize * 0.55, screenY + tileSize * 0.35, tileSize * 0.08, tileSize * 0.08);
+            }
+            ctx.font = `${tileSize * 0.4}px serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText('⚔️', screenX + tileSize / 2, screenY + tileSize * 0.15);
+        }
+
+        function drawMessageWindow() {
+            if (!dialog.active) return;
+            const padding = 20;
+            const windowHeight = tileSize * 2.5;
+            const windowY = canvasHeight - windowHeight - 180;
+            const windowX = padding;
+            const windowWidth = canvasWidth - padding * 2;
+
+            drawWindow(windowX, windowY, windowWidth, windowHeight);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = `${Math.floor(tileSize * 0.45)}px 'MS Gothic', monospace`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(dialog.displayedText, windowX + 20, windowY + 20);
+
+            if (!dialog.isTyping && dialog.currentIndex < dialog.messages.length - 1) {
+                const blinkAlpha = Math.sin(Date.now() / 200) * 0.5 + 0.5;
+                ctx.fillStyle = `rgba(255, 255, 255, ${blinkAlpha})`;
+                ctx.font = `${tileSize * 0.4}px serif`;
+                ctx.textAlign = 'right';
+                ctx.fillText('▼', windowX + windowWidth - 20, windowY + windowHeight - 25);
+            }
+        }
+
+        function drawWindow(x, y, w, h) {
+            ctx.fillStyle = 'rgba(0, 0, 50, 0.95)';
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x + 2, y + 2, w - 4, h - 4);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x + 8, y + 8, w - 16, h - 16);
+        }
+
+        function drawMenu() {
+            if (!menu.active) return;
+            const menuWidth = canvasWidth * 0.85;
+            const menuHeight = canvasHeight * 0.75;
+            const menuX = (canvasWidth - menuWidth) / 2;
+            const menuY = (canvasHeight - menuHeight) / 2;
+
+            drawWindow(menuX, menuY, menuWidth, menuHeight);
+
+            // タブ表示
+            const tabY = menuY + 10;
+            ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            // つよさタブ
+            ctx.fillStyle = menu.mode === 'status' ? '#ffd700' : 'rgba(255, 255, 255, 0.5)';
+            ctx.fillText('つよさ', menuX + menuWidth * 0.25, tabY);
+
+            // もちものタブ
+            ctx.fillStyle = menu.mode === 'items' ? '#ffd700' : 'rgba(255, 255, 255, 0.5)';
+            ctx.fillText('もちもの', menuX + menuWidth * 0.75, tabY);
+
+            // 区切り線
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(menuX + 15, tabY + tileSize * 0.5);
+            ctx.lineTo(menuX + menuWidth - 15, tabY + tileSize * 0.5);
+            ctx.stroke();
+
+            const contentY = tabY + tileSize * 0.7;
+            const lineHeight = tileSize * 0.5;
+
+            if (menu.mode === 'status') {
+                // つよさ（ステータス画面）
+                ctx.fillStyle = '#fff';
+                ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                ctx.textAlign = 'left';
+
+                const col1X = menuX + 20;
+                const col2X = menuX + menuWidth * 0.55;
+                let y = contentY + 10;
+
+                ctx.fillStyle = '#ffd700';
+                ctx.fillText('ゆうしゃ', col1X, y);
+                ctx.fillStyle = '#fff';
+                ctx.fillText(`Lv ${player.level}`, col2X, y);
+                y += lineHeight * 1.3;
+
+                ctx.fillText(`HP`, col1X, y);
+                ctx.fillText(`${player.hp} / ${player.maxHp}`, col2X, y);
+                y += lineHeight;
+
+                ctx.fillText(`MP`, col1X, y);
+                ctx.fillText(`${player.mp} / ${player.maxMp}`, col2X, y);
+                y += lineHeight * 1.3;
+
+                ctx.fillText(`ちから`, col1X, y);
+                ctx.fillText(`${player.baseAtk}`, col2X, y);
+                y += lineHeight;
+
+                ctx.fillText(`みのまもり`, col1X, y);
+                ctx.fillText(`${player.baseDef}`, col2X, y);
+                y += lineHeight;
+
+                ctx.fillText(`すばやさ`, col1X, y);
+                ctx.fillText(`${player.speed}`, col2X, y);
+                y += lineHeight;
+
+                // こうげき力・しゅび力（装備込み）
+                ctx.fillStyle = '#4f4';
+                ctx.fillText(`こうげき力`, col1X, y);
+                ctx.fillText(`${getPlayerAtk()}`, col2X, y);
+                y += lineHeight;
+
+                ctx.fillText(`しゅび力`, col1X, y);
+                ctx.fillText(`${getPlayerDef()}`, col2X, y);
+                y += lineHeight * 0.8;
+
+                ctx.fillText(`けいけんち`, col1X, y);
+                ctx.fillText(`${player.exp}`, col2X, y);
+                y += lineHeight;
+
+                // 次のレベルまでの経験値
+                const nextLevelExp = player.level < expTable.length - 1 ? expTable[player.level + 1] : null;
+                if (nextLevelExp !== null) {
+                    const needed = nextLevelExp - player.exp;
+                    ctx.fillText(`つぎのLvまで`, col1X, y);
+                    ctx.fillText(`あと ${needed}`, col2X, y);
+                } else {
+                    ctx.fillText(`さいだいレベル`, col1X, y);
+                }
+                y += lineHeight * 1.3;
+
+                ctx.fillStyle = '#ffd700';
+                ctx.fillText(`ゴールド`, col1X, y);
+                ctx.fillStyle = '#fff';
+                ctx.fillText(`${player.gold} G`, col2X, y);
+                y += lineHeight * 1.5;
+
+                // 装備表示
+                ctx.fillStyle = '#aaa';
+                ctx.fillText('─ そうび ─', col1X, y);
+                y += lineHeight;
+
+                const weapon = items[player.equipment.weapon];
+                const armor = items[player.equipment.armor];
+                ctx.fillStyle = '#fff';
+                ctx.fillText(`⚔️ E: ${weapon ? weapon.name : 'なし'}`, col1X, y);
+                y += lineHeight;
+                ctx.fillText(`🛡️ E: ${armor ? armor.name : 'なし'}`, col1X, y);
+
+            } else {
+                // もちもの（アイテム画面）
+                ctx.fillStyle = '#fff';
+                ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                ctx.textAlign = 'left';
+                const itemStartY = contentY + 10;
+
+                if (player.inventory.length === 0) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('アイテムを持っていない', canvasWidth / 2, itemStartY);
+                } else {
+                    player.inventory.forEach((itemId, i) => {
+                        const item = items[itemId];
+                        if (item) {
+                            ctx.fillStyle = '#fff';
+                            ctx.fillText(`・${item.name}`, menuX + 30, itemStartY + i * lineHeight);
+                        }
+                    });
+                }
+            }
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = `${tileSize * 0.3}px 'MS Gothic', monospace`;
+            ctx.textAlign = 'center';
+            ctx.fillText('← → タブ切替 / Bボタンで閉じる', canvasWidth / 2, menuY + menuHeight - 25);
+        }
+
+        function drawInn() {
+            if (!inn.active) return;
+
+            const windowWidth = canvasWidth * 0.8;
+            const windowHeight = tileSize * 3.5;
+            const windowX = (canvasWidth - windowWidth) / 2;
+            const windowY = (canvasHeight - windowHeight) / 2;
+
+            drawWindow(windowX, windowY, windowWidth, windowHeight);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+
+            ctx.fillText(`おとまりですか？（${inn.cost}ゴールド）`, windowX + 20, windowY + 20);
+
+            // 選択肢
+            const choiceY = windowY + tileSize * 1.5;
+            const choices = ['はい', 'いいえ'];
+
+            choices.forEach((choice, i) => {
+                const choiceX = windowX + 40 + i * tileSize * 2.5;
+                if (i === inn.selectedIndex) {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillText('▶', choiceX - tileSize * 0.5, choiceY);
+                }
+                ctx.fillStyle = '#fff';
+                ctx.fillText(choice, choiceX, choiceY);
+            });
+
+            // 所持金表示
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+            ctx.fillText(`所持金: ${player.gold} G`, windowX + 20, windowY + windowHeight - tileSize * 0.6);
+        }
+
+        function drawShop() {
+            if (!shop.active) return;
+
+            const windowWidth = canvasWidth * 0.9;
+            const windowHeight = canvasHeight * 0.75;
+            const windowX = (canvasWidth - windowWidth) / 2;
+            const windowY = (canvasHeight - windowHeight) / 2;
+
+            drawWindow(windowX, windowY, windowWidth, windowHeight);
+
+            ctx.fillStyle = '#ffd700';
+            ctx.font = `${tileSize * 0.5}px 'MS Gothic', monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('⚔️ ぶきぼうぐや 🛡️', canvasWidth / 2, windowY + 15);
+
+            // 所持金表示
+            ctx.fillStyle = '#fff';
+            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+            ctx.textAlign = 'right';
+            ctx.fillText(`💰 ${player.gold} G`, windowX + windowWidth - 20, windowY + 15);
+
+            const listY = windowY + tileSize * 1.2;
+            const lineHeight = tileSize * 0.55;
+
+            if (shop.mode === 'menu') {
+                // メニュー選択
+                ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+                ctx.textAlign = 'left';
+                const menuItems = ['かう', 'うる', 'やめる'];
+                menuItems.forEach((menuItem, i) => {
+                    const y = listY + i * lineHeight * 1.5;
+                    if (i === shop.menuIndex) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.fillText('▶', windowX + 30, y);
+                    }
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText(menuItem, windowX + 60, y);
+                });
+
+            } else if (shop.mode === 'buy') {
+                if (shop.phase === 'list') {
+                    // 購入リスト
+                    ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                    ctx.textAlign = 'left';
+
+                    shopItems.forEach((itemId, i) => {
+                        const item = items[itemId];
+                        const y = listY + i * lineHeight;
+
+                        if (i === shop.selectedIndex) {
+                            ctx.fillStyle = '#ffd700';
+                            ctx.fillText('▶', windowX + 15, y);
+                        }
+
+                        const icon = item.type === 'weapon' ? '⚔️' : '🛡️';
+                        ctx.fillStyle = player.gold >= item.price ? '#fff' : '#666';
+                        ctx.fillText(`${icon} ${item.name}`, windowX + 40, y);
+                        ctx.fillText(`${item.price} G`, windowX + windowWidth * 0.55, y);
+
+                        if (i === shop.selectedIndex) {
+                            const statChange = getStatChangePreview(item);
+                            ctx.fillStyle = statChange > 0 ? '#4f4' : (statChange < 0 ? '#f44' : '#fff');
+                            const sign = statChange > 0 ? '+' : '';
+                            const statLabel = item.type === 'weapon' ? 'こうげき' : 'しゅび';
+                            ctx.fillText(`${statLabel} ${sign}${statChange}`, windowX + windowWidth * 0.78, y);
+                        }
+                    });
+
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.font = `${tileSize * 0.3}px 'MS Gothic', monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('↑↓ 選択 / A 購入 / B 戻る', canvasWidth / 2, windowY + windowHeight - 25);
+
+                } else if (shop.phase === 'confirm') {
+                    const item = shop.selectedItem;
+                    ctx.fillStyle = '#fff';
+                    ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`${item.name} を かいますか？`, windowX + 30, listY);
+                    ctx.fillText(`（${item.price} ゴールド）`, windowX + 30, listY + lineHeight);
+
+                    const choiceY = listY + lineHeight * 3;
+                    ['はい', 'いいえ'].forEach((choice, i) => {
+                        const choiceX = windowX + 50 + i * tileSize * 2.5;
+                        if (i === shop.confirmIndex) {
+                            ctx.fillStyle = '#ffd700';
+                            ctx.fillText('▶', choiceX - tileSize * 0.5, choiceY);
+                        }
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText(choice, choiceX, choiceY);
+                    });
+
+                } else if (shop.phase === 'equip') {
+                    const item = shop.selectedItem;
+                    ctx.fillStyle = '#fff';
+                    ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`${item.name} を てにいれた！`, windowX + 30, listY);
+                    ctx.fillText('そうび しますか？', windowX + 30, listY + lineHeight);
+
+                    const choiceY = listY + lineHeight * 3;
+                    ['はい', 'いいえ'].forEach((choice, i) => {
+                        const choiceX = windowX + 50 + i * tileSize * 2.5;
+                        if (i === shop.equipIndex) {
+                            ctx.fillStyle = '#ffd700';
+                            ctx.fillText('▶', choiceX - tileSize * 0.5, choiceY);
+                        }
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText(choice, choiceX, choiceY);
+                    });
+                }
+
+            } else if (shop.mode === 'sell') {
+                if (shop.phase === 'list') {
+                    // 売却リスト
+                    ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                    ctx.textAlign = 'left';
+
+                    if (shop.sellableItems.length === 0) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('うれるものが ありません', canvasWidth / 2, listY + lineHeight);
+                    } else {
+                        shop.sellableItems.forEach((itemId, i) => {
+                            const item = items[itemId];
+                            const y = listY + i * lineHeight;
+                            const sellPrice = Math.floor(item.price / 2);
+
+                            if (i === shop.selectedIndex) {
+                                ctx.fillStyle = '#ffd700';
+                                ctx.fillText('▶', windowX + 15, y);
+                            }
+
+                            const icon = item.type === 'weapon' ? '⚔️' : (item.type === 'armor' ? '🛡️' : '📦');
+                            ctx.fillStyle = '#fff';
+                            ctx.fillText(`${icon} ${item.name}`, windowX + 40, y);
+                            ctx.fillText(`${sellPrice} G`, windowX + windowWidth * 0.65, y);
+                        });
+                    }
+
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.font = `${tileSize * 0.3}px 'MS Gothic', monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('↑↓ 選択 / A 売却 / B 戻る', canvasWidth / 2, windowY + windowHeight - 25);
+
+                } else if (shop.phase === 'confirm') {
+                    const item = shop.selectedItem;
+                    const sellPrice = Math.floor(item.price / 2);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`${item.name} を うりますか？`, windowX + 30, listY);
+                    ctx.fillText(`（${sellPrice} ゴールド）`, windowX + 30, listY + lineHeight);
+
+                    const choiceY = listY + lineHeight * 3;
+                    ['はい', 'いいえ'].forEach((choice, i) => {
+                        const choiceX = windowX + 50 + i * tileSize * 2.5;
+                        if (i === shop.confirmIndex) {
+                            ctx.fillStyle = '#ffd700';
+                            ctx.fillText('▶', choiceX - tileSize * 0.5, choiceY);
+                        }
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText(choice, choiceX, choiceY);
+                    });
+
+                } else if (shop.phase === 'sold') {
+                    const item = shop.selectedItem;
+                    const sellPrice = Math.floor(item.price / 2);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`${item.name} を うりました！`, windowX + 30, listY);
+                    ctx.fillText(`${sellPrice} ゴールド てにいれた！`, windowX + 30, listY + lineHeight);
+                }
+            }
+        }
+
+        // 装備変更時のステータス変化をプレビュー
+        function getStatChangePreview(item) {
+            if (item.type === 'weapon') {
+                const currentWeapon = items[player.equipment.weapon];
+                const currentValue = currentWeapon ? currentWeapon.value : 0;
+                return item.value - currentValue;
+            } else if (item.type === 'armor') {
+                const currentArmor = items[player.equipment.armor];
+                const currentValue = currentArmor ? currentArmor.value : 0;
+                return item.value - currentValue;
+            }
+            return 0;
+        }
+
+        // ========================================
+        // バトル描画
+        // ========================================
+        // 呪文フラッシュを開始
+        function startSpellFlash(color) {
+            spellFlash.active = true;
+            spellFlash.color = color;
+            spellFlash.alpha = 1.0;
+
+            // フェードアウト処理
+            const fadeOut = () => {
+                spellFlash.alpha -= 0.1;
+                if (spellFlash.alpha <= 0) {
+                    spellFlash.active = false;
+                    spellFlash.alpha = 0;
+                } else {
+                    setTimeout(fadeOut, 50);
+                }
+            };
+            setTimeout(fadeOut, 100);
+        }
+
+        function drawBattle() {
+            // 背景
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            // 戦闘開始フラッシュ演出
+            if (battle.flashCount > 0) {
+                const alpha = (battle.flashCount % 2 === 0) ? 0.8 : 0;
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                return;
+            }
+
+            // 呪文フラッシュ演出
+            if (spellFlash.active && spellFlash.alpha > 0) {
+                // 色をパースしてアルファ値を適用
+                const baseColor = spellFlash.color.replace(/[\d.]+\)$/, `${spellFlash.alpha})`);
+                ctx.fillStyle = baseColor;
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            }
+
+            // モンスター表示
+            if (battle.enemy) {
+                ctx.font = `${tileSize * 4}px serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(battle.enemy.sprite, canvasWidth / 2, canvasHeight * 0.35);
+
+                // モンスター名と状態異常バッジ
+                ctx.fillStyle = '#fff';
+                ctx.font = `${tileSize * 0.5}px 'MS Gothic', monospace`;
+                ctx.fillText(battle.enemy.name, canvasWidth / 2, canvasHeight * 0.55);
+
+                // 状態異常バッジを名前の下に表示
+                const enemyStatusBadge = getStatusBadges(battle.enemy);
+                if (enemyStatusBadge) {
+                    ctx.fillStyle = '#f88';
+                    ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                    ctx.fillText(enemyStatusBadge, canvasWidth / 2, canvasHeight * 0.55 + tileSize * 0.5);
+                }
+            }
+
+            // ステータスウィンドウ
+            const statusW = canvasWidth * 0.5;
+            const statusH = tileSize * 2.5;
+            const statusX = 10;
+            const statusY = 10;
+            drawWindow(statusX, statusY, statusW, statusH);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+
+            // プレイヤー名と状態異常バッジ
+            const playerStatusBadge = getStatusBadges(player);
+            ctx.fillText(`ゆうしゃ  Lv${player.level}`, statusX + 15, statusY + 15);
+            if (playerStatusBadge) {
+                ctx.fillStyle = '#f88';  // 状態異常は赤系で表示
+                ctx.fillText(playerStatusBadge, statusX + statusW - 70, statusY + 15);
+                ctx.fillStyle = '#fff';
+            }
+            ctx.fillText(`HP: ${player.hp}/${player.maxHp}`, statusX + 15, statusY + 15 + tileSize * 0.5);
+            ctx.fillText(`MP: ${player.mp}/${player.maxMp}`, statusX + 15, statusY + 15 + tileSize * 1.0);
+
+            // メッセージウィンドウ
+            const msgH = tileSize * 2;
+            const msgY = canvasHeight - msgH - 180;
+            drawWindow(10, msgY, canvasWidth - 20, msgH);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+            ctx.textAlign = 'left';
+            ctx.fillText(battle.message, 30, msgY + 25);
+
+            // コマンドウィンドウ
+            if (battle.phase === 'command') {
+                const cmdW = canvasWidth * 0.45;
+                const cmdH = tileSize * 3;
+                const cmdX = canvasWidth - cmdW - 10;
+                const cmdY = canvasHeight - cmdH - 10;
+                drawWindow(cmdX, cmdY, cmdW, cmdH);
+
+                const commands = ['たたかう', 'じゅもん', 'にげる'];
+                ctx.font = `${tileSize * 0.5}px 'MS Gothic', monospace`;
+
+                commands.forEach((cmd, i) => {
+                    const y = cmdY + 20 + i * tileSize * 0.7;
+                    if (i === battle.commandIndex) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.fillText('▶', cmdX + 15, y);
+                    }
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText(cmd, cmdX + 40, y);
+                });
+
+                // 呪文サブメニュー
+                if (battle.showSpells) {
+                    const spellW = cmdW * 1.1;
+                    const spellH = Math.max(tileSize * 2.5, tileSize * 0.6 * player.spells.length + 30);
+                    const spellX = cmdX - spellW - 10;
+                    const spellY = cmdY;
+                    drawWindow(spellX, spellY, spellW, spellH);
+
+                    player.spells.forEach((spellId, i) => {
+                        const spell = spells[spellId];
+                        const y = spellY + 20 + i * tileSize * 0.6;
+                        const canUse = player.mp >= spell.mp;
+
+                        // 選択カーソル
+                        if (i === battle.spellIndex) {
+                            ctx.fillStyle = canUse ? '#ffd700' : '#888';
+                            ctx.fillText('▶', spellX + 10, y);
+                        }
+
+                        // 呪文名とMP（MP不足はグレーアウト）
+                        ctx.fillStyle = canUse ? '#fff' : '#555';
+                        ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                        ctx.fillText(`${spell.name}`, spellX + 30, y);
+
+                        // MP消費量
+                        ctx.fillStyle = canUse ? '#8cf' : '#444';
+                        ctx.fillText(`${spell.mp}`, spellX + spellW - 40, y);
+                    });
+
+                    // 操作ガイド
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.font = `${tileSize * 0.25}px 'MS Gothic', monospace`;
+                    ctx.fillText('B:もどる', spellX + 10, spellY + spellH - 10);
+                }
+            }
+        }
+
+        // ========================================
+        // メイン描画
+        // ========================================
+        let drawDebugCount = 0;
+        function draw() {
+            // タイトル画面中は描画をスキップ
+            if (gameMode === MODE.TITLE) {
+                return;
+            }
+
+            // デバッグ: 最初の数フレームだけログ出力
+            if (drawDebugCount < 5) {
+                console.log('[DEBUG draw] gameMode:', gameMode, 'tileSize:', tileSize, 'canvasWidth:', canvasWidth, 'currentMap.data:', !!currentMap.data);
+                drawDebugCount++;
+            }
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            // 画面シェイク処理
+            let shakeX = 0, shakeY = 0;
+            if (screenShake.active) {
+                shakeX = (Math.random() - 0.5) * screenShake.intensity;
+                shakeY = (Math.random() - 0.5) * screenShake.intensity;
+                screenShake.duration--;
+                if (screenShake.duration <= 0) {
+                    screenShake.active = false;
+                }
+            }
+
+            ctx.save();
+            ctx.translate(shakeX, shakeY);
+
+            if (gameMode === MODE.ENDING) {
+                drawEnding();
+            } else if (gameMode === MODE.BATTLE) {
+                drawBattle();
+            } else {
+                drawMap();
+                drawChests();
+                drawNPCs();
+                drawPlayer();
+                drawMessageWindow();
+                drawMenu();
+                drawInn();
+                drawShop();
+            }
+
+            ctx.restore();
+
+            // エンディングのフェード描画（restore後に描画）
+            if (endingState.fadeAlpha > 0 && endingState.phase !== 'staffroll' && endingState.phase !== 'theend' && endingState.phase !== 'none') {
+                ctx.fillStyle = `rgba(0, 0, 0, ${endingState.fadeAlpha})`;
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            }
+        }
+
+        // ========================================
+        // バトルシステム
+        // ========================================
+        function startBattle(monsterType) {
+            const monsterData = monsters[monsterType];
+            battle.active = true;
+            battle.enemy = {
+                ...monsterData,
+                currentHp: monsterData.hp,
+                // 敵の状態異常
+                status: {
+                    sleep: 0,
+                    poison: 0,
+                    blind: 0
+                }
+            };
+            battle.phase = 'start';
+            battle.commandIndex = 0;
+            battle.spellIndex = 0;
+            battle.showSpells = false;
+            battle.message = '';
+            battle.messageQueue = [];
+            battle.result = null;
+            battle.flashCount = 6;
+
+            // プレイヤーの状態異常をリセット（戦闘ごとにリセット）
+            player.status = { sleep: 0, poison: 0, blind: 0 };
+
+            gameMode = MODE.BATTLE;
+
+            // フラッシュアニメーション
+            const flashInterval = setInterval(() => {
+                battle.flashCount--;
+                if (battle.flashCount <= 0) {
+                    clearInterval(flashInterval);
+                    showBattleMessage(`${battle.enemy.name} が あらわれた！`, () => {
+                        battle.phase = 'command';
+                    });
+                }
+            }, 100);
+        }
+
+        function showBattleMessage(msg, callback) {
+            battle.message = msg;
+            setTimeout(() => {
+                if (callback) callback();
+            }, 1000);
+        }
+
+        // 敵の耐性を考慮した成功率を計算
+        function getEffectiveSuccessRate(spell, enemy) {
+            const baseRate = spell.successRate;
+            const resistance = enemy.resistances ? enemy.resistances[spell.statusEffect] : 1.0;
+            return baseRate * resistance;
+        }
+
+        function executeBattleCommand() {
+            if (battle.showSpells) {
+                // 呪文実行
+                const spell = spells[player.spells[battle.spellIndex]];
+                if (player.mp < spell.mp) {
+                    showBattleMessage('MPが たりない！', () => {
+                        battle.phase = 'command';
+                    });
+                    return;
+                }
+
+                player.mp -= spell.mp;
+                battle.showSpells = false;
+                battle.phase = 'playerTurn';
+
+                // フラッシュ演出を開始
+                if (spell.flashColor) {
+                    startSpellFlash(spell.flashColor);
+                }
+
+                showBattleMessage(`ゆうしゃ は ${spell.name} を となえた！`, () => {
+                    if (spell.type === 'heal') {
+                        const healAmount = spell.power;
+                        player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                        showBattleMessage(`HPが ${healAmount} かいふくした！`, () => {
+                            processTurnEnd();
+                        });
+                    } else if (spell.type === 'attack') {
+                        const damage = spell.power + Math.floor(Math.random() * 5);
+                        battle.enemy.currentHp -= damage;
+                        showBattleMessage(`${battle.enemy.name} に ${damage} の ダメージ！`, () => {
+                            checkBattleEnd() || processTurnEnd();
+                        });
+                    } else if (spell.type === 'status') {
+                        // 状態異常呪文
+                        // 既にその状態異常にかかっている場合
+                        if (battle.enemy.status[spell.statusEffect] > 0) {
+                            showBattleMessage(`しかし ${battle.enemy.name} には きかなかった！`, () => {
+                                processTurnEnd();
+                            });
+                        } else {
+                            // 耐性を考慮した成功率
+                            const effectiveRate = getEffectiveSuccessRate(spell, battle.enemy);
+                            if (effectiveRate <= 0) {
+                                // 完全耐性
+                                showBattleMessage(`しかし ${battle.enemy.name} には まったく きかなかった！`, () => {
+                                    processTurnEnd();
+                                });
+                            } else if (Math.random() < effectiveRate) {
+                                // 成功
+                                applyStatusEffect(battle.enemy, spell.statusEffect);
+                                let successMsg = '';
+                                if (spell.statusEffect === 'sleep') {
+                                    successMsg = `${battle.enemy.name} は ねむりにおちた！`;
+                                } else if (spell.statusEffect === 'blind') {
+                                    successMsg = `${battle.enemy.name} は まぼろしに つつまれた！`;
+                                } else {
+                                    const effectName = STATUS_EFFECTS[spell.statusEffect].name;
+                                    successMsg = `${battle.enemy.name} は ${effectName}状態に なった！`;
+                                }
+                                showBattleMessage(successMsg, () => {
+                                    processTurnEnd();
+                                });
+                            } else {
+                                // 失敗（耐性で弾かれた）
+                                showBattleMessage(`しかし ${battle.enemy.name} には きかなかった！`, () => {
+                                    processTurnEnd();
+                                });
+                            }
+                        }
+                    }
+                });
+            } else {
+                switch (battle.commandIndex) {
+                    case 0: // たたかう
+                        playerAttack();
+                        break;
+                    case 1: // じゅもん
+                        battle.showSpells = true;
+                        battle.spellIndex = 0;
+                        break;
+                    case 2: // にげる
+                        tryEscape();
+                        break;
+                }
+            }
+        }
+
+        // ターン終了処理（毒ダメージなど）
+        function processTurnEnd() {
+            // プレイヤーの毒ダメージ
+            const poisonResult = processPoisonDamage(player, 'ゆうしゃ', player.maxHp);
+            if (poisonResult) {
+                showBattleMessage(poisonResult.message, () => {
+                    if (player.hp <= 1) {
+                        // 毒では死なないが次の行動へ
+                    }
+                    enemyTurn();
+                });
+            } else {
+                enemyTurn();
+            }
+        }
+
+        function playerAttack() {
+            battle.phase = 'playerTurn';
+
+            // 幻惑状態なら命中率低下
+            const hitRate = getHitRate(player);
+            if (Math.random() > hitRate) {
+                showBattleMessage('ゆうしゃ の こうげき！ しかし こうげきは はずれた！', () => {
+                    processTurnEnd();
+                });
+                return;
+            }
+
+            const atk = getPlayerAtk();
+            const damage = Math.max(1, Math.floor(atk / 2 - battle.enemy.def / 4 + Math.random() * 5));
+            battle.enemy.currentHp -= damage;
+
+            showBattleMessage(`ゆうしゃ の こうげき！ ${damage} の ダメージ！`, () => {
+                checkBattleEnd() || processTurnEnd();
+            });
+        }
+
+        function enemyTurn() {
+            // 魔王の場合は専用の行動ロジックを使用
+            if (battle.enemy.isBoss) {
+                maouTurn();
+                return;
+            }
+
+            battle.phase = 'enemyTurn';
+
+            // 敵の眠りチェック
+            const wakeResult = checkWakeUp(battle.enemy, battle.enemy.name);
+            if (!wakeResult.awake) {
+                showBattleMessage(wakeResult.message, () => {
+                    processEnemyTurnEnd();
+                });
+                return;
+            }
+            if (wakeResult.message) {
+                // 目覚めたメッセージを表示してから行動
+                showBattleMessage(wakeResult.message, () => {
+                    executeEnemyAttack();
+                });
+                return;
+            }
+
+            executeEnemyAttack();
+        }
+
+        function executeEnemyAttack() {
+            // 敵の幻惑状態チェック
+            const hitRate = getHitRate(battle.enemy);
+            if (Math.random() > hitRate) {
+                showBattleMessage(`${battle.enemy.name} の こうげき！ しかし こうげきは はずれた！`, () => {
+                    processEnemyTurnEnd();
+                });
+                return;
+            }
+
+            const def = getPlayerDef();
+            const damage = Math.max(1, Math.floor(battle.enemy.atk / 2 - def / 4 + Math.random() * 3));
+            player.hp -= damage;
+
+            showBattleMessage(`${battle.enemy.name} の こうげき！ ${damage} の ダメージ！`, () => {
+                if (player.hp <= 0) {
+                    player.hp = 0;
+                    battleLose();
+                } else {
+                    processEnemyTurnEnd();
+                }
+            });
+        }
+
+        // 敵ターン終了処理
+        function processEnemyTurnEnd() {
+            // 敵の毒ダメージ
+            const poisonResult = processPoisonDamage(battle.enemy, battle.enemy.name, battle.enemy.hp);
+            if (poisonResult) {
+                showBattleMessage(poisonResult.message, () => {
+                    if (checkBattleEnd()) return;
+                    startPlayerTurn();
+                });
+            } else {
+                startPlayerTurn();
+            }
+        }
+
+        // プレイヤーターン開始
+        function startPlayerTurn() {
+            // プレイヤーの眠りチェック
+            const wakeResult = checkWakeUp(player, 'ゆうしゃ');
+            if (!wakeResult.awake) {
+                showBattleMessage(wakeResult.message, () => {
+                    // 眠っている場合は行動をスキップして敵ターンへ
+                    processTurnEnd();
+                });
+                return;
+            }
+            if (wakeResult.message) {
+                showBattleMessage(wakeResult.message, () => {
+                    battle.phase = 'command';
+                });
+                return;
+            }
+
+            battle.phase = 'command';
+        }
+
+        function tryEscape() {
+            battle.phase = 'playerTurn';
+
+            // 魔王からは逃げられない
+            if (battle.enemy.isBoss) {
+                showBattleMessage('魔王 の ちから が ゆうしゃ を にがさない！', () => {
+                    enemyTurn();
+                });
+                return;
+            }
+
+            const escapeChance = player.speed / (player.speed + battle.enemy.speed);
+
+            if (Math.random() < escapeChance) {
+                showBattleMessage('うまく にげきれた！', () => {
+                    endBattle('escape');
+                });
+            } else {
+                showBattleMessage('しかし まわりこまれてしまった！', () => {
+                    enemyTurn();
+                });
+            }
+        }
+
+        function checkBattleEnd() {
+            if (battle.enemy.currentHp <= 0) {
+                battle.enemy.currentHp = 0;
+                battleWin();
+                return true;
+            }
+            return false;
+        }
+
+        function battleWin() {
+            battle.phase = 'result';
+            const isBossDefeat = battle.enemy.isBoss;
+            const exp = battle.enemy.exp;
+            const gold = battle.enemy.gold;
+            player.exp += exp;
+            player.gold += gold;
+
+            showBattleMessage(`${battle.enemy.name} を たおした！`, () => {
+                // 魔王討伐時は特別な演出
+                if (isBossDefeat) {
+                    screenShake.active = true;
+                    screenShake.intensity = 15;
+                    screenShake.duration = 60;
+
+                    showBattleMessage('ぐ...ぐおおおお...！', () => {
+                        showBattleMessage('ま...まさか... この私が...', () => {
+                            showBattleMessage('魔王 は 消滅した！', () => {
+                                showBattleMessage(`${exp} ポイントの けいけんちを かくとく！`, () => {
+                                    checkLevelUp(() => {
+                                        gameCleared = true;
+                                        startEnding();
+                                    });
+                                });
+                            });
+                        });
+                    });
+                } else {
+                    showBattleMessage(`${exp} ポイントの けいけんちを かくとく！`, () => {
+                        showBattleMessage(`${gold} ゴールドを てにいれた！`, () => {
+                            checkLevelUp(() => {
+                                endBattle('win');
+                            });
+                        });
+                    });
+                }
+            });
+        }
+
+        // このレベルで習得する呪文をチェック
+        function checkNewSpells(level) {
+            const newSpells = [];
+            for (const spellId in spells) {
+                const spell = spells[spellId];
+                if (spell.learnLevel === level && !player.spells.includes(spellId)) {
+                    newSpells.push(spellId);
+                }
+            }
+            return newSpells;
+        }
+
+        // 呪文習得メッセージを表示
+        function showSpellLearnMessages(spellList, callback) {
+            if (spellList.length === 0) {
+                callback();
+                return;
+            }
+            const spellId = spellList.shift();
+            const spell = spells[spellId];
+            player.spells.push(spellId);
+            showBattleMessage(`${spell.name} を おぼえた！`, () => {
+                showSpellLearnMessages(spellList, callback);
+            });
+        }
+
+        function checkLevelUp(callback) {
+            if (player.level < expTable.length - 1 && player.exp >= expTable[player.level + 1]) {
+                player.level++;
+
+                // ステータス上昇をランダム要素込みで計算
+                const hpUp = 3 + Math.floor(Math.random() * 5); // 3-7
+                const mpUp = 1 + Math.floor(Math.random() * 3); // 1-3
+                const atkUp = 1 + Math.floor(Math.random() * 2); // 1-2
+                const defUp = 1 + Math.floor(Math.random() * 2); // 1-2
+                const spdUp = Math.floor(Math.random() * 2); // 0-1
+
+                player.maxHp += hpUp;
+                player.maxMp += mpUp;
+                player.baseAtk += atkUp;
+                player.baseDef += defUp;
+                player.speed += spdUp;
+                // HP/MPは全回復しない（宿屋の重要性を高める）
+
+                // 基礎ステータスが上がったのでこうげき力・しゅび力を再計算
+                updateActualStats();
+
+                // このレベルで習得する呪文をチェック
+                const newSpells = checkNewSpells(player.level);
+
+                // レベルアップメッセージを順番に表示
+                showBattleMessage(`レベルが あがった！ Lv${player.level} になった！`, () => {
+                    showBattleMessage(`さいだいHP が ${hpUp} あがった！`, () => {
+                        showBattleMessage(`さいだいMP が ${mpUp} あがった！`, () => {
+                            showBattleMessage(`ちから が ${atkUp} あがった！`, () => {
+                                showBattleMessage(`みのまもり が ${defUp} あがった！`, () => {
+                                    const afterStats = () => {
+                                        // 呪文習得メッセージ
+                                        showSpellLearnMessages(newSpells, () => {
+                                            checkLevelUp(callback); // 複数レベルアップ対応
+                                        });
+                                    };
+                                    if (spdUp > 0) {
+                                        showBattleMessage(`すばやさ が ${spdUp} あがった！`, afterStats);
+                                    } else {
+                                        afterStats();
+                                    }
+                                });
+                            });
+                        });
+                    });
+                });
+            } else {
+                callback();
+            }
+        }
+
+        function battleLose() {
+            battle.phase = 'result';
+            showBattleMessage('ゆうしゃ は しんでしまった...', () => {
+                showBattleMessage('おうさま「そなたに もう一度 チャンスを やろう」', () => {
+                    player.gold = Math.floor(player.gold / 2);
+                    player.hp = player.maxHp;
+                    player.mp = player.maxMp;
+                    player.x = 7;
+                    player.y = 11;
+                    currentMapId = 'castle';
+                    currentMap = maps[currentMapId];
+                    mapNameElement.textContent = currentMap.name;
+                    endBattle('lose');
+                });
+            });
+        }
+
+        function endBattle(result) {
+            battle.result = result;
+            setTimeout(() => {
+                gameMode = MODE.FIELD;
+                battle.active = false;
+                updateCamera();
+                saveGame();
+            }, 500);
+        }
+
+        // ========================================
+        // エンディングシステム
+        // ========================================
+        let endingState = {
+            phase: 'none',      // none, fadeout, castle, talk, staffroll, theend
+            fadeAlpha: 0,
+            scrollY: 0,
+            staffRollComplete: false
+        };
+
+        const staffRollText = [
+            '',
+            '',
+            '~ CONGRATULATIONS! ~',
+            '',
+            '',
+            '魔王を 倒し',
+            '世界に 平和が 戻った',
+            '',
+            '',
+            '',
+            '-- STAFF --',
+            '',
+            'ゲームデザイン',
+            '  あなた',
+            '',
+            'プログラミング',
+            '  あなた',
+            '',
+            'グラフィック',
+            '  あなた',
+            '',
+            '',
+            '-- SPECIAL THANKS --',
+            '',
+            '最後まで プレイしてくれた',
+            'あなたに 感謝！',
+            '',
+            '',
+            '',
+            '',
+            'THANK YOU FOR PLAYING!',
+            '',
+            '',
+            '',
+            '',
+            '~ THE END ~',
+            '',
+            '',
+            ''
+        ];
+
+        function startEnding() {
+            endingState.phase = 'fadeout';
+            endingState.fadeAlpha = 0;
+            battle.active = false;
+
+            // フェードアウト開始
+            const fadeInterval = setInterval(() => {
+                endingState.fadeAlpha += 0.02;
+                if (endingState.fadeAlpha >= 1) {
+                    clearInterval(fadeInterval);
+                    // 城に移動
+                    currentMapId = 'castle';
+                    currentMap = maps[currentMapId];
+                    player.x = 7;
+                    player.y = 9;
+                    mapNameElement.textContent = currentMap.name;
+
+                    endingState.phase = 'castle';
+                    gameMode = MODE.FIELD;
+
+                    // フェードイン
+                    const fadeInInterval = setInterval(() => {
+                        endingState.fadeAlpha -= 0.02;
+                        if (endingState.fadeAlpha <= 0) {
+                            endingState.fadeAlpha = 0;
+                            clearInterval(fadeInInterval);
+                            // 凱旋イベント開始
+                            setTimeout(() => {
+                                startTriumphEvent();
+                            }, 500);
+                        }
+                    }, 30);
+                }
+            }, 30);
+        }
+
+        function startTriumphEvent() {
+            endingState.phase = 'talk';
+            startDialog([
+                'おお ゆうしゃよ！',
+                'よくぞ 魔王を たおしてくれた！',
+                'これで 世界に 平和が もどった！',
+                'そなたの いさおしは ながく 語り継がれるであろう',
+                'ありがとう ゆうしゃよ！',
+                '...世界は 平和になった...'
+            ], () => {
+                // スタッフロールへ
+                setTimeout(() => {
+                    startStaffRoll();
+                }, 1000);
+            });
+        }
+
+        function startStaffRoll() {
+            endingState.phase = 'staffroll';
+            endingState.scrollY = canvasHeight;
+            endingState.staffRollComplete = false;
+            gameMode = MODE.ENDING;
+        }
+
+        function updateStaffRoll() {
+            if (endingState.phase !== 'staffroll') return;
+
+            endingState.scrollY -= 1;
+
+            const textHeight = staffRollText.length * 30 + canvasHeight;
+            if (endingState.scrollY < -textHeight + canvasHeight / 2) {
+                endingState.phase = 'theend';
+                endingState.fadeAlpha = 0;
+            }
+        }
+
+        function drawEnding() {
+            // スタッフロール描画
+            if (endingState.phase === 'staffroll') {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.font = '20px "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif';
+
+                for (let i = 0; i < staffRollText.length; i++) {
+                    const y = endingState.scrollY + i * 30;
+                    if (y > -30 && y < canvasHeight + 30) {
+                        ctx.fillText(staffRollText[i], canvasWidth / 2, y);
+                    }
+                }
+
+                ctx.textAlign = 'left';
+            }
+
+            // THE END 表示
+            if (endingState.phase === 'theend') {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+                endingState.fadeAlpha = Math.min(1, endingState.fadeAlpha + 0.01);
+
+                ctx.fillStyle = `rgba(255, 215, 0, ${endingState.fadeAlpha})`;
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 48px "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif';
+                ctx.fillText('THE END', canvasWidth / 2, canvasHeight / 2);
+
+                ctx.font = '16px "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif';
+                ctx.fillStyle = `rgba(255, 255, 255, ${endingState.fadeAlpha * 0.7})`;
+                ctx.fillText('Press any key to return to title', canvasWidth / 2, canvasHeight / 2 + 60);
+
+                ctx.textAlign = 'left';
+            }
+        }
+
+        function handleEndingInput() {
+            if (endingState.phase === 'theend' && endingState.fadeAlpha >= 1) {
+                // ゲームリセット（タイトルへ）
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            // ゲームをリセット
+            gameCleared = false;
+            endingState.phase = 'none';
+            endingState.fadeAlpha = 0;
+            endingState.scrollY = 0;
+
+            // プレイヤー初期化
+            player.hp = 30;
+            player.maxHp = 30;
+            player.mp = 10;
+            player.maxMp = 10;
+            player.baseAtk = 8;
+            player.baseDef = 5;
+            player.atk = 8;
+            player.def = 5;
+            player.speed = 5;
+            player.level = 1;
+            player.exp = 0;
+            player.gold = 100;
+            player.x = 7;
+            player.y = 11;
+            player.dir = 0;
+            player.inventory = [];
+            player.equipment = { weapon: null, armor: null };
+            player.spells = ['hoimi', 'mera'];
+            player.status = { sleep: 0, poison: 0, blind: 0 };
+
+            openedChests = [];
+            currentMapId = 'castle';
+            currentMap = maps[currentMapId];
+            mapNameElement.textContent = currentMap.name;
+
+            gameMode = MODE.FIELD;
+            localStorage.removeItem('dragonQuestSave');
+        }
+
+        function checkRandomEncounter() {
+            if (currentMap.encounterRate <= 0) return;
+
+            const tile = currentMap.data[player.y][player.x];
+            if (!ENCOUNTER_TILES.includes(tile)) return;
+
+            if (Math.random() < currentMap.encounterRate) {
+                const table = encounterTables[currentMap.type] || encounterTables.field;
+                const monsterType = table[Math.floor(Math.random() * table.length)];
+                startBattle(monsterType);
+            }
+        }
+
+        // ========================================
+        // NPC・宝箱
+        // ========================================
+        function getNpcAt(x, y) {
+            if (!currentMap.npcs) return null;
+            return currentMap.npcs.find(npc => npc.x === x && npc.y === y) || null;
+        }
+
+        function getChestAt(x, y) {
+            if (!currentMap.chests) return null;
+            return currentMap.chests.find(chest => chest.x === x && chest.y === y) || null;
+        }
+
+        function isNpcBlocking(x, y) { return getNpcAt(x, y) !== null; }
+        function isChestBlocking(x, y) { return getChestAt(x, y) !== null; }
+
+        // ========================================
+        // 会話システム
+        // ========================================
+        function startDialog(messages) {
+            dialog.active = true;
+            dialog.messages = Array.isArray(messages) ? messages : [messages];
+            dialog.currentIndex = 0;
+            dialog.displayedText = '';
+            dialog.charIndex = 0;
+            dialog.isTyping = true;
+            typeNextChar();
+        }
+
+        function typeNextChar() {
+            if (!dialog.active) return;
+            const currentMessage = dialog.messages[dialog.currentIndex];
+            if (dialog.charIndex < currentMessage.length) {
+                dialog.displayedText += currentMessage[dialog.charIndex];
+                dialog.charIndex++;
+                setTimeout(typeNextChar, dialog.typingSpeed);
+            } else {
+                dialog.isTyping = false;
+            }
+        }
+
+        function advanceDialog() {
+            if (!dialog.active) return;
+            if (dialog.isTyping) {
+                dialog.displayedText = dialog.messages[dialog.currentIndex];
+                dialog.charIndex = dialog.messages[dialog.currentIndex].length;
+                dialog.isTyping = false;
+            } else if (dialog.currentIndex < dialog.messages.length - 1) {
+                dialog.currentIndex++;
+                dialog.displayedText = '';
+                dialog.charIndex = 0;
+                dialog.isTyping = true;
+                typeNextChar();
+            } else {
+                closeDialog();
+            }
+        }
+
+        function closeDialog() {
+            dialog.active = false;
+            dialog.messages = [];
+            dialog.currentIndex = 0;
+            dialog.displayedText = '';
+        }
+
+        // ========================================
+        // 宝箱・メニュー
+        // ========================================
+        function openChest(chest) {
+            if (chest.isOpened) {
+                startDialog(['宝箱は からっぽだ。']);
+            } else {
+                const item = items[chest.itemId];
+                if (item) {
+                    chest.isOpened = true;
+                    player.inventory.push(item.id);
+                    startDialog(['宝箱をあけた！', `${item.name} を手に入れた！`]);
+                    saveGame();
+                }
+            }
+        }
+
+        function openMenu() {
+            if (dialog.active || isTransitioning || gameMode === MODE.BATTLE || inn.active) return;
+            menu.active = true;
+            menu.mode = 'status'; // デフォルトでステータス画面
+        }
+
+        function closeMenu() { menu.active = false; }
+
+        // ========================================
+        // 宿屋システム
+        // ========================================
+        function openInn(cost) {
+            inn.active = true;
+            inn.cost = cost;
+            inn.selectedIndex = 0;
+        }
+
+        function closeInn() {
+            inn.active = false;
+        }
+
+        function confirmInn() {
+            if (inn.selectedIndex === 0) {
+                // はい
+                if (player.gold >= inn.cost) {
+                    player.gold -= inn.cost;
+                    closeInn();
+                    // 暗転演出
+                    fadeOverlay.classList.add('active');
+                    setTimeout(() => {
+                        player.hp = player.maxHp;
+                        player.mp = player.maxMp;
+                        saveGame();
+                        setTimeout(() => {
+                            fadeOverlay.classList.remove('active');
+                            startDialog(['ゆっくり おやすみください...', 'おはようございます！', 'HPとMPが かいふくしました！']);
+                        }, 500);
+                    }, 500);
+                } else {
+                    closeInn();
+                    startDialog(['お金が たりないようです...']);
+                }
+            } else {
+                // いいえ
+                closeInn();
+                startDialog(['またのお越しを おまちしております。']);
+            }
+        }
+
+        // ========================================
+        // ショップシステム
+        // ========================================
+        function openShop() {
+            shop.active = true;
+            shop.mode = 'menu';
+            shop.phase = 'list';
+            shop.menuIndex = 0;
+            shop.selectedIndex = 0;
+            shop.confirmIndex = 0;
+            shop.equipIndex = 0;
+            shop.selectedItem = null;
+            shop.sellableItems = [];
+        }
+
+        // 売却可能なアイテムリストを作成（装備中のものは除外）
+        function updateSellableItems() {
+            shop.sellableItems = player.inventory.filter(itemId => {
+                const item = items[itemId];
+                // 価格が0のアイテム（伝説の剣など）は売れない
+                if (!item || item.price === 0) return false;
+                return true;
+            });
+        }
+
+        function closeShop() {
+            shop.active = false;
+            startDialog(['またのお越しを おまちしております。']);
+        }
+
+        function handleShopInput(action) {
+            // メニューモード（かう/うる/やめる）
+            if (shop.mode === 'menu') {
+                if (action === 'up') {
+                    shop.menuIndex = Math.max(0, shop.menuIndex - 1);
+                } else if (action === 'down') {
+                    shop.menuIndex = Math.min(2, shop.menuIndex + 1);
+                } else if (action === 'confirm') {
+                    if (shop.menuIndex === 0) {
+                        // かう
+                        shop.mode = 'buy';
+                        shop.phase = 'list';
+                        shop.selectedIndex = 0;
+                    } else if (shop.menuIndex === 1) {
+                        // うる
+                        updateSellableItems();
+                        shop.mode = 'sell';
+                        shop.phase = 'list';
+                        shop.selectedIndex = 0;
+                    } else {
+                        // やめる
+                        closeShop();
+                    }
+                } else if (action === 'cancel') {
+                    closeShop();
+                }
+                return;
+            }
+
+            // 購入モード
+            if (shop.mode === 'buy') {
+                if (shop.phase === 'list') {
+                    if (action === 'up') {
+                        shop.selectedIndex = Math.max(0, shop.selectedIndex - 1);
+                    } else if (action === 'down') {
+                        shop.selectedIndex = Math.min(shopItems.length - 1, shop.selectedIndex + 1);
+                    } else if (action === 'confirm') {
+                        const itemId = shopItems[shop.selectedIndex];
+                        const item = items[itemId];
+                        if (player.gold >= item.price) {
+                            shop.selectedItem = item;
+                            shop.phase = 'confirm';
+                            shop.confirmIndex = 0;
+                        }
+                    } else if (action === 'cancel') {
+                        shop.mode = 'menu';
+                        shop.menuIndex = 0;
+                    }
+                } else if (shop.phase === 'confirm') {
+                    if (action === 'left') {
+                        shop.confirmIndex = 0;
+                    } else if (action === 'right') {
+                        shop.confirmIndex = 1;
+                    } else if (action === 'confirm') {
+                        if (shop.confirmIndex === 0) {
+                            // 購入
+                            player.gold -= shop.selectedItem.price;
+                            player.inventory.push(shop.selectedItem.id);
+                            shop.phase = 'equip';
+                            shop.equipIndex = 0;
+                        } else {
+                            shop.phase = 'list';
+                        }
+                    } else if (action === 'cancel') {
+                        shop.phase = 'list';
+                    }
+                } else if (shop.phase === 'equip') {
+                    if (action === 'left') {
+                        shop.equipIndex = 0;
+                    } else if (action === 'right') {
+                        shop.equipIndex = 1;
+                    } else if (action === 'confirm') {
+                        if (shop.equipIndex === 0) {
+                            equipItem(shop.selectedItem.id);
+                        }
+                        saveGame();
+                        shop.phase = 'list';
+                    } else if (action === 'cancel') {
+                        saveGame();
+                        shop.phase = 'list';
+                    }
+                }
+                return;
+            }
+
+            // 売却モード
+            if (shop.mode === 'sell') {
+                if (shop.phase === 'list') {
+                    if (action === 'up') {
+                        shop.selectedIndex = Math.max(0, shop.selectedIndex - 1);
+                    } else if (action === 'down') {
+                        shop.selectedIndex = Math.min(Math.max(0, shop.sellableItems.length - 1), shop.selectedIndex + 1);
+                    } else if (action === 'confirm') {
+                        if (shop.sellableItems.length > 0) {
+                            const itemId = shop.sellableItems[shop.selectedIndex];
+                            shop.selectedItem = items[itemId];
+                            shop.phase = 'confirm';
+                            shop.confirmIndex = 0;
+                        }
+                    } else if (action === 'cancel') {
+                        shop.mode = 'menu';
+                        shop.menuIndex = 1;
+                    }
+                } else if (shop.phase === 'confirm') {
+                    if (action === 'left') {
+                        shop.confirmIndex = 0;
+                    } else if (action === 'right') {
+                        shop.confirmIndex = 1;
+                    } else if (action === 'confirm') {
+                        if (shop.confirmIndex === 0) {
+                            // 売却実行
+                            const sellPrice = Math.floor(shop.selectedItem.price / 2);
+                            player.gold += sellPrice;
+                            // インベントリから削除
+                            const idx = player.inventory.indexOf(shop.selectedItem.id);
+                            if (idx !== -1) {
+                                player.inventory.splice(idx, 1);
+                            }
+                            shop.phase = 'sold';
+                        } else {
+                            shop.phase = 'list';
+                        }
+                    } else if (action === 'cancel') {
+                        shop.phase = 'list';
+                    }
+                } else if (shop.phase === 'sold') {
+                    // 売却完了メッセージ後
+                    if (action === 'confirm' || action === 'cancel') {
+                        updateSellableItems();
+                        shop.selectedIndex = Math.min(shop.selectedIndex, Math.max(0, shop.sellableItems.length - 1));
+                        shop.phase = 'list';
+                        saveGame();
+                    }
+                }
+            }
+        }
+
+        function equipItem(itemId) {
+            const item = items[itemId];
+            if (!item) return;
+
+            if (item.type === 'weapon') {
+                // 現在の武器をインベントリに戻す（初期装備でない場合）
+                if (player.equipment.weapon && player.equipment.weapon !== 10) {
+                    const idx = player.inventory.indexOf(player.equipment.weapon);
+                    if (idx === -1) {
+                        player.inventory.push(player.equipment.weapon);
+                    }
+                }
+                // 新しい武器を装備
+                player.equipment.weapon = itemId;
+                // インベントリから削除
+                const removeIdx = player.inventory.indexOf(itemId);
+                if (removeIdx !== -1) {
+                    player.inventory.splice(removeIdx, 1);
+                }
+            } else if (item.type === 'armor') {
+                // 現在の防具をインベントリに戻す（初期装備でない場合）
+                if (player.equipment.armor && player.equipment.armor !== 20) {
+                    const idx = player.inventory.indexOf(player.equipment.armor);
+                    if (idx === -1) {
+                        player.inventory.push(player.equipment.armor);
+                    }
+                }
+                // 新しい防具を装備
+                player.equipment.armor = itemId;
+                // インベントリから削除
+                const removeIdx = player.inventory.indexOf(itemId);
+                if (removeIdx !== -1) {
+                    player.inventory.splice(removeIdx, 1);
+                }
+            }
+            // 装備変更後、ステータスを再計算
+            updateActualStats();
+        }
+
+        // ========================================
+        // マップ遷移（マルチマップシステム対応）
+        // ========================================
+
+        // 非同期マップロード（実際のfetchでJSONファイルを読み込む）
+        async function loadMapFromDatabase(mapPath) {
+            try {
+                // 実際のJSONファイルをfetch
+                const response = await fetch(mapPath);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const mapData = await response.json();
+                console.log(`マップをロードしました: ${mapPath}`);
+                return mapData;
+            } catch (error) {
+                console.error(`マップロードエラー (${mapPath}):`, error);
+
+                // フォールバック: 旧形式のマップIDに変換を試みる
+                const mapIdMatch = mapPath.match(/maps\/(.+)\.json/);
+                if (mapIdMatch) {
+                    const mapId = mapIdMatch[1].replace('_', '');
+                    const normalizedId = mapId === 'maou_room' ? 'maouRoom' : mapId;
+                    if (maps[normalizedId]) {
+                        console.log(`フォールバック: 内蔵マップ ${normalizedId} を使用`);
+                        return {
+                            ...maps[normalizedId],
+                            mapId: normalizedId
+                        };
+                    }
+                }
+
+                throw error;
+            }
+        }
+
+        // マップパスかどうかを判定
+        function isMapPath(target) {
+            return target.startsWith('maps/') || target.endsWith('.json');
+        }
+
+        // マップパスから旧形式IDへの変換
+        function getMapIdFromPath(mapPath) {
+            const match = mapPath.match(/maps\/(.+)\.json/);
+            if (match) {
+                const id = match[1].replace('_', '');
+                return id === 'maou_room' ? 'maouRoom' : id;
+            }
+            return mapPath;
+        }
+
+        // 旧形式IDからマップパスへの変換
+        function getMapPathFromId(mapId) {
+            if (mapId === 'maouRoom') return 'maps/maou_room.json';
+            return `maps/${mapId}.json`;
+        }
+
+        function checkWarp() {
+            if (!currentMap.warps) return;
+            for (const warp of currentMap.warps) {
+                if (player.x === warp.x && player.y === warp.y) {
+                    performWarp(warp.targetMap, warp.targetX, warp.targetY);
+                    return;
+                }
+            }
+        }
+
+        async function performWarp(targetMap, targetX, targetY) {
+            if (isTransitioning) return;
+
+            // 新形式（maps/*.json）か旧形式（mapId）かを判定
+            const isNewFormat = isMapPath(targetMap);
+            const targetMapPath = isNewFormat ? targetMap : getMapPathFromId(targetMap);
+            const targetMapId = isNewFormat ? getMapIdFromPath(targetMap) : targetMap;
+
+            // 旧形式マップを直接参照できるか確認
+            if (!isNewFormat && maps[targetMapId]) {
+                // 旧形式の直接遷移
+                performLegacyWarp(targetMapId, targetX, targetY);
+                return;
+            }
+
+            // 新形式のマップロード
+            isTransitioning = true;
+            mapLoadState.loading = true;
+            fadeOverlay.classList.add('active');
+
+            try {
+                // フェードアウト完了を待つ
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                // マップをロード
+                const mapData = await loadMapFromDatabase(targetMapPath);
+
+                // マップをmapsオブジェクトに追加（キャッシュ）
+                maps[mapData.mapId] = mapData;
+
+                // 現在のマップを更新
+                currentMapId = mapData.mapId;
+                currentMapPath = targetMapPath;
+                currentMap = mapData;
+                player.x = targetX;
+                player.y = targetY;
+                mapNameElement.textContent = currentMap.name;
+                updateCamera();
+                saveGame();
+
+                // フェードイン
+                await new Promise(resolve => setTimeout(resolve, 100));
+                fadeOverlay.classList.remove('active');
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+            } catch (error) {
+                console.error('マップロードエラー:', error);
+                // フォールバック: 旧形式を試す
+                if (maps[targetMapId]) {
+                    currentMapId = targetMapId;
+                    currentMap = maps[targetMapId];
+                    player.x = targetX;
+                    player.y = targetY;
+                    mapNameElement.textContent = currentMap.name;
+                    updateCamera();
+                }
+                fadeOverlay.classList.remove('active');
+            } finally {
+                mapLoadState.loading = false;
+                isTransitioning = false;
+            }
+        }
+
+        // 旧形式のワープ処理（互換性維持）
+        function performLegacyWarp(targetMapId, targetX, targetY) {
+            if (isTransitioning || !maps[targetMapId]) return;
+            isTransitioning = true;
+            fadeOverlay.classList.add('active');
+
+            setTimeout(() => {
+                currentMapId = targetMapId;
+                currentMapPath = getMapPathFromId(targetMapId);
+                currentMap = maps[targetMapId];
+                player.x = targetX;
+                player.y = targetY;
+                mapNameElement.textContent = currentMap.name;
+                updateCamera();
+                saveGame();
+
+                setTimeout(() => {
+                    fadeOverlay.classList.remove('active');
+                    setTimeout(() => { isTransitioning = false; }, 300);
+                }, 100);
+            }, 300);
+        }
+
+        // ========================================
+        // 移動
+        // ========================================
+        function canMove(x, y) {
+            if (x < 0 || x >= currentMap.cols || y < 0 || y >= currentMap.rows) return false;
+            const tile = currentMap.data[y][x];
+            if (!WALKABLE_TILES.includes(tile)) return false;
+            if (isNpcBlocking(x, y) || isChestBlocking(x, y)) return false;
+            return true;
+        }
+
+        function movePlayer(dx, dy) {
+            if (player.moving || isTransitioning || dialog.active || menu.active || inn.active || shop.active || gameMode === MODE.BATTLE) return;
+
+            if (dy < 0) player.direction = 'up';
+            else if (dy > 0) player.direction = 'down';
+            else if (dx < 0) player.direction = 'left';
+            else if (dx > 0) player.direction = 'right';
+
+            const newX = player.x + dx;
+            const newY = player.y + dy;
+
+            if (canMove(newX, newY)) {
+                player.moving = true;
+                player.x = newX;
+                player.y = newY;
+                updateCamera();
+
+                setTimeout(() => {
+                    checkWarp();
+                    if (gameMode === MODE.FIELD) {
+                        checkRandomEncounter();
+                    }
+                    player.moving = false;
+                }, player.moveDelay);
+            }
+        }
+
+        function getFrontPosition() {
+            let fx = player.x, fy = player.y;
+            switch (player.direction) {
+                case 'up': fy--; break;
+                case 'down': fy++; break;
+                case 'left': fx--; break;
+                case 'right': fx++; break;
+            }
+            return { x: fx, y: fy };
+        }
+
+        function interact() {
+            if (menu.active || gameMode === MODE.BATTLE || inn.active || shop.active) return;
+            if (dialog.active) { advanceDialog(); return; }
+
+            const front = getFrontPosition();
+            const npc = getNpcAt(front.x, front.y);
+            if (npc) {
+                if (npc.type === 'inn') {
+                    openInn(npc.innCost);
+                } else if (npc.type === 'shop') {
+                    openShop();
+                } else if (npc.type === 'maou') {
+                    // 魔王戦開始
+                    if (gameCleared) {
+                        // 既にクリア済み
+                        startDialog(['......。', '（魔王の姿はもうない）']);
+                    } else {
+                        startMaouBattle();
+                    }
+                } else {
+                    // ゲームクリア後はNPCのセリフが変わる
+                    if (gameCleared && npc.clearedMessages) {
+                        startDialog(npc.clearedMessages);
+                    } else {
+                        startDialog(npc.messages);
+                    }
+                }
+                return;
+            }
+
+            const chest = getChestAt(front.x, front.y);
+            if (chest) { openChest(chest); }
+        }
+
+        // 魔王戦開始
+        function startMaouBattle() {
+            // 魔王専用の演出付きバトル開始
+            const monsterData = monsters['maou'];
+            battle.active = true;
+            battle.enemy = {
+                ...monsterData,
+                currentHp: monsterData.hp,
+                currentMp: monsterData.mp,
+                status: { sleep: 0, poison: 0, blind: 0 },
+                actionCount: 0  // 2回行動用カウンター
+            };
+            battle.phase = 'start';
+            battle.commandIndex = 0;
+            battle.spellIndex = 0;
+            battle.showSpells = false;
+            battle.message = '';
+            battle.messageQueue = [];
+            battle.result = null;
+            battle.flashCount = 12;  // 魔王は激しいフラッシュ
+
+            player.status = { sleep: 0, poison: 0, blind: 0 };
+            gameMode = MODE.BATTLE;
+
+            // 激しいフラッシュ演出
+            const flashInterval = setInterval(() => {
+                battle.flashCount--;
+                if (battle.flashCount <= 0) {
+                    clearInterval(flashInterval);
+                    // 魔王専用メッセージ
+                    showBattleMessage('ついに きたか...', () => {
+                        showBattleMessage('私が 魔王だ！', () => {
+                            screenShake.active = true;
+                            screenShake.intensity = 8;
+                            screenShake.duration = 30;
+                            showBattleMessage('くらえ！ この力を！', () => {
+                                battle.phase = 'command';
+                            });
+                        });
+                    });
+                }
+            }, 80);
+        }
+
+        // 魔王のAI行動選択
+        function selectMaouAction() {
+            const hpRatio = battle.enemy.currentHp / battle.enemy.hp;
+            const skills = battle.enemy.skills;
+
+            // HP50%以下でベホマを使う確率が上がる
+            if (hpRatio < 0.5 && battle.enemy.currentMp >= 50 && Math.random() < 0.4) {
+                return 'behoma';
+            }
+
+            // HP30%以下で強力な攻撃を多用
+            if (hpRatio < 0.3) {
+                const aggressiveSkills = ['ionazun', 'hageshiiHonoo'];
+                return aggressiveSkills[Math.floor(Math.random() * aggressiveSkills.length)];
+            }
+
+            // 通常時はランダムに行動（ベホマ以外）
+            const normalSkills = skills.filter(s => s !== 'behoma');
+            return normalSkills[Math.floor(Math.random() * normalSkills.length)];
+        }
+
+        // 魔王のスキル実行
+        function executeMaouSkill(skillId, callback) {
+            if (skillId === 'attack') {
+                // 通常攻撃
+                const def = getPlayerDef();
+                const damage = Math.max(1, Math.floor(battle.enemy.atk / 2 - def / 4 + Math.random() * 10));
+                player.hp -= damage;
+
+                screenShake.active = true;
+                screenShake.intensity = 5;
+                screenShake.duration = 15;
+
+                showBattleMessage(`魔王 の こうげき！ ${damage} の ダメージ！`, () => {
+                    if (player.hp <= 0) {
+                        player.hp = 0;
+                        battleLose();
+                    } else {
+                        callback();
+                    }
+                });
+            } else {
+                const skill = bossSkills[skillId];
+                if (!skill) {
+                    callback();
+                    return;
+                }
+
+                // フラッシュ演出
+                if (skill.flashColor) {
+                    startSpellFlash(skill.flashColor);
+                }
+
+                // 画面シェイク（攻撃スキルのみ）
+                if (skill.type === 'attack') {
+                    screenShake.active = true;
+                    screenShake.intensity = 10;
+                    screenShake.duration = 20;
+                }
+
+                showBattleMessage(`魔王 は ${skill.name} を はなった！`, () => {
+                    if (skill.type === 'heal') {
+                        battle.enemy.currentHp = Math.min(battle.enemy.hp, battle.enemy.currentHp + skill.power);
+                        showBattleMessage(`魔王 の HPが かいふくした！`, () => {
+                            callback();
+                        });
+                    } else if (skill.type === 'attack') {
+                        const damage = skill.power + Math.floor(Math.random() * 15);
+                        player.hp -= damage;
+                        showBattleMessage(`ゆうしゃ に ${damage} の ダメージ！`, () => {
+                            if (player.hp <= 0) {
+                                player.hp = 0;
+                                battleLose();
+                            } else {
+                                callback();
+                            }
+                        });
+                    } else {
+                        callback();
+                    }
+                });
+            }
+        }
+
+        // 魔王の2回行動ターン
+        function maouTurn() {
+            battle.phase = 'enemyTurn';
+            battle.enemy.actionCount = 0;
+            executeMaouActions();
+        }
+
+        function executeMaouActions() {
+            // 眠りチェック
+            const wakeResult = checkWakeUp(battle.enemy, '魔王');
+            if (!wakeResult.awake) {
+                showBattleMessage(wakeResult.message, () => {
+                    processEnemyTurnEnd();
+                });
+                return;
+            }
+            if (wakeResult.message) {
+                showBattleMessage(wakeResult.message, () => {
+                    doMaouAction();
+                });
+                return;
+            }
+            doMaouAction();
+        }
+
+        function doMaouAction() {
+            const skillId = selectMaouAction();
+            battle.enemy.actionCount++;
+
+            executeMaouSkill(skillId, () => {
+                // 2回行動チェック
+                if (battle.enemy.actionCount < battle.enemy.actions && player.hp > 0) {
+                    showBattleMessage('魔王 は さらに こうげきを しかけてきた！', () => {
+                        doMaouAction();
+                    });
+                } else {
+                    processEnemyTurnEnd();
+                }
+            });
+        }
+
+        // ========================================
+        // 入力処理
+        // ========================================
+        document.addEventListener('keydown', (e) => {
+            if (isTransitioning) return;
+
+            // タイトル画面
+            if (gameMode === MODE.TITLE) {
+                if (!titleMenuActive) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        activateTitleMenu();
+                    }
+                } else {
+                    const menuCount = hasSaveData ? 2 : 1;
+                    switch (e.key) {
+                        case 'ArrowUp': case 'w': case 'W':
+                            titleMenuIndex = Math.max(0, titleMenuIndex - 1);
+                            updateTitleMenuSelection();
+                            break;
+                        case 'ArrowDown': case 's': case 'S':
+                            titleMenuIndex = Math.min(menuCount - 1, titleMenuIndex + 1);
+                            updateTitleMenuSelection();
+                            break;
+                        case 'Enter': case ' ': case 'z':
+                            selectTitleMenuItem();
+                            break;
+                    }
+                }
+                e.preventDefault();
+                return;
+            }
+
+            // エンディング中
+            if (gameMode === MODE.ENDING) {
+                handleEndingInput();
+                return;
+            }
+
+            // バトル中
+            if (gameMode === MODE.BATTLE) {
+                if (battle.phase === 'command') {
+                    if (battle.showSpells) {
+                        switch (e.key) {
+                            case 'ArrowUp': case 'w': case 'W':
+                                battle.spellIndex = Math.max(0, battle.spellIndex - 1);
+                                break;
+                            case 'ArrowDown': case 's': case 'S':
+                                battle.spellIndex = Math.min(player.spells.length - 1, battle.spellIndex + 1);
+                                break;
+                            case 'Enter': case ' ': case 'z':
+                                executeBattleCommand();
+                                break;
+                            case 'Escape': case 'x': case 'b': case 'B':
+                                battle.showSpells = false;
+                                break;
+                        }
+                    } else {
+                        switch (e.key) {
+                            case 'ArrowUp': case 'w': case 'W':
+                                battle.commandIndex = Math.max(0, battle.commandIndex - 1);
+                                break;
+                            case 'ArrowDown': case 's': case 'S':
+                                battle.commandIndex = Math.min(2, battle.commandIndex + 1);
+                                break;
+                            case 'Enter': case ' ': case 'z':
+                                executeBattleCommand();
+                                break;
+                        }
+                    }
+                }
+                e.preventDefault();
+                return;
+            }
+
+            // ショップ
+            if (shop.active) {
+                switch (e.key) {
+                    case 'ArrowUp': case 'w': case 'W':
+                        handleShopInput('up');
+                        break;
+                    case 'ArrowDown': case 's': case 'S':
+                        handleShopInput('down');
+                        break;
+                    case 'ArrowLeft': case 'a': case 'A':
+                        handleShopInput('left');
+                        break;
+                    case 'ArrowRight': case 'd': case 'D':
+                        handleShopInput('right');
+                        break;
+                    case 'Enter': case ' ': case 'z':
+                        handleShopInput('confirm');
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        handleShopInput('cancel');
+                        break;
+                }
+                e.preventDefault();
+                return;
+            }
+
+            // 宿屋
+            if (inn.active) {
+                switch (e.key) {
+                    case 'ArrowLeft': case 'a': case 'A':
+                        inn.selectedIndex = 0;
+                        break;
+                    case 'ArrowRight': case 'd': case 'D':
+                        inn.selectedIndex = 1;
+                        break;
+                    case 'Enter': case ' ': case 'z':
+                        confirmInn();
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        closeInn();
+                        startDialog(['またのお越しを おまちしております。']);
+                        break;
+                }
+                e.preventDefault();
+                return;
+            }
+
+            // フィールド
+            if (menu.active) {
+                switch (e.key) {
+                    case 'ArrowLeft': case 'a': case 'A':
+                        menu.mode = 'status';
+                        break;
+                    case 'ArrowRight': case 'd': case 'D':
+                        menu.mode = 'items';
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        closeMenu();
+                        break;
+                }
+                e.preventDefault();
+                return;
+            }
+
+            if (dialog.active) {
+                if (e.key === 'Enter' || e.key === ' ' || e.key === 'z') {
+                    advanceDialog();
+                    e.preventDefault();
+                }
+                return;
+            }
+
+            switch (e.key) {
+                case 'ArrowUp': case 'w': case 'W': movePlayer(0, -1); break;
+                case 'ArrowDown': case 's': case 'S': movePlayer(0, 1); break;
+                case 'ArrowLeft': case 'a': case 'A': movePlayer(-1, 0); break;
+                case 'ArrowRight': case 'd': case 'D': movePlayer(1, 0); break;
+                case 'Enter': case ' ': case 'z': interact(); break;
+                case 'Escape': case 'x': case 'b': case 'B': openMenu(); break;
+            }
+            e.preventDefault();
+        });
+
+        // タッチボタン
+        function setupDpadButton(id, dx, dy) {
+            const btn = document.getElementById(id);
+            const handlePress = (e) => {
+                e.preventDefault();
+                // バトル中
+                if (gameMode === MODE.BATTLE && battle.phase === 'command') {
+                    if (dy < 0) {
+                        if (battle.showSpells) battle.spellIndex = Math.max(0, battle.spellIndex - 1);
+                        else battle.commandIndex = Math.max(0, battle.commandIndex - 1);
+                    } else if (dy > 0) {
+                        if (battle.showSpells) battle.spellIndex = Math.min(player.spells.length - 1, battle.spellIndex + 1);
+                        else battle.commandIndex = Math.min(2, battle.commandIndex + 1);
+                    }
+                    return;
+                }
+                // ショップ
+                if (shop.active) {
+                    if (dy < 0) handleShopInput('up');
+                    else if (dy > 0) handleShopInput('down');
+                    else if (dx < 0) handleShopInput('left');
+                    else if (dx > 0) handleShopInput('right');
+                    return;
+                }
+                // 宿屋
+                if (inn.active) {
+                    if (dx < 0) inn.selectedIndex = 0;
+                    else if (dx > 0) inn.selectedIndex = 1;
+                    return;
+                }
+                // メニュー
+                if (menu.active) {
+                    if (dx < 0) menu.mode = 'status';
+                    else if (dx > 0) menu.mode = 'items';
+                    return;
+                }
+                if (isTransitioning || dialog.active) return;
+                btn.classList.add('pressed');
+                movePlayer(dx, dy);
+            };
+            const handleRelease = () => { btn.classList.remove('pressed'); };
+            btn.addEventListener('touchstart', handlePress, { passive: false });
+            btn.addEventListener('touchend', handleRelease);
+            btn.addEventListener('mousedown', handlePress);
+            btn.addEventListener('mouseup', handleRelease);
+            btn.addEventListener('mouseleave', handleRelease);
+        }
+
+        setupDpadButton('dpad-up', 0, -1);
+        setupDpadButton('dpad-down', 0, 1);
+        setupDpadButton('dpad-left', -1, 0);
+        setupDpadButton('dpad-right', 1, 0);
+
+        function setupActionButton(id, callback) {
+            const btn = document.getElementById(id);
+            const handlePress = (e) => { e.preventDefault(); btn.classList.add('pressed'); callback(); };
+            const handleRelease = () => { btn.classList.remove('pressed'); };
+            btn.addEventListener('touchstart', handlePress, { passive: false });
+            btn.addEventListener('touchend', handleRelease);
+            btn.addEventListener('mousedown', handlePress);
+            btn.addEventListener('mouseup', handleRelease);
+            btn.addEventListener('mouseleave', handleRelease);
+        }
+
+        function onActionA() {
+            if (isTransitioning) return;
+            if (gameMode === MODE.BATTLE && battle.phase === 'command') {
+                executeBattleCommand();
+            } else if (shop.active) {
+                handleShopInput('confirm');
+            } else if (inn.active) {
+                confirmInn();
+            } else {
+                interact();
+            }
+        }
+
+        function onActionB() {
+            if (gameMode === MODE.BATTLE && battle.showSpells) {
+                battle.showSpells = false;
+            } else if (shop.active) {
+                handleShopInput('cancel');
+            } else if (inn.active) {
+                closeInn();
+                startDialog(['またのお越しを おまちしております。']);
+            } else if (dialog.active) {
+                closeDialog();
+            } else if (menu.active) {
+                closeMenu();
+            } else {
+                openMenu();
+            }
+        }
+
+        setupActionButton('btn-a', onActionA);
+        setupActionButton('btn-b', onActionB);
+
+        // ========================================
+        // ゲームループ
+        // ========================================
+        function gameLoop() {
+            // エンディングのスタッフロール更新
+            updateStaffRoll();
+
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ========================================
+        // タイトル画面
+        // ========================================
+        const titleScreen = document.getElementById('titleScreen');
+        const menuContinue = document.getElementById('menu-continue');
+        const menuNewGame = document.getElementById('menu-newgame');
+        const pressStart = document.getElementById('pressStart');
+        const titleMenu = document.querySelector('.title-menu');
+
+        function checkSaveData() {
+            const savedData = localStorage.getItem(SAVE_KEY);
+            hasSaveData = savedData !== null;
+            return hasSaveData;
+        }
+
+        function initTitleScreen() {
+            checkSaveData();
+
+            if (hasSaveData) {
+                menuContinue.style.display = 'flex';
+                titleMenuIndex = 0; // 続きからがデフォルト
+            } else {
+                menuContinue.style.display = 'none';
+                titleMenuIndex = 0;
+            }
+
+            titleMenuActive = false;
+            pressStart.style.display = 'block';
+            titleMenu.classList.remove('active');
+            updateTitleMenuSelection();
+        }
+
+        function updateTitleMenuSelection() {
+            const items = titleMenu.querySelectorAll('.menu-item');
+            items.forEach((item, index) => {
+                if (item.style.display !== 'none') {
+                    const actualIndex = hasSaveData ? index : index - 1;
+                    item.classList.toggle('selected', actualIndex === titleMenuIndex || (!hasSaveData && index === 1 && titleMenuIndex === 0));
+                }
+            });
+        }
+
+        function activateTitleMenu() {
+            if (titleMenuActive) return;
+            titleMenuActive = true;
+            pressStart.style.display = 'none';
+            titleMenu.classList.add('active');
+            updateTitleMenuSelection();
+        }
+
+        async function selectTitleMenuItem() {
+            if (!titleMenuActive) {
+                activateTitleMenu();
+                return;
+            }
+
+            console.log('[DEBUG] selectTitleMenuItem開始');
+            console.log('[DEBUG] hasSaveData:', hasSaveData, 'titleMenuIndex:', titleMenuIndex);
+
+            // フェードアウト
+            const fadeOverlay = document.getElementById('fadeOverlay');
+            fadeOverlay.classList.add('active');
+
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // タイトル画面を非表示
+            titleScreen.classList.add('hidden');
+            gameMode = MODE.FIELD;
+            console.log('[DEBUG] gameMode変更:', gameMode);
+
+            if (hasSaveData && titleMenuIndex === 0) {
+                // 続きから
+                console.log('[DEBUG] 続きからを選択');
+                await loadGame();
+            } else {
+                // はじめから（セーブデータをクリア）
+                console.log('[DEBUG] はじめからを選択');
+                localStorage.removeItem(SAVE_KEY);
+                resetGameState();
+                updateActualStats();
+                console.log('[DEBUG] resetGameState完了');
+                console.log('[DEBUG] currentMap:', currentMap);
+                console.log('[DEBUG] currentMap.data存在:', !!currentMap.data, 'rows:', currentMap.rows, 'cols:', currentMap.cols);
+                console.log('[DEBUG] player:', player.x, player.y);
+            }
+
+            // マップ名を更新
+            document.getElementById('mapName').textContent = currentMap.name || 'フィールド';
+
+            console.log('[DEBUG] resize前 tileSize:', tileSize, 'canvasWidth:', canvasWidth);
+            resize();
+            console.log('[DEBUG] resize後 tileSize:', tileSize, 'canvasWidth:', canvasWidth);
+            updateCamera();
+            console.log('[DEBUG] updateCamera後 cameraX:', cameraX, 'cameraY:', cameraY);
+
+            // フェードイン
+            await new Promise(resolve => setTimeout(resolve, 100));
+            fadeOverlay.classList.remove('active');
+            console.log('[DEBUG] フェードイン完了, gameMode:', gameMode);
+        }
+
+        function resetGameState() {
+            // プレイヤーを初期状態にリセット
+            player.x = 4;
+            player.y = 10;
+            player.hp = 30;
+            player.maxHp = 30;
+            player.mp = 10;
+            player.maxMp = 10;
+            player.level = 1;
+            player.exp = 0;
+            player.gold = 50;
+            player.baseAttack = 5;
+            player.baseDefense = 3;
+            player.attack = 5;
+            player.defense = 3;
+            player.weapon = null;
+            player.armor = null;
+            player.shield = null;
+            player.helmet = null;
+            player.accessory = null;
+            player.spells = [];
+            player.statusEffects = [];
+
+            // インベントリをリセット
+            inventory.length = 0;
+            inventory.push({ id: 1, quantity: 3 });
+
+            // マップをリセット
+            currentMapId = 'field';
+            currentMapPath = null;
+            const fieldMap = maps.field;
+            currentMap = {
+                data: fieldMap.data.map(row => [...row]),
+                cols: fieldMap.cols,
+                rows: fieldMap.rows,
+                npcs: JSON.parse(JSON.stringify(fieldMap.npcs)),
+                chests: JSON.parse(JSON.stringify(fieldMap.chests)),
+                warps: fieldMap.warps ? [...fieldMap.warps] : [],
+                name: fieldMap.name,
+                type: fieldMap.type,
+                encounterRate: fieldMap.encounterRate
+            };
+
+            // 宝箱の開封状態をリセット
+            openedChests.clear();
+
+            // ゲームクリアフラグをリセット
+            gameCleared = false;
+        }
+
+        // タイトル画面のイベントリスナー
+        menuContinue.addEventListener('click', () => {
+            if (gameMode === MODE.TITLE) {
+                titleMenuIndex = 0;
+                updateTitleMenuSelection();
+                selectTitleMenuItem();
+            }
+        });
+
+        menuNewGame.addEventListener('click', () => {
+            if (gameMode === MODE.TITLE) {
+                titleMenuIndex = hasSaveData ? 1 : 0;
+                updateTitleMenuSelection();
+                selectTitleMenuItem();
+            }
+        });
+
+        titleScreen.addEventListener('click', (e) => {
+            if (gameMode === MODE.TITLE && !titleMenuActive) {
+                activateTitleMenu();
+            }
+        });
+
+        // ========================================
+        // 初期化
+        // ========================================
+        window.addEventListener('resize', resize);
+
+        // 非同期初期化
+        async function initGame() {
+            initTitleScreen();
+            resize();
+            gameLoop();
+        }
+
+        initGame();
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+    </script>
+</body>
+</html>
