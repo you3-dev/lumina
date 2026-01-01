@@ -1014,6 +1014,8 @@
                 // マップの読み込み（外部JSONを優先してロード）
                 try {
                     const mapData = await loadMapFromDatabase(currentMapPath);
+                    // 外部JSONマップであることをマーク
+                    mapData._isExternal = true;
                     currentMap = {
                         data: mapData.data.map(row => [...row]),
                         cols: mapData.cols,
@@ -1024,7 +1026,8 @@
                         name: mapData.name,
                         type: mapData.type,
                         encounterRate: mapData.encounterRate,
-                        mapId: mapData.mapId
+                        mapId: mapData.mapId,
+                        _isExternal: true
                     };
                     maps[mapData.mapId] = mapData;
                     currentMapId = mapData.mapId;
@@ -2950,9 +2953,14 @@
             const targetMapPath = isNewFormat ? targetMap : getMapPathFromId(targetMap);
             const targetMapId = isNewFormat ? getMapIdFromPath(targetMap) : targetMap;
 
-            // 旧形式マップを直接参照できるか確認
+            // キャッシュ済みの外部JSONマップがあれば再利用（宝箱状態保持のため）
+            if (maps[targetMapId] && maps[targetMapId]._isExternal) {
+                performLegacyWarp(targetMapId, targetX, targetY);
+                return;
+            }
+
+            // 旧形式（内蔵マップ）を直接参照できるか確認
             if (!isNewFormat && maps[targetMapId]) {
-                // 旧形式の直接遷移
                 performLegacyWarp(targetMapId, targetX, targetY);
                 return;
             }
@@ -2968,6 +2976,9 @@
 
                 // マップをロード
                 const mapData = await loadMapFromDatabase(targetMapPath);
+
+                // 外部JSONマップであることをマーク
+                mapData._isExternal = true;
 
                 // マップをmapsオブジェクトに追加（キャッシュ）
                 maps[mapData.mapId] = mapData;
@@ -3700,6 +3711,8 @@
 
             try {
                 const mapData = await loadMapFromDatabase(currentMapPath);
+                // 外部JSONマップであることをマーク
+                mapData._isExternal = true;
                 currentMap = {
                     data: mapData.data.map(row => [...row]),
                     cols: mapData.cols,
@@ -3710,7 +3723,8 @@
                     name: mapData.name,
                     type: mapData.type,
                     encounterRate: mapData.encounterRate,
-                    mapId: mapData.mapId
+                    mapId: mapData.mapId,
+                    _isExternal: true
                 };
                 maps[mapData.mapId] = mapData;
             } catch (err) {
