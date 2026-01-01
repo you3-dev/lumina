@@ -1689,6 +1689,7 @@
         const ctx = canvas.getContext('2d');
         const fadeOverlay = document.getElementById('fadeOverlay');
         const mapNameElement = document.getElementById('mapName');
+        const mapNameArea = document.getElementById('mapNameArea');
 
         let tileSize = 32;
         let cameraX = 0;
@@ -2973,6 +2974,9 @@
 
             gameMode = MODE.BATTLE;
 
+            // バトル中はマップ名を非表示
+            mapNameArea.style.display = 'none';
+
             // フラッシュアニメーション
             const flashInterval = setInterval(() => {
                 battle.flashCount--;
@@ -3599,6 +3603,8 @@
             setTimeout(() => {
                 gameMode = MODE.FIELD;
                 battle.active = false;
+                // マップ名を再表示
+                mapNameArea.style.display = 'flex';
                 updateCamera();
                 saveGame();
             }, 500);
@@ -4927,6 +4933,9 @@
             player.status = { sleep: 0, poison: 0, blind: 0 };
             gameMode = MODE.BATTLE;
 
+            // バトル中はマップ名を非表示
+            mapNameArea.style.display = 'none';
+
             // フラッシュ演出
             const flashInterval = setInterval(() => {
                 battle.flashCount--;
@@ -4976,6 +4985,9 @@
 
             player.status = { sleep: 0, poison: 0, blind: 0 };
             gameMode = MODE.BATTLE;
+
+            // バトル中はマップ名を非表示
+            mapNameArea.style.display = 'none';
 
             // 激しいフラッシュ演出
             const flashInterval = setInterval(() => {
