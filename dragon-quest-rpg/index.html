@@ -954,7 +954,10 @@
         const menu = {
             active: false,
             selectedIndex: 0,
-            mode: 'items' // 'items' or 'status'
+            mode: 'status', // 'status' or 'items'
+            itemCursor: 0,  // アイテムリスト上のカーソル位置
+            showItemAction: false, // アイテムアクションサブメニュー表示
+            itemActionIndex: 0 // 0: つかう/そうびする, 1: すてる, 2: やめる
         };
 
         // 宿屋状態
@@ -1469,17 +1472,65 @@
                     player.inventory.forEach((itemId, i) => {
                         const item = items[itemId];
                         if (item) {
-                            ctx.fillStyle = '#fff';
-                            ctx.fillText(`・${item.name}`, menuX + 30, itemStartY + i * lineHeight);
+                            // 選択中のアイテムはハイライト
+                            const isSelected = (i === menu.itemCursor);
+                            ctx.fillStyle = isSelected ? '#ffd700' : '#fff';
+                            const cursor = isSelected ? '▶' : '・';
+                            ctx.fillText(`${cursor}${item.name}`, menuX + 30, itemStartY + i * lineHeight);
+
+                            // 装備品にはタイプ表示
+                            if (item.type === 'weapon') {
+                                ctx.fillStyle = '#88f';
+                                ctx.fillText('⚔️', menuX + menuWidth - 50, itemStartY + i * lineHeight);
+                            } else if (item.type === 'armor') {
+                                ctx.fillStyle = '#8f8';
+                                ctx.fillText('🛡️', menuX + menuWidth - 50, itemStartY + i * lineHeight);
+                            }
                         }
                     });
+
+                    // アイテムアクションサブメニュー
+                    if (menu.showItemAction && player.inventory.length > 0) {
+                        const selectedItemId = player.inventory[menu.itemCursor];
+                        const selectedItem = items[selectedItemId];
+                        if (selectedItem) {
+                            const subMenuWidth = tileSize * 3.5;
+                            const subMenuHeight = tileSize * 2;
+                            const subMenuX = menuX + menuWidth - subMenuWidth - 20;
+                            const subMenuY = itemStartY + menu.itemCursor * lineHeight - 5;
+
+                            drawWindow(subMenuX, subMenuY, subMenuWidth, subMenuHeight);
+
+                            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+                            ctx.textAlign = 'left';
+
+                            // アクション選択肢
+                            let actions = [];
+                            if (selectedItem.type === 'weapon' || selectedItem.type === 'armor') {
+                                actions = ['そうびする', 'すてる', 'やめる'];
+                            } else {
+                                actions = ['つかう', 'すてる', 'やめる'];
+                            }
+
+                            actions.forEach((action, i) => {
+                                const isActionSelected = (i === menu.itemActionIndex);
+                                ctx.fillStyle = isActionSelected ? '#ffd700' : '#fff';
+                                const actionCursor = isActionSelected ? '▶' : ' ';
+                                ctx.fillText(`${actionCursor}${action}`, subMenuX + 15, subMenuY + 20 + i * (tileSize * 0.45));
+                            });
+                        }
+                    }
                 }
             }
 
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
             ctx.font = `${tileSize * 0.3}px 'MS Gothic', monospace`;
             ctx.textAlign = 'center';
-            ctx.fillText('← → タブ切替 / Bボタンで閉じる', canvasWidth / 2, menuY + menuHeight - 25);
+            if (menu.mode === 'items' && player.inventory.length > 0) {
+                ctx.fillText('↑↓選択 / A決定 / B戻る', canvasWidth / 2, menuY + menuHeight - 25);
+            } else {
+                ctx.fillText('← → タブ切替 / Bで閉じる', canvasWidth / 2, menuY + menuHeight - 25);
+            }
         }
 
         function drawInn() {
@@ -2755,7 +2806,56 @@
             menu.mode = 'status'; // デフォルトでステータス画面
         }
 
-        function closeMenu() { menu.active = false; }
+        function closeMenu() {
+            menu.active = false;
+            menu.showItemAction = false;
+            menu.itemActionIndex = 0;
+        }
+
+        // アイテムアクション実行
+        function executeItemAction() {
+            if (player.inventory.length === 0) return;
+
+            const selectedItemId = player.inventory[menu.itemCursor];
+            const selectedItem = items[selectedItemId];
+            if (!selectedItem) return;
+
+            const isEquipment = (selectedItem.type === 'weapon' || selectedItem.type === 'armor');
+
+            switch (menu.itemActionIndex) {
+                case 0: // つかう or そうびする
+                    if (isEquipment) {
+                        // 装備する
+                        equipItem(selectedItemId);
+                        closeMenu();
+                        startDialog([`${selectedItem.name}を そうびした！`]);
+                    } else {
+                        // 使う
+                        useItem(selectedItemId);
+                    }
+                    break;
+
+                case 1: // すてる
+                    const idx = player.inventory.indexOf(selectedItemId);
+                    if (idx !== -1) {
+                        player.inventory.splice(idx, 1);
+                        // カーソル位置調整
+                        if (menu.itemCursor >= player.inventory.length && menu.itemCursor > 0) {
+                            menu.itemCursor--;
+                        }
+                    }
+                    menu.showItemAction = false;
+                    if (player.inventory.length === 0) {
+                        closeMenu();
+                        startDialog([`${selectedItem.name}を すてた。`]);
+                    }
+                    break;
+
+                case 2: // やめる
+                    menu.showItemAction = false;
+                    break;
+            }
+        }
 
         // ========================================
         // 宿屋システム
@@ -2963,6 +3063,78 @@
                     }
                 }
             }
+        }
+
+        // アイテム使用
+        function useItem(itemId) {
+            const item = items[itemId];
+            if (!item) return false;
+
+            // 装備アイテムは使用できない（装備するを選ぶ必要がある）
+            if (item.type === 'weapon' || item.type === 'armor') {
+                return false;
+            }
+
+            let message = '';
+            let success = false;
+
+            switch (item.type) {
+                case 'heal':
+                    // HP回復アイテム
+                    if (player.hp >= player.maxHp) {
+                        message = 'HPは まんたんだ！';
+                    } else {
+                        const healAmount = Math.min(item.value, player.maxHp - player.hp);
+                        player.hp += healAmount;
+                        message = `${item.name}を使った！\nHPが ${healAmount} 回復した！`;
+                        success = true;
+                    }
+                    break;
+
+                case 'cure':
+                    // 状態異常回復（毒など）
+                    if (player.status && player.status.poison > 0) {
+                        player.status.poison = 0;
+                        message = `${item.name}を使った！\n毒が 治った！`;
+                        success = true;
+                    } else {
+                        message = '毒に かかっていない！';
+                    }
+                    break;
+
+                case 'holy':
+                    // 聖水：しばらくエンカウントしない効果
+                    message = `${item.name}を使った！\nしばらく 魔物が よりつかない！`;
+                    stepsSinceLastBattle = -10; // 歩数をマイナスにしてエンカウント回避
+                    success = true;
+                    break;
+
+                case 'key':
+                    // 鍵：フィールドでは使えない
+                    message = 'ここでは 使えない！';
+                    break;
+
+                default:
+                    message = 'ここでは 使えない！';
+                    break;
+            }
+
+            // 使用成功時、インベントリから削除
+            if (success) {
+                const idx = player.inventory.indexOf(itemId);
+                if (idx !== -1) {
+                    player.inventory.splice(idx, 1);
+                }
+                // カーソル位置調整
+                if (menu.itemCursor >= player.inventory.length && menu.itemCursor > 0) {
+                    menu.itemCursor--;
+                }
+            }
+
+            // メニューを閉じてダイアログ表示
+            closeMenu();
+            startDialog(message.split('\n'));
+            return success;
         }
 
         function equipItem(itemId) {
@@ -3550,16 +3722,59 @@
 
             // フィールド
             if (menu.active) {
-                switch (e.key) {
-                    case 'ArrowLeft': case 'a': case 'A':
-                        menu.mode = 'status';
-                        break;
-                    case 'ArrowRight': case 'd': case 'D':
-                        menu.mode = 'items';
-                        break;
-                    case 'Escape': case 'x': case 'b': case 'B':
-                        closeMenu();
-                        break;
+                if (menu.showItemAction) {
+                    // アイテムアクションサブメニュー操作
+                    switch (e.key) {
+                        case 'ArrowUp': case 'w': case 'W':
+                            menu.itemActionIndex = (menu.itemActionIndex + 2) % 3;
+                            break;
+                        case 'ArrowDown': case 's': case 'S':
+                            menu.itemActionIndex = (menu.itemActionIndex + 1) % 3;
+                            break;
+                        case 'Enter': case ' ': case 'z': case 'Z':
+                            executeItemAction();
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            menu.showItemAction = false;
+                            break;
+                    }
+                } else if (menu.mode === 'items' && player.inventory.length > 0) {
+                    // アイテムリスト操作
+                    switch (e.key) {
+                        case 'ArrowUp': case 'w': case 'W':
+                            menu.itemCursor = (menu.itemCursor + player.inventory.length - 1) % player.inventory.length;
+                            break;
+                        case 'ArrowDown': case 's': case 'S':
+                            menu.itemCursor = (menu.itemCursor + 1) % player.inventory.length;
+                            break;
+                        case 'ArrowLeft': case 'a': case 'A':
+                            menu.mode = 'status';
+                            break;
+                        case 'ArrowRight': case 'd': case 'D':
+                            // 既にitemsモードなので何もしない
+                            break;
+                        case 'Enter': case ' ': case 'z': case 'Z':
+                            menu.showItemAction = true;
+                            menu.itemActionIndex = 0;
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            closeMenu();
+                            break;
+                    }
+                } else {
+                    // タブ切り替えモード
+                    switch (e.key) {
+                        case 'ArrowLeft': case 'a': case 'A':
+                            menu.mode = 'status';
+                            break;
+                        case 'ArrowRight': case 'd': case 'D':
+                            menu.mode = 'items';
+                            menu.itemCursor = 0;
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            closeMenu();
+                            break;
+                    }
                 }
                 e.preventDefault();
                 return;
