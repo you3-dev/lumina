@@ -3990,7 +3990,7 @@
                             menu.spellCursor = 0;
                             break;
                         case 'ArrowRight': case 'd': case 'D':
-                            // 既にitemsモードなので何もしない（一番右のタブ）
+                            menu.mode = 'map';
                             break;
                         case 'Enter': case ' ': case 'z': case 'Z':
                             menu.showItemAction = true;
@@ -4023,14 +4023,31 @@
                             closeMenu();
                             break;
                     }
+                } else if (menu.mode === 'map') {
+                    // ちずタブ
+                    switch (e.key) {
+                        case 'ArrowLeft': case 'a': case 'A':
+                            menu.mode = 'items';
+                            menu.itemCursor = 0;
+                            break;
+                        case 'ArrowRight': case 'd': case 'D':
+                            menu.mode = 'status';
+                            break;
+                        case 'Enter': case ' ': case 'z': case 'Z':
+                            closeMenu();
+                            openWorldMap();
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            closeMenu();
+                            break;
+                    }
                 } else {
                     // タブ切り替えモード（アイテム・呪文がない場合やstatusモード）
                     switch (e.key) {
                         case 'ArrowLeft': case 'a': case 'A':
-                            // status → items(右端へ) / spells → status / items → spells
+                            // status → map / spells → status / items → spells / map → items
                             if (menu.mode === 'status') {
-                                menu.mode = 'items';
-                                menu.itemCursor = 0;
+                                menu.mode = 'map';
                             } else if (menu.mode === 'spells') {
                                 menu.mode = 'status';
                             } else if (menu.mode === 'items') {
@@ -4039,7 +4056,7 @@
                             }
                             break;
                         case 'ArrowRight': case 'd': case 'D':
-                            // status → spells / spells → items / items → status(左端へ)
+                            // status → spells / spells → items / items → map / map → status
                             if (menu.mode === 'status') {
                                 menu.mode = 'spells';
                                 menu.spellCursor = 0;
@@ -4047,7 +4064,7 @@
                                 menu.mode = 'items';
                                 menu.itemCursor = 0;
                             } else if (menu.mode === 'items') {
-                                menu.mode = 'status';
+                                menu.mode = 'map';
                             }
                             break;
                         case 'Escape': case 'x': case 'b': case 'B':
@@ -4157,12 +4174,17 @@
                         if (dy < 0) menu.itemCursor = (menu.itemCursor + player.inventory.length - 1) % player.inventory.length;
                         else if (dy > 0) menu.itemCursor = (menu.itemCursor + 1) % player.inventory.length;
                         else if (dx < 0) { menu.mode = 'spells'; menu.spellCursor = 0; }
+                        else if (dx > 0) menu.mode = 'map';
                     } else if (menu.mode === 'spells' && player.spells.length > 0) {
                         // 呪文リスト
                         if (dy < 0) menu.spellCursor = (menu.spellCursor + player.spells.length - 1) % player.spells.length;
                         else if (dy > 0) menu.spellCursor = (menu.spellCursor + 1) % player.spells.length;
                         else if (dx < 0) menu.mode = 'status';
                         else if (dx > 0) { menu.mode = 'items'; menu.itemCursor = 0; }
+                    } else if (menu.mode === 'map') {
+                        // ちずタブ
+                        if (dx < 0) { menu.mode = 'items'; menu.itemCursor = 0; }
+                        else if (dx > 0) menu.mode = 'status';
                     } else {
                         // タブ切り替え（status/呪文なし/アイテムなしの場合）
                         if (dx < 0) {
