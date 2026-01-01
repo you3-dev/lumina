@@ -407,6 +407,7 @@
     <div id="hud">
         <div id="mapNameArea">
             <span id="mapName">フィールド</span>
+            <span id="floorDisplay" style="color: #aaddff; margin-left: 8px;"></span>
             <span id="mapPinBtn" class="map-pin-btn">📍</span>
         </div>
 
@@ -462,7 +463,15 @@
             TOWN: 4,
             STAIRS: 5,
             FLOOR: 6,
-            WALL: 7
+            WALL: 7,
+            PORTAL: 8,       // 旅の扉
+            STAIRS_UP: 9,    // 上り階段
+            STAIRS_DOWN: 10, // 下り階段
+            // 砂漠タイル
+            SAND: 11,        // 砂漠
+            OASIS: 12,       // オアシス
+            PYRAMID: 13,     // ピラミッド入口
+            QUICKSAND: 14    // 流砂（ワープ用）
         };
 
         // マップタイプ別のタイル色
@@ -502,11 +511,19 @@
             [TILE.TOWN]: '#2d5a27',
             [TILE.STAIRS]: '#4a4a4a',
             [TILE.FLOOR]: '#8b7355',
-            [TILE.WALL]: '#4a4a5a'
+            [TILE.WALL]: '#4a4a5a',
+            [TILE.PORTAL]: '#6a2a8a',      // 旅の扉（紫）
+            [TILE.STAIRS_UP]: '#5a5a4a',   // 上り階段
+            [TILE.STAIRS_DOWN]: '#4a4a3a', // 下り階段
+            // 砂漠タイル
+            [TILE.SAND]: '#d4a559',        // 砂漠（黄土色）
+            [TILE.OASIS]: '#2d8a57',       // オアシス（緑）
+            [TILE.PYRAMID]: '#c4a040',     // ピラミッド（金色）
+            [TILE.QUICKSAND]: '#b89050'    // 流砂（暗い砂色）
         };
 
-        const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR];
-        const ENCOUNTER_TILES = [TILE.GRASS, TILE.FLOOR]; // エンカウントが発生するタイル（草原とダンジョン床）
+        const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR, TILE.PORTAL, TILE.STAIRS_UP, TILE.STAIRS_DOWN, TILE.SAND, TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND];
+        const ENCOUNTER_TILES = [TILE.GRASS, TILE.FLOOR, TILE.SAND]; // エンカウントが発生するタイル（草原、ダンジョン床、砂漠）
 
         // ========================================
         // アイテムデータ
@@ -522,17 +539,45 @@
             11: { id: 11, name: 'どうのつるぎ', type: 'weapon', value: 10, price: 100, equippable: ['hero'] },
             12: { id: 12, name: 'てつのつるぎ', type: 'weapon', value: 20, price: 300, equippable: ['hero'] },
             13: { id: 13, name: 'はがねのつるぎ', type: 'weapon', value: 35, price: 700, equippable: ['hero'] },
-            14: { id: 14, name: 'でんせつのつるぎ', type: 'weapon', value: 50, price: 0, equippable: ['hero'] },
+            14: { id: 14, name: 'ほのおのつるぎ', type: 'weapon', value: 40, price: 0, equippable: ['hero'] },
             // 防具
             20: { id: 20, name: 'たびびとのふく', type: 'armor', value: 1, price: 10, equippable: ['hero'] },
             21: { id: 21, name: 'かわのよろい', type: 'armor', value: 5, price: 80, equippable: ['hero'] },
             22: { id: 22, name: 'くさりかたびら', type: 'armor', value: 12, price: 250, equippable: ['hero'] },
             23: { id: 23, name: 'てつのよろい', type: 'armor', value: 22, price: 600, equippable: ['hero'] },
-            24: { id: 24, name: 'まほうのよろい', type: 'armor', value: 35, price: 1200, equippable: ['hero'] }
+            24: { id: 24, name: 'まほうのよろい', type: 'armor', value: 35, price: 1200, equippable: ['hero'] },
+            // エリア2 武器・防具
+            15: { id: 15, name: 'さばくのつるぎ', type: 'weapon', value: 45, price: 1500, equippable: ['hero'] },
+            16: { id: 16, name: 'ファラオのつるぎ', type: 'weapon', value: 55, price: 3000, equippable: ['hero'] },
+            25: { id: 25, name: 'さばくのよろい', type: 'armor', value: 40, price: 1800, equippable: ['hero'] },
+            26: { id: 26, name: 'ファラオのよろい', type: 'armor', value: 50, price: 3500, equippable: ['hero'] },
+            // クエストアイテム（エリア2）
+            30: { id: 30, name: '清らかな水', description: 'オアシスの村を救う聖なる水', type: 'quest', price: 0 },
+            31: { id: 31, name: '王家の紋章', description: '太陽の城塞への入城許可証', type: 'quest', price: 0 },
+            32: { id: 32, name: '通行手形', description: 'バザールの町への通行許可証', type: 'quest', price: 0 },
+            33: { id: 33, name: '太陽の護符', description: '砂漠の守護者の力を封じた護符', type: 'quest', price: 0 },
+            // 回復アイテム（上位）
+            4: { id: 4, name: '上薬草', description: 'HPを100回復する', type: 'heal', value: 100, price: 50 },
+            5: { id: 5, name: '世界樹の葉', description: '戦闘不能を回復する', type: 'revive', price: 500 },
+            9: { id: 9, name: 'キメラのつばさ', description: '最後に訪れた町に戻る', type: 'escape', price: 25 }
         };
 
-        // ショップ商品リスト
-        const shopItems = [11, 12, 13, 21, 22, 23, 24]; // どうのつるぎ〜まほうのよろい
+        // ショップ商品リスト（エリア別対応）
+        const shopItemsByArea = {
+            default: [11, 12, 13, 21, 22, 23, 24], // どうのつるぎ〜まほうのよろい
+            area2_shop: [12, 13, 14, 22, 23, 24, 1, 2, 3], // より強い装備 + 回復アイテム
+            // 砂漠エリアのショップ
+            oasis_shop: [1, 2, 4, 9, 12, 13, 22, 23], // オアシスの村：基本装備と回復
+            bazaar_shop: [1, 2, 4, 5, 9, 13, 15, 23, 25], // バザールの町：中級装備
+            hidden_shop: [4, 5, 15, 16, 25, 26] // 隠れ里：高級装備
+        };
+        let currentShopId = 'default';
+        const shopItems = shopItemsByArea.default; // 互換性のため維持
+
+        // 現在のショップアイテムを取得
+        function getShopItems() {
+            return shopItemsByArea[currentShopId] || shopItemsByArea.default;
+        }
 
         // ========================================
         // インベントリ管理ヘルパー関数
@@ -697,6 +742,273 @@
                 gold: 45,
                 resistances: { sleep: 0, blind: 0.3, poison: 0 }
             },
+            // ===== 中ボス級 =====
+            midBoss: {
+                name: '洞窟の番人',
+                sprite: '🗿',
+                level: 9,
+                hp: 100,
+                atk: 28,
+                def: 18,
+                speed: 6,
+                exp: 80,
+                gold: 100,
+                isBoss: true,
+                resistances: { sleep: 0.1, blind: 0.2, poison: 0.3 }
+            },
+            // ========================================
+            // エリア2: 太陽と砂の王国（Lv10~25想定）
+            // ========================================
+            // ===== 砂漠フィールド（Lv10~13）=====
+            sandSlime: {
+                name: 'サンドスライム',
+                sprite: '🟡',
+                level: 10,
+                hp: 35,
+                atk: 22,
+                def: 12,
+                speed: 5,
+                exp: 30,
+                gold: 25,
+                resistances: { sleep: 1.0, blind: 1.0, poison: 0.5 }
+            },
+            desertScorpion: {
+                name: 'サンドスコーピオン',
+                sprite: '🦂',
+                hueRotate: 30,
+                level: 11,
+                hp: 45,
+                atk: 28,
+                def: 18,
+                speed: 9,
+                exp: 40,
+                gold: 35,
+                canPoison: true,
+                resistances: { sleep: 0.5, blind: 0.7, poison: 0 }
+            },
+            cactusMan: {
+                name: 'サボテンマン',
+                sprite: '🌵',
+                level: 11,
+                hp: 40,
+                atk: 25,
+                def: 15,
+                speed: 4,
+                exp: 35,
+                gold: 30,
+                resistances: { sleep: 0.8, blind: 0.6, poison: 0 }
+            },
+            desertVulture: {
+                name: 'デザートバルチャー',
+                sprite: '🦅',
+                level: 12,
+                hp: 38,
+                atk: 30,
+                def: 10,
+                speed: 14,
+                exp: 45,
+                gold: 40,
+                resistances: { sleep: 0.6, blind: 0.4, poison: 1.0 }
+            },
+            // ===== 砂漠中盤（Lv13~16）=====
+            desertMummy: {
+                name: 'デザートミイラ',
+                sprite: '🧟',
+                level: 13,
+                hp: 55,
+                atk: 32,
+                def: 20,
+                speed: 4,
+                exp: 55,
+                gold: 50,
+                weakToFire: true,
+                resistances: { sleep: 0.2, blind: 0.8, poison: 0 }
+            },
+            sandDevil: {
+                name: 'すなじごく',
+                sprite: '🌀',
+                hueRotate: 40,
+                level: 14,
+                hp: 50,
+                atk: 35,
+                def: 16,
+                speed: 8,
+                exp: 60,
+                gold: 55,
+                resistances: { sleep: 0.3, blind: 0.5, poison: 0.5 }
+            },
+            pyramidGuard: {
+                name: 'ピラミッドガード',
+                sprite: '🗿',
+                hueRotate: 180,
+                level: 15,
+                hp: 70,
+                atk: 38,
+                def: 28,
+                speed: 5,
+                exp: 75,
+                gold: 70,
+                resistances: { sleep: 0, blind: 0.5, poison: 0 }
+            },
+            cursedPharaoh: {
+                name: 'のろいのファラオ',
+                sprite: '👑',
+                hueRotate: 270,
+                level: 15,
+                hp: 65,
+                atk: 35,
+                def: 22,
+                speed: 7,
+                exp: 70,
+                gold: 65,
+                resistances: { sleep: 0, blind: 0.3, poison: 0 }
+            },
+            // ===== ダンジョン深部（Lv16~19）=====
+            desertGolem: {
+                name: 'デザートゴーレム',
+                sprite: '🪨',
+                level: 16,
+                hp: 90,
+                atk: 42,
+                def: 35,
+                speed: 3,
+                exp: 90,
+                gold: 85,
+                resistances: { sleep: 0, blind: 0, poison: 0 }
+            },
+            sandWorm: {
+                name: 'サンドワーム',
+                sprite: '🐛',
+                hueRotate: 40,
+                level: 17,
+                hp: 85,
+                atk: 45,
+                def: 25,
+                speed: 6,
+                exp: 100,
+                gold: 95,
+                resistances: { sleep: 0.4, blind: 0.6, poison: 0.3 }
+            },
+            banditLeader: {
+                name: 'とうぞくのかしら',
+                sprite: '🥷',
+                level: 17,
+                hp: 75,
+                atk: 48,
+                def: 22,
+                speed: 12,
+                exp: 95,
+                gold: 150,
+                resistances: { sleep: 0.5, blind: 0.4, poison: 0.8 }
+            },
+            ancientSoldier: {
+                name: 'いにしえのへいし',
+                sprite: '⚔️',
+                level: 18,
+                hp: 80,
+                atk: 50,
+                def: 30,
+                speed: 7,
+                exp: 110,
+                gold: 100,
+                resistances: { sleep: 0, blind: 0.5, poison: 0 }
+            },
+            // ===== 高レベル（Lv19~22）=====
+            sphinxMinor: {
+                name: 'スフィンクス',
+                sprite: '🦁',
+                level: 19,
+                hp: 100,
+                atk: 52,
+                def: 32,
+                speed: 10,
+                exp: 130,
+                gold: 120,
+                resistances: { sleep: 0.2, blind: 0.3, poison: 0.5 }
+            },
+            djinn: {
+                name: 'ランプのまじん',
+                sprite: '🧞',
+                level: 20,
+                hp: 95,
+                atk: 55,
+                def: 28,
+                speed: 11,
+                exp: 140,
+                gold: 130,
+                resistances: { sleep: 0.1, blind: 0.2, poison: 0.3 }
+            },
+            mummyKing: {
+                name: 'ミイラおとこ',
+                sprite: '🧟',
+                hueRotate: 180,
+                level: 21,
+                hp: 110,
+                atk: 58,
+                def: 35,
+                speed: 5,
+                exp: 160,
+                gold: 150,
+                weakToFire: true,
+                resistances: { sleep: 0, blind: 0.5, poison: 0 }
+            },
+            // ===== エリア2 ボス級 =====
+            quicksandBoss: {
+                name: '流砂の主',
+                sprite: '🌊',
+                hueRotate: 40,
+                level: 18,
+                hp: 180,
+                atk: 45,
+                def: 30,
+                speed: 8,
+                exp: 200,
+                gold: 300,
+                isBoss: true,
+                resistances: { sleep: 0, blind: 0.2, poison: 0 }
+            },
+            banditKing: {
+                name: '盗賊王',
+                sprite: '👤',
+                level: 19,
+                hp: 200,
+                atk: 52,
+                def: 28,
+                speed: 14,
+                exp: 250,
+                gold: 500,
+                isBoss: true,
+                resistances: { sleep: 0.1, blind: 0.3, poison: 0.5 }
+            },
+            pyramidGuardian: {
+                name: 'ピラミッドの守護者',
+                sprite: '🦅',
+                hueRotate: 300,
+                level: 22,
+                hp: 280,
+                atk: 60,
+                def: 40,
+                speed: 10,
+                exp: 400,
+                gold: 400,
+                isBoss: true,
+                resistances: { sleep: 0, blind: 0.1, poison: 0 }
+            },
+            desertGuardian: {
+                name: '砂漠の守護者',
+                sprite: '🗿',
+                hueRotate: 45,
+                level: 25,
+                hp: 400,
+                atk: 70,
+                def: 50,
+                speed: 12,
+                exp: 600,
+                gold: 800,
+                isBoss: true,
+                actions: 2,
+                resistances: { sleep: 0, blind: 0, poison: 0 }
+            },
             // ===== ボス級 =====
             dragon: {
                 name: 'ドラゴン',
@@ -738,12 +1050,31 @@
         // エリア別エンカウントテーブル（mapIdベース）
         // 同じモンスターを複数回入れると出現率が上がる
         const encounterTables = {
+            // エリア1: 最初の大陸
             // フィールド（Lv1~3）- 初心者向け
             field: ['slime', 'slime', 'slime', 'dracky', 'dracky', 'bat'],
             // 深い森（Lv3~5）- やや強め
             forest: ['dracky', 'bat', 'bat', 'ghost', 'scorpion'],
             // 暗黒の洞窟（Lv5~8）- 中盤〜後半
-            dungeon: ['ghost', 'scorpion', 'skeleton', 'skeleton', 'armoredKnight', 'deathKnight']
+            dungeon: ['ghost', 'scorpion', 'skeleton', 'skeleton', 'armoredKnight', 'deathKnight'],
+
+            // エリア2: 太陽と砂の王国（Lv10~25）
+            // 砂漠フィールド（Lv10~14）
+            desert_field: ['sandSlime', 'sandSlime', 'desertScorpion', 'cactusMan', 'desertVulture', 'desertMummy'],
+            // 砂漠フィールド奥地（Lv13~17）
+            desert_deep: ['desertMummy', 'sandDevil', 'sandDevil', 'pyramidGuard', 'cursedPharaoh', 'desertGolem'],
+            // 流砂の洞窟（Lv14~18）
+            quicksand_cave: ['sandDevil', 'sandDevil', 'sandWorm', 'sandWorm', 'desertGolem'],
+            // 盗賊のアジト（Lv15~18）
+            bandit_hideout: ['banditLeader', 'banditLeader', 'banditLeader', 'desertScorpion', 'cactusMan'],
+            // ピラミッド（Lv16~22）
+            pyramid: ['pyramidGuard', 'cursedPharaoh', 'desertMummy', 'ancientSoldier', 'mummyKing'],
+            pyramid_deep: ['ancientSoldier', 'mummyKing', 'sphinxMinor', 'djinn'],
+            // 砂漠の城（Lv20~25）
+            desert_castle: ['sphinxMinor', 'djinn', 'mummyKing', 'ancientSoldier'],
+            // 旧エリア2互換
+            area2_field: ['sandSlime', 'sandSlime', 'desertScorpion', 'cactusMan', 'desertVulture', 'desertMummy'],
+            area2_dungeon: ['pyramidGuard', 'cursedPharaoh', 'desertGolem', 'sandWorm']
         };
 
         // 旧type名との互換用フォールバック
@@ -796,8 +1127,127 @@
 
         // ボス戦演出用
         let screenShake = { active: false, intensity: 0, duration: 0 };
-        let gameCleared = false;  // 魔王討伐フラグ
+        let gameCleared = false;  // 魔王討伐フラグ（後方互換性のため維持）
         let endingPhase = null;   // エンディング進行状態
+
+        // ========================================
+        // ゲーム進行フラグ管理
+        // ========================================
+        const gameProgress = {
+            // ボス撃破フラグ
+            bossDefeated: {
+                midBoss: false,     // 中ボス（洞窟の番人）
+                maou: false,        // 魔王
+                // エリア2ボス
+                quicksandBoss: false,    // 流砂の主
+                banditKing: false,       // 盗賊王
+                pyramidGuardian: false,  // ピラミッドの守護者
+                desertGuardian: false    // 砂漠の守護者（城の中ボス）
+            },
+            // ストーリー進行フラグ
+            storyFlags: {
+                reportedMidBossDefeat: false,  // 中ボス撃破を王様に報告
+                portalRoomUnlocked: false      // 旅の扉の部屋への通行許可
+            },
+            // クエストフラグ（エリア2）
+            quests: {
+                // 水不足の解消クエスト
+                waterShortage: {
+                    started: false,      // クエスト開始
+                    bossDefeated: false, // 流砂の主を倒した
+                    itemObtained: false, // 清らかな水を入手
+                    completed: false     // 村長に渡して完了
+                },
+                // 通行手形の奪還クエスト
+                passportRecovery: {
+                    started: false,      // クエスト開始
+                    bossDefeated: false, // 盗賊王を倒した
+                    completed: false     // バザールに入れるようになった
+                },
+                // 王家の紋章クエスト
+                royalCrest: {
+                    started: false,      // クエスト開始
+                    bossDefeated: false, // ピラミッドの守護者を倒した
+                    itemObtained: false, // 紋章を入手
+                    completed: false     // 城の門が開いた
+                }
+            },
+            // エリア別進行状態
+            areas: {}
+        };
+
+        // フラグ操作ヘルパー関数
+        function setStoryFlag(flagName, value = true) {
+            if (gameProgress.storyFlags.hasOwnProperty(flagName)) {
+                gameProgress.storyFlags[flagName] = value;
+            }
+        }
+
+        function getStoryFlag(flagName) {
+            return gameProgress.storyFlags[flagName] || false;
+        }
+
+        function setBossDefeated(bossName, value = true) {
+            if (gameProgress.bossDefeated.hasOwnProperty(bossName)) {
+                gameProgress.bossDefeated[bossName] = value;
+                // 魔王撃破は既存フラグと連動
+                if (bossName === 'maou') {
+                    gameCleared = value;
+                }
+            }
+        }
+
+        function isBossDefeated(bossName) {
+            return gameProgress.bossDefeated[bossName] || false;
+        }
+
+        function resetGameProgress() {
+            gameProgress.bossDefeated.midBoss = false;
+            gameProgress.bossDefeated.maou = false;
+            gameProgress.bossDefeated.quicksandBoss = false;
+            gameProgress.bossDefeated.banditKing = false;
+            gameProgress.bossDefeated.pyramidGuardian = false;
+            gameProgress.bossDefeated.desertGuardian = false;
+            gameProgress.storyFlags.reportedMidBossDefeat = false;
+            gameProgress.storyFlags.portalRoomUnlocked = false;
+            // クエストリセット
+            Object.keys(gameProgress.quests).forEach(questName => {
+                Object.keys(gameProgress.quests[questName]).forEach(flag => {
+                    gameProgress.quests[questName][flag] = false;
+                });
+            });
+            gameProgress.areas = {};
+        }
+
+        // クエストフラグ操作
+        function setQuestFlag(questName, flagName, value = true) {
+            if (gameProgress.quests[questName] && gameProgress.quests[questName].hasOwnProperty(flagName)) {
+                gameProgress.quests[questName][flagName] = value;
+            }
+        }
+
+        function getQuestFlag(questName, flagName) {
+            if (gameProgress.quests[questName]) {
+                return gameProgress.quests[questName][flagName] || false;
+            }
+            return false;
+        }
+
+        function isQuestCompleted(questName) {
+            return getQuestFlag(questName, 'completed');
+        }
+
+        function areAllDesertQuestsCompleted() {
+            const allCompleted = isQuestCompleted('waterShortage') &&
+                   isQuestCompleted('passportRecovery') &&
+                   isQuestCompleted('royalCrest');
+            // 全クエスト完了時に砂漠の城を開放
+            if (allCompleted && !getStoryFlag('desertCastleUnlocked')) {
+                setStoryFlag('desertCastleUnlocked', true);
+                saveGame();
+            }
+            return allCompleted;
+        }
 
         // ========================================
         // マップシステム（外部JSONファイル連携）
@@ -819,7 +1269,7 @@
         const maps = {
             field: {
                 mapId: 'field',
-                name: 'フィールド',
+                name: 'ルミナス大陸',
                 type: 'field',
                 cols: 20,
                 rows: 20,
@@ -857,7 +1307,7 @@
             },
             castle: {
                 mapId: 'castle',
-                name: '城',
+                name: 'グランディア城',
                 type: 'castle',
                 cols: 15,
                 rows: 15,
@@ -884,7 +1334,7 @@
                     { x: 7, y: 12, targetMap: 'maps/field.json', targetX: 9, targetY: 6 }
                 ],
                 npcs: [
-                    { id: 'king', x: 7, y: 2, sprite: '👑', type: 'king', messages: ['おお、勇者よ！', 'よくぞ参った。', '魔王が世界を闇で覆おうとしておる。', 'どうか世界を救ってくれ！', '東の洞窟に伝説の剣があるという。', '旅立つがよい！'], clearedMessages: ['おお、勇者よ！', 'よくぞ魔王を倒してくれた！', 'これで世界に平和が戻った。', 'そなたは真の英雄じゃ！'] },
+                    { id: 'king', x: 7, y: 2, sprite: '👑', type: 'king', messages: ['おお、勇者よ！', 'よくぞ参った。', '魔王が世界を闘で覆おうとしておる。', 'どうか世界を救ってくれ！', '東の洞窟にほのおのつるぎがあるという。', '旅立つがよい！'], clearedMessages: ['おお、勇者よ！', 'よくぞ魔王を倒してくれた！', 'これで世界に平和が戻った。', 'そなたは真の英雄じゃ！'] },
                     { id: 'guard1', x: 3, y: 10, sprite: '💂', type: 'guard', messages: ['王様をお守りするのが', '我々の務めです。'], clearedMessages: ['勇者様！', 'あなたのおかげで平和になりました！'] },
                     { id: 'guard2', x: 11, y: 10, sprite: '💂', type: 'guard', messages: ['この城は安全です。', 'ご安心ください。'], clearedMessages: ['魔王が倒されたと聞きました！', 'ありがとうございます、勇者様！'] }
                 ],
@@ -894,7 +1344,7 @@
             },
             town: {
                 mapId: 'town',
-                name: '街',
+                name: 'アルカディアの街',
                 type: 'town',
                 cols: 15,
                 rows: 15,
@@ -934,7 +1384,7 @@
             },
             dungeon: {
                 mapId: 'dungeon',
-                name: '洞窟',
+                name: '灼熱の洞窟',
                 type: 'dungeon',
                 cols: 12,
                 rows: 12,
@@ -959,16 +1409,16 @@
                     { x: 10, y: 5, targetMap: 'maps/maou_room.json', targetX: 7, targetY: 12 }
                 ],
                 npcs: [
-                    { id: 'hermit', x: 10, y: 10, sprite: '🧙', type: 'hermit', messages: ['ほほう、ここまで来たか。', 'わしは昔、勇者だった。', 'この奥に伝説の剣がある。', '魔王を倒すのに必要じゃ。', '心して進むがよい。'] }
+                    { id: 'hermit', x: 10, y: 10, sprite: '🧙', type: 'hermit', messages: ['ほほう、ここまで来たか。', 'わしは昔、勇者だった。', 'この奥にほのおのつるぎがある。', '洞窟の番人を倒すのに必要じゃ。', '心して進むがよい。'] }
                 ],
                 chests: [
                     { id: 'dungeon_chest1', x: 4, y: 3, itemId: 1, isOpened: false },  // 薬草
-                    { id: 'dungeon_chest2', x: 1, y: 7, itemId: 14, isOpened: false }  // でんせつのつるぎ
+                    { id: 'dungeon_chest2', x: 1, y: 7, itemId: 14, isOpened: false }  // ほのおのつるぎ
                 ]
             },
             maouRoom: {
                 mapId: 'maouRoom',
-                name: '魔王の間',
+                name: '暗黒の玉座',
                 type: 'dungeon',
                 cols: 11,
                 rows: 10,
@@ -1169,7 +1619,8 @@
             displayedText: '',
             charIndex: 0,
             isTyping: false,
-            typingSpeed: 50
+            typingSpeed: 50,
+            onComplete: null  // ダイアログ終了時コールバック
         };
 
         // メニュー状態
@@ -1278,12 +1729,18 @@
                     baseAtk: player.baseAtk, baseDef: player.baseDef, speed: player.speed,
                     level: player.level, exp: player.exp, gold: player.gold,
                     inventory: player.inventory, spells: player.spells,
-                    equipment: player.equipment  // 新形式
+                    equipment: player.equipment
                 },
                 currentMapId: currentMapId,
-                currentMapPath: currentMapPath,  // マルチマップシステム用
+                currentMapPath: currentMapPath,
                 chestStates: chestStates,
-                gameCleared: gameCleared  // 魔王討伐フラグ
+                gameCleared: gameCleared,
+                // ゲーム進行フラグ
+                gameProgress: {
+                    bossDefeated: { ...gameProgress.bossDefeated },
+                    storyFlags: { ...gameProgress.storyFlags },
+                    areas: { ...gameProgress.areas }
+                }
             };
 
             try {
@@ -1435,6 +1892,25 @@
                     gameCleared = data.gameCleared;
                 }
 
+                // ゲーム進行フラグの読み込み（後方互換性対応）
+                if (data.gameProgress) {
+                    // 保存されたフラグを復元
+                    if (data.gameProgress.bossDefeated) {
+                        Object.assign(gameProgress.bossDefeated, data.gameProgress.bossDefeated);
+                    }
+                    if (data.gameProgress.storyFlags) {
+                        Object.assign(gameProgress.storyFlags, data.gameProgress.storyFlags);
+                    }
+                    if (data.gameProgress.areas) {
+                        gameProgress.areas = { ...data.gameProgress.areas };
+                    }
+                } else {
+                    // 旧セーブデータからの移行：gameClearedからmaou撃破フラグを推測
+                    gameProgress.bossDefeated.maou = gameCleared;
+                    gameProgress.storyFlags.reportedMidBossDefeat = false;
+                    gameProgress.storyFlags.portalRoomUnlocked = false;
+                }
+
                 // ロード後にステータスを再計算
                 updateActualStats();
                 return true;
@@ -1523,6 +1999,19 @@
             } else if (tile === TILE.WALL) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
                 ctx.fillRect(x, y + tileSize - 4, tileSize, 4);
+            } else if (tile === TILE.PORTAL) {
+                // 旅の扉：渦巻きアニメーション
+                const time = Date.now() / 500;
+                ctx.save();
+                ctx.translate(x + tileSize / 2, y + tileSize / 2);
+                ctx.rotate(time % (Math.PI * 2));
+                ctx.font = `${tileSize * 0.8}px serif`;
+                ctx.fillText('🌀', 0, 0);
+                ctx.restore();
+            } else if (tile === TILE.STAIRS_UP) {
+                ctx.fillText('⬆️', x + tileSize / 2, y + tileSize / 2);
+            } else if (tile === TILE.STAIRS_DOWN) {
+                ctx.fillText('⬇️', x + tileSize / 2, y + tileSize / 2);
             }
             ctx.restore();
         }
@@ -1958,7 +2447,7 @@
                     ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
                     ctx.textAlign = 'left';
 
-                    shopItems.forEach((itemId, i) => {
+                    getShopItems().forEach((itemId, i) => {
                         const item = items[itemId];
                         const y = listY + i * lineHeight;
 
@@ -2884,6 +3373,8 @@
         function battleWin() {
             battle.phase = 'result';
             const isBossDefeat = battle.enemy.isBoss;
+            const isMaou = battle.enemy.name === '魔王';
+            const isMidBoss = battle.enemy.name === '洞窟の番人';
             const exp = battle.enemy.exp;
             const gold = battle.enemy.gold;
             player.exp += exp;
@@ -2891,7 +3382,7 @@
 
             showBattleMessage(`${battle.enemy.name} を たおした！`, () => {
                 // 魔王討伐時は特別な演出
-                if (isBossDefeat) {
+                if (isBossDefeat && isMaou) {
                     screenShake.active = true;
                     screenShake.intensity = 15;
                     screenShake.duration = 60;
@@ -2902,12 +3393,37 @@
                                 showBattleMessage(`${exp} ポイントの けいけんちを かくとく！`, () => {
                                     checkLevelUp(() => {
                                         gameCleared = true;
+                                        setBossDefeated('maou', true);
                                         startEnding();
                                     });
                                 });
                             });
                         });
                     });
+                } else if (isBossDefeat && isMidBoss) {
+                    // 中ボス撃破時の演出
+                    screenShake.active = true;
+                    screenShake.intensity = 10;
+                    screenShake.duration = 40;
+
+                    showBattleMessage('ぐ...ぐおお...！', () => {
+                        showBattleMessage('洞窟の番人 は 崩れ去った！', () => {
+                            showBattleMessage(`${exp} ポイントの けいけんちを かくとく！`, () => {
+                                showBattleMessage(`${gold} ゴールドを てにいれた！`, () => {
+                                    checkLevelUp(() => {
+                                        setBossDefeated('midBoss', true);
+                                        showBattleMessage('王様に 報告しよう！', () => {
+                                            endBattle('win');
+                                            saveGame();
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                } else if (isBossDefeat && battle.enemy.bossId) {
+                    // 砂漠エリアのボス撃破処理
+                    handleDesertBossDefeat(battle.enemy.bossId, exp, gold);
                 } else {
                     showBattleMessage(`${exp} ポイントの けいけんちを かくとく！`, () => {
                         showBattleMessage(`${gold} ゴールドを てにいれた！`, () => {
@@ -2917,6 +3433,56 @@
                         });
                     });
                 }
+            });
+        }
+
+        // 砂漠エリアのボス撃破処理
+        function handleDesertBossDefeat(bossId, exp, gold) {
+            screenShake.active = true;
+            screenShake.intensity = 10;
+            screenShake.duration = 40;
+
+            const bossName = battle.enemy.name;
+
+            showBattleMessage('ぐ...ぐおお...！', () => {
+                showBattleMessage(`${bossName} を たおした！`, () => {
+                    showBattleMessage(`${exp} ポイントの けいけんちを かくとく！`, () => {
+                        showBattleMessage(`${gold} ゴールドを てにいれた！`, () => {
+                            checkLevelUp(() => {
+                                // ボスごとのクエスト処理
+                                setBossDefeated(bossId, true);
+
+                                let questMessage = '';
+                                if (bossId === 'quicksandBoss') {
+                                    setQuestFlag('waterShortage', 'bossDefeated', true);
+                                    questMessage = '宝箱から 清らかな水 を手に入れよう！';
+                                } else if (bossId === 'banditKing') {
+                                    setQuestFlag('passportRecovery', 'bossDefeated', true);
+                                    setQuestFlag('passportRecovery', 'completed', true);
+                                    setStoryFlag('bazaarUnlocked', true);
+                                    questMessage = 'バザールの町への 通行手形 を手に入れた！';
+                                } else if (bossId === 'pyramidGuardian') {
+                                    setQuestFlag('royalCrest', 'bossDefeated', true);
+                                    setQuestFlag('royalCrest', 'completed', true);
+                                    questMessage = '王家の紋章 を手に入れた！';
+                                } else if (bossId === 'desertGuardian') {
+                                    setStoryFlag('desertPortalUnlocked', true);
+                                    questMessage = '砂漠の王に報告しよう！';
+                                }
+
+                                if (questMessage) {
+                                    showBattleMessage(questMessage, () => {
+                                        endBattle('win');
+                                        saveGame();
+                                    });
+                                } else {
+                                    endBattle('win');
+                                    saveGame();
+                                }
+                            });
+                        });
+                    });
+                });
             });
         }
 
@@ -3200,6 +3766,7 @@
         function resetGame() {
             // ゲームをリセット
             gameCleared = false;
+            resetGameProgress();
             endingState.phase = 'none';
             endingState.fadeAlpha = 0;
             endingState.scrollY = 0;
@@ -3272,9 +3839,13 @@
 
             // エンカウント判定
             if (Math.random() < currentEncounterRate) {
-                // mapIdベースでエンカウントテーブルを選択（フォールバック付き）
+                // エンカウントテーブルを選択（優先順位）
+                // 1. マップに直接指定されたencounterTable
+                // 2. mapIdベース
+                // 3. typeベースのフォールバック
                 const mapId = currentMap.mapId || '';
-                let table = encounterTables[mapId];
+                let tableKey = currentMap.encounterTable || mapId;
+                let table = encounterTables[tableKey];
                 if (!table) {
                     // mapIdで見つからなければtypeで探す
                     const fallbackType = encounterTableFallback[currentMap.type] || 'field';
@@ -3352,10 +3923,16 @@
         }
 
         function closeDialog() {
+            const callback = dialog.onComplete;
             dialog.active = false;
             dialog.messages = [];
             dialog.currentIndex = 0;
             dialog.displayedText = '';
+            dialog.onComplete = null;
+            // コールバックがあれば実行
+            if (callback) {
+                callback();
+            }
         }
 
         // ========================================
@@ -3480,7 +4057,8 @@
         // ========================================
         // ショップシステム
         // ========================================
-        function openShop() {
+        function openShop(shopId = 'default') {
+            currentShopId = shopId;
             shop.active = true;
             shop.mode = 'menu';
             shop.phase = 'list';
@@ -3542,9 +4120,9 @@
                     if (action === 'up') {
                         shop.selectedIndex = Math.max(0, shop.selectedIndex - 1);
                     } else if (action === 'down') {
-                        shop.selectedIndex = Math.min(shopItems.length - 1, shop.selectedIndex + 1);
+                        shop.selectedIndex = Math.min(getShopItems().length - 1, shop.selectedIndex + 1);
                     } else if (action === 'confirm') {
-                        const itemId = shopItems[shop.selectedIndex];
+                        const itemId = getShopItems()[shop.selectedIndex];
                         const item = items[itemId];
                         if (player.gold >= item.price) {
                             shop.selectedItem = item;
@@ -3839,13 +4417,102 @@
         }
 
         function checkWarp() {
+            // 旅の扉チェック（先にチェック、特別演出あり）
+            if (currentMap.portals) {
+                for (const portal of currentMap.portals) {
+                    if (player.x === portal.x && player.y === portal.y) {
+                        performPortalWarp(portal);
+                        return;
+                    }
+                }
+            }
+
+            // 通常ワープチェック
             if (!currentMap.warps) return;
             for (const warp of currentMap.warps) {
                 if (player.x === warp.x && player.y === warp.y) {
-                    performWarp(warp.targetMap, warp.targetX, warp.targetY);
+                    // 通行条件チェック
+                    if (warp.requiresFlag && !getStoryFlag(warp.requiresFlag)) {
+                        startDialog(['この先へは まだ 行けないようだ...']);
+                        return;
+                    }
+
+                    // 階段タイプの処理（stairType: 'up' | 'down'）
+                    if (warp.stairType) {
+                        performStairWarp(warp);
+                    } else {
+                        performWarp(warp.targetMap, warp.targetX, warp.targetY);
+                    }
                     return;
                 }
             }
+        }
+
+        // 階段ワープ（階層移動用）
+        async function performStairWarp(stairWarp) {
+            if (isTransitioning) return;
+            isTransitioning = true;
+
+            // 階段の方向に応じたメッセージ
+            const direction = stairWarp.stairType === 'up' ? '上' : '下';
+
+            // 短いフェード演出
+            fadeOverlay.classList.add('active');
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            // 通常のワープ処理を実行
+            isTransitioning = false;
+            await performWarp(stairWarp.targetMap, stairWarp.targetX, stairWarp.targetY);
+        }
+
+        // 旅の扉ワープ（特別演出付き）
+        async function performPortalWarp(portal) {
+            if (isTransitioning) return;
+
+            // 通行条件チェック
+            if (portal.requiresFlag && !getStoryFlag(portal.requiresFlag)) {
+                startDialog(['この扉は まだ 開かない...', '特別な許可が 必要なようだ。']);
+                return;
+            }
+
+            isTransitioning = true;
+
+            // 渦巻き＋フラッシュ演出
+            await playPortalAnimation();
+
+            // 通常のワープ処理を実行
+            isTransitioning = false;  // performWarp内で再設定されるので一旦解除
+            await performWarp(portal.targetMap, portal.targetX, portal.targetY);
+        }
+
+        // 旅の扉演出
+        async function playPortalAnimation() {
+            const duration = 800; // 0.8秒
+            const startTime = Date.now();
+
+            // 画面を紫にフラッシュしながら渦巻き
+            return new Promise(resolve => {
+                function animate() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+
+                    // フェードオーバーレイを紫に
+                    fadeOverlay.style.background = `rgba(100, 50, 150, ${progress * 0.8})`;
+                    fadeOverlay.classList.add('active');
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        // 白いフラッシュで締め
+                        fadeOverlay.style.background = '#fff';
+                        setTimeout(() => {
+                            fadeOverlay.style.background = '#000';
+                            resolve();
+                        }, 100);
+                    }
+                }
+                animate();
+            });
         }
 
         async function performWarp(targetMap, targetX, targetY) {
@@ -3910,6 +4577,7 @@
                     console.error('宝箱状態の復元に失敗:', e);
                 }
                 updateMapPinVisibility();
+                updateFloorDisplay();
                 updateCamera();
                 saveGame();
 
@@ -3933,6 +4601,7 @@
                     player.y = targetY;
                     mapNameElement.textContent = currentMap.name;
                     updateMapPinVisibility();
+                    updateFloorDisplay();
                     updateCamera();
                 }
                 fadeOverlay.classList.remove('active');
@@ -3956,6 +4625,7 @@
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
                 updateMapPinVisibility();
+                updateFloorDisplay();
                 updateCamera();
                 saveGame();
 
@@ -4029,8 +4699,8 @@
             if (npc) {
                 if (npc.type === 'inn') {
                     openInn(npc.innCost);
-                } else if (npc.type === 'shop') {
-                    openShop();
+                } else if (npc.type === 'shop' || npc.type === 'shopkeeper') {
+                    openShop(npc.shopId || 'default');
                 } else if (npc.type === 'maou') {
                     // 魔王戦開始
                     if (gameCleared) {
@@ -4039,6 +4709,15 @@
                     } else {
                         startMaouBattle();
                     }
+                } else if (npc.type === 'king') {
+                    // 王様との会話（条件分岐）
+                    handleKingDialog(npc);
+                } else if (npc.type === 'boss' && npc.bossId) {
+                    // ボスNPC戦
+                    handleBossNpc(npc);
+                } else if (npc.type === 'quest_giver') {
+                    // クエストNPC
+                    handleQuestGiver(npc);
                 } else {
                     // ゲームクリア後はNPCのセリフが変わる
                     if (gameCleared && npc.clearedMessages) {
@@ -4052,6 +4731,212 @@
 
             const chest = getChestAt(front.x, front.y);
             if (chest) { openChest(chest); }
+        }
+
+        // 王様との会話処理（条件分岐）
+        function handleKingDialog(npc) {
+            // 魔王討伐済み
+            if (gameCleared && npc.clearedMessages) {
+                startDialog(npc.clearedMessages);
+                return;
+            }
+
+            // 中ボス撃破後、まだ報告していない場合
+            if (isBossDefeated('midBoss') && !getStoryFlag('reportedMidBossDefeat')) {
+                startDialogWithCallback([
+                    'おお！勇者よ！',
+                    'なんと！洞窟の番人を倒したというのか！',
+                    'よくぞやってくれた！',
+                    'これで旅の扉の部屋へ行けるようにしよう。',
+                    '城の北側にある部屋じゃ。',
+                    '旅の扉を通れば、新たな大陸へ行ける。',
+                    'さらなる冒険が待っておるぞ！'
+                ], () => {
+                    setStoryFlag('reportedMidBossDefeat', true);
+                    setStoryFlag('portalRoomUnlocked', true);
+                    saveGame();
+                });
+                return;
+            }
+
+            // 旅の扉が開放済み
+            if (getStoryFlag('portalRoomUnlocked')) {
+                startDialog([
+                    'おお、勇者よ！',
+                    '旅の扉の部屋は城の北側じゃ。',
+                    '新たな大陸で強敵が待っておるぞ。',
+                    '気をつけて行くのじゃ！'
+                ]);
+                return;
+            }
+
+            // 通常の会話
+            startDialog(npc.messages);
+        }
+
+        // ボスNPC戦の処理
+        function handleBossNpc(npc) {
+            const bossId = npc.bossId;
+
+            // 既にボスを倒している場合
+            if (isBossDefeated(bossId)) {
+                if (npc.defeatedMessages) {
+                    startDialog(npc.defeatedMessages);
+                } else {
+                    startDialog(['......。', '（もう戦う相手はいない）']);
+                }
+                return;
+            }
+
+            // 砂漠の守護者は3つのクエスト完了が必要
+            if (npc.requiresAllQuests && !areAllDesertQuestsCompleted()) {
+                startDialog([
+                    '我は砂漠の守護者...',
+                    '三つの試練を乗り越えた者だけが',
+                    '我に挑む資格がある。',
+                    '清らかな水、通行手形、王家の紋章...',
+                    '全てを集めて出直すがいい。'
+                ]);
+                return;
+            }
+
+            // ボス戦前の会話→戦闘開始
+            startDialogWithCallback(npc.messages, () => {
+                startBossBattle(bossId);
+            });
+        }
+
+        // クエストNPC処理（村長など）
+        function handleQuestGiver(npc) {
+            const questId = npc.questId;
+
+            if (!questId) {
+                startDialog(npc.messages);
+                return;
+            }
+
+            // 水不足クエスト（オアシスの村長）
+            if (questId === 'waterShortage') {
+                handleWaterShortageQuest(npc);
+                return;
+            }
+
+            // 通行手形クエスト関連は盗賊ボス撃破で自動完了
+            // 王家の紋章クエスト関連はピラミッドボス撃破で自動完了
+
+            startDialog(npc.messages);
+        }
+
+        // 水不足クエスト処理
+        function handleWaterShortageQuest(npc) {
+            // クエスト完了済み
+            if (isQuestCompleted('waterShortage')) {
+                startDialog(npc.completedMessages || [
+                    'おかげで村に水が戻った。',
+                    'ありがとう、勇者様！'
+                ]);
+                return;
+            }
+
+            // 清らかな水を持っている場合
+            if (hasItem(30)) {
+                startDialogWithCallback([
+                    'おお！それは清らかな水！',
+                    'これで村を救える！',
+                    'ありがとう、勇者様！',
+                    'この恩は忘れない！'
+                ], () => {
+                    removeItem(30);
+                    setQuestFlag('waterShortage', 'completed', true);
+                    // 報酬
+                    player.gold += 500;
+                    player.exp += 200;
+                    showMessage('500ゴールドと200EXPを獲得！');
+                    saveGame();
+                });
+                return;
+            }
+
+            // ボス撃破後だが水を持っていない
+            if (getQuestFlag('waterShortage', 'bossDefeated')) {
+                startDialog([
+                    '流砂の洞窟の奥に清らかな水があるという。',
+                    'ボスは倒したのか？',
+                    '水を持ってきてくれ！'
+                ]);
+                return;
+            }
+
+            // クエスト開始前または進行中
+            if (!getQuestFlag('waterShortage', 'started')) {
+                startDialogWithCallback(npc.messages, () => {
+                    setQuestFlag('waterShortage', 'started', true);
+                    saveGame();
+                });
+            } else {
+                startDialog(npc.messages);
+            }
+        }
+
+        // ボス戦開始（汎用）
+        function startBossBattle(bossId) {
+            const monsterData = monsters[bossId];
+            if (!monsterData) {
+                console.error('Boss not found:', bossId);
+                return;
+            }
+
+            battle.active = true;
+            battle.enemy = {
+                ...monsterData,
+                currentHp: monsterData.hp,
+                currentMp: monsterData.mp || 0,
+                status: { sleep: 0, poison: 0, blind: 0 },
+                actionCount: 0,
+                bossId: bossId  // ボスIDを保存
+            };
+            battle.phase = 'start';
+            battle.commandIndex = 0;
+            battle.spellIndex = 0;
+            battle.showSpells = false;
+            battle.showItems = false;
+            battle.itemCursor = 0;
+            battle.message = '';
+            battle.messageQueue = [];
+            battle.result = null;
+            battle.flashCount = 8;
+
+            // バフをリセット
+            if (battle.buffs) {
+                battle.buffs.attackUp = 0;
+                battle.buffs.defenseUp = 0;
+            }
+
+            player.status = { sleep: 0, poison: 0, blind: 0 };
+            gameMode = MODE.BATTLE;
+
+            // フラッシュ演出
+            const flashInterval = setInterval(() => {
+                battle.flashCount--;
+                if (battle.flashCount <= 0) {
+                    clearInterval(flashInterval);
+                    showBattleMessage(`${monsterData.name} が あらわれた！`, () => {
+                        battle.phase = 'command';
+                    });
+                }
+            }, 80);
+        }
+
+        // コールバック付きダイアログ
+        function startDialogWithCallback(messages, onComplete) {
+            dialog.active = true;
+            dialog.messages = Array.isArray(messages) ? messages : [messages];
+            dialog.currentIndex = 0;
+            dialog.displayedText = '';
+            dialog.charIndex = 0;
+            dialog.isTyping = true;
+            dialog.onComplete = onComplete;  // コールバックを保存
+            typeNextChar();
         }
 
         // 魔王戦開始
@@ -4792,7 +5677,14 @@
             5: '#8866aa', // 階段
             6: '#996633', // 床（ダンジョン）
             7: '#555555', // 壁
-            8: '#116611'  // 森
+            8: '#aa44aa', // 旅の扉（紫）
+            9: '#8866aa', // 上り階段
+            10: '#664488', // 下り階段
+            // 砂漠タイル
+            11: '#d4a559', // 砂漠
+            12: '#44aa66', // オアシス
+            13: '#c4a040', // ピラミッド
+            14: '#b89050'  // 流砂
         };
 
         // 地図表示の状態
@@ -4831,6 +5723,15 @@
             }
         }
 
+        // 広大マップ用の部分表示設定
+        let worldMapViewport = {
+            usePartialView: false,
+            viewSize: 100,      // 部分表示時の表示範囲（タイル数）
+            offsetX: 0,
+            offsetY: 0,
+            tileSize: 4
+        };
+
         function renderWorldMap() {
             const mapData = currentMap.data;
             const rows = currentMap.rows;
@@ -4840,13 +5741,43 @@
             const maxWidth = Math.min(window.innerWidth * 0.7, 500);
             const maxHeight = Math.min(window.innerHeight * 0.5, 400);
 
-            // タイルサイズを自動計算
-            const tileW = Math.floor(maxWidth / cols);
-            const tileH = Math.floor(maxHeight / rows);
-            const tileSize = Math.max(2, Math.min(tileW, tileH, 10)); // 2〜10px
+            // 広大マップ判定（100x100以上は部分表示モード）
+            const isLargeMap = cols > 100 || rows > 100;
+            worldMapViewport.usePartialView = isLargeMap;
 
-            const canvasW = cols * tileSize;
-            const canvasH = rows * tileSize;
+            let displayCols, displayRows, tileSize;
+
+            if (isLargeMap) {
+                // 広大マップ: プレイヤー周辺のみ表示
+                const viewSize = worldMapViewport.viewSize;
+                displayCols = Math.min(cols, viewSize);
+                displayRows = Math.min(rows, viewSize);
+
+                // プレイヤーを中心にオフセット計算
+                worldMapViewport.offsetX = Math.max(0, Math.min(cols - displayCols, player.x - Math.floor(displayCols / 2)));
+                worldMapViewport.offsetY = Math.max(0, Math.min(rows - displayRows, player.y - Math.floor(displayRows / 2)));
+
+                // タイルサイズ計算（最小1px）
+                const tileW = Math.floor(maxWidth / displayCols);
+                const tileH = Math.floor(maxHeight / displayRows);
+                tileSize = Math.max(1, Math.min(tileW, tileH, 6));
+            } else {
+                // 通常マップ: 全体表示
+                displayCols = cols;
+                displayRows = rows;
+                worldMapViewport.offsetX = 0;
+                worldMapViewport.offsetY = 0;
+
+                // タイルサイズを自動計算（最小1px、大きいマップは縮小）
+                const tileW = Math.floor(maxWidth / cols);
+                const tileH = Math.floor(maxHeight / rows);
+                tileSize = Math.max(1, Math.min(tileW, tileH, 10));
+            }
+
+            worldMapViewport.tileSize = tileSize;
+
+            const canvasW = displayCols * tileSize;
+            const canvasH = displayRows * tileSize;
 
             // キャンバスサイズを設定
             worldMapCanvas.width = canvasW;
@@ -4858,27 +5789,34 @@
             worldMapOffscreen.height = canvasH;
             worldMapOffscreenCtx = worldMapOffscreen.getContext('2d');
 
-            // 地形を描画
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
+            // 地形を描画（表示範囲のみ）
+            const startCol = worldMapViewport.offsetX;
+            const startRow = worldMapViewport.offsetY;
+            const endCol = startCol + displayCols;
+            const endRow = startRow + displayRows;
+
+            for (let row = startRow; row < endRow && row < rows; row++) {
+                for (let col = startCol; col < endCol && col < cols; col++) {
                     const tile = mapData[row][col];
                     const color = WORLD_MAP_COLORS[tile] || '#333333';
                     worldMapOffscreenCtx.fillStyle = color;
-                    worldMapOffscreenCtx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+                    const drawX = (col - startCol) * tileSize;
+                    const drawY = (row - startRow) * tileSize;
+                    worldMapOffscreenCtx.fillRect(drawX, drawY, tileSize, tileSize);
                 }
             }
 
-            // グリッド線（オプション、大きいマップでは省略）
-            if (cols <= 30 && rows <= 30 && tileSize >= 4) {
+            // グリッド線（小さいマップかつタイルが4px以上の場合のみ）
+            if (displayCols <= 30 && displayRows <= 30 && tileSize >= 4) {
                 worldMapOffscreenCtx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
                 worldMapOffscreenCtx.lineWidth = 0.5;
-                for (let row = 0; row <= rows; row++) {
+                for (let row = 0; row <= displayRows; row++) {
                     worldMapOffscreenCtx.beginPath();
                     worldMapOffscreenCtx.moveTo(0, row * tileSize);
                     worldMapOffscreenCtx.lineTo(canvasW, row * tileSize);
                     worldMapOffscreenCtx.stroke();
                 }
-                for (let col = 0; col <= cols; col++) {
+                for (let col = 0; col <= displayCols; col++) {
                     worldMapOffscreenCtx.beginPath();
                     worldMapOffscreenCtx.moveTo(col * tileSize, 0);
                     worldMapOffscreenCtx.lineTo(col * tileSize, canvasH);
@@ -4886,40 +5824,87 @@
                 }
             }
 
+            // 広大マップの場合、表示範囲の境界を示す枠を描画
+            if (isLargeMap) {
+                worldMapOffscreenCtx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+                worldMapOffscreenCtx.lineWidth = 2;
+                worldMapOffscreenCtx.strokeRect(1, 1, canvasW - 2, canvasH - 2);
+
+                // マップ全体での位置を示すミニマップ（右上に小さく）
+                const miniSize = 50;
+                const miniTileW = miniSize / cols;
+                const miniTileH = miniSize / rows;
+                const miniX = canvasW - miniSize - 5;
+                const miniY = 5;
+
+                // ミニマップ背景
+                worldMapOffscreenCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                worldMapOffscreenCtx.fillRect(miniX - 2, miniY - 2, miniSize + 4, miniSize + 4);
+
+                // ミニマップ上の現在表示範囲
+                worldMapOffscreenCtx.fillStyle = 'rgba(100, 100, 100, 0.8)';
+                worldMapOffscreenCtx.fillRect(miniX, miniY, miniSize, miniSize);
+
+                worldMapOffscreenCtx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+                worldMapOffscreenCtx.fillRect(
+                    miniX + startCol * miniTileW,
+                    miniY + startRow * miniTileH,
+                    displayCols * miniTileW,
+                    displayRows * miniTileH
+                );
+
+                // プレイヤー位置（赤点）
+                worldMapOffscreenCtx.fillStyle = '#ff3333';
+                worldMapOffscreenCtx.beginPath();
+                worldMapOffscreenCtx.arc(
+                    miniX + player.x * miniTileW,
+                    miniY + player.y * miniTileH,
+                    2, 0, Math.PI * 2
+                );
+                worldMapOffscreenCtx.fill();
+            }
+
             // オフスクリーンから転送
             worldMapCtx.drawImage(worldMapOffscreen, 0, 0);
         }
 
         function startPlayerMarkerAnimation() {
-            const mapData = currentMap.data;
-            const rows = currentMap.rows;
-            const cols = currentMap.cols;
-            const tileSize = worldMapCanvas.width / cols;
+            const tileSize = worldMapViewport.tileSize;
 
             function animateMarker() {
                 // オフスクリーンを再描画
                 worldMapCtx.drawImage(worldMapOffscreen, 0, 0);
 
-                // プレイヤー位置を描画（点滅）
+                // プレイヤー位置を描画（点滅）- 部分表示モード対応
                 if (playerBlinkState) {
-                    const px = player.x * tileSize + tileSize / 2;
-                    const py = player.y * tileSize + tileSize / 2;
-                    const radius = Math.max(3, tileSize * 0.6);
+                    // 部分表示の場合はオフセットを考慮
+                    const displayX = player.x - worldMapViewport.offsetX;
+                    const displayY = player.y - worldMapViewport.offsetY;
 
-                    // 外側の光彩
-                    worldMapCtx.beginPath();
-                    worldMapCtx.arc(px, py, radius + 2, 0, Math.PI * 2);
-                    worldMapCtx.fillStyle = 'rgba(255, 100, 100, 0.5)';
-                    worldMapCtx.fill();
+                    // 表示範囲内にいる場合のみ描画
+                    const cols = worldMapViewport.usePartialView ? worldMapViewport.viewSize : currentMap.cols;
+                    const rows = worldMapViewport.usePartialView ? worldMapViewport.viewSize : currentMap.rows;
 
-                    // 中心のマーカー
-                    worldMapCtx.beginPath();
-                    worldMapCtx.arc(px, py, radius, 0, Math.PI * 2);
-                    worldMapCtx.fillStyle = '#ff3333';
-                    worldMapCtx.fill();
-                    worldMapCtx.strokeStyle = '#ffffff';
-                    worldMapCtx.lineWidth = 1;
-                    worldMapCtx.stroke();
+                    if (displayX >= 0 && displayX < cols && displayY >= 0 && displayY < rows) {
+                        const px = displayX * tileSize + tileSize / 2;
+                        const py = displayY * tileSize + tileSize / 2;
+                        const radius = Math.max(2, tileSize * 0.6);
+
+                        // 外側の光彩
+                        worldMapCtx.beginPath();
+                        worldMapCtx.arc(px, py, radius + 2, 0, Math.PI * 2);
+                        worldMapCtx.fillStyle = 'rgba(255, 100, 100, 0.5)';
+                        worldMapCtx.fill();
+
+                        // 中心のマーカー
+                        worldMapCtx.beginPath();
+                        worldMapCtx.arc(px, py, radius, 0, Math.PI * 2);
+                        worldMapCtx.fillStyle = '#ff3333';
+                        worldMapCtx.fill();
+                        worldMapCtx.strokeStyle = '#ffffff';
+                        worldMapCtx.lineWidth = 1;
+                        worldMapCtx.stroke();
+                    }
                 }
 
                 playerBlinkState = !playerBlinkState;
@@ -4959,6 +5944,27 @@
                 mapPinBtn.classList.remove('hidden');
             } else {
                 mapPinBtn.classList.add('hidden');
+            }
+        }
+
+        // フロア表示を更新
+        const floorDisplayElement = document.getElementById('floorDisplay');
+        function updateFloorDisplay() {
+            if (!currentMap || currentMap.floor === undefined) {
+                floorDisplayElement.textContent = '';
+                return;
+            }
+
+            const floor = currentMap.floor;
+            if (floor > 0) {
+                // 塔などの上層階
+                floorDisplayElement.textContent = `${floor}F`;
+            } else if (floor < 0) {
+                // 地下階
+                floorDisplayElement.textContent = `B${Math.abs(floor)}F`;
+            } else {
+                // 0階（地上）
+                floorDisplayElement.textContent = '';
             }
         }
 
@@ -5051,6 +6057,7 @@
             // マップ名を更新
             document.getElementById('mapName').textContent = currentMap.name || 'フィールド';
             updateMapPinVisibility();
+            updateFloorDisplay();
 
             console.log('[DEBUG] resize前 tileSize:', tileSize, 'canvasWidth:', canvasWidth);
             resize();
@@ -5139,6 +6146,8 @@
             if (typeof gameCleared !== 'undefined') {
                 gameCleared = false;
             }
+            // ゲーム進行フラグをリセット
+            resetGameProgress();
         }
 
         // タイトル画面のイベントリスナー
