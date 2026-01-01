@@ -393,7 +393,6 @@
         const TUBE_CAPACITY = 4;      // 各チューブの容量
         const FILLED_TUBES = 5;       // 液体入りチューブ数
         const EMPTY_TUBES = 2;        // 空チューブ数
-        const SHUFFLE_MOVES = 300;    // シャッフル回数（1ユニットずつなので多めに）
 
         // ============================================
         // ゲーム状態
@@ -437,25 +436,44 @@
         }
 
         // ============================================
-        // パズル生成（逆順シャッフル方式）
+        // パズル生成（ランダム配置 + 解検証方式）
         // ============================================
         function generateNewPuzzle() {
-            // 1. 完成状態を作成
-            tubes = [];
-            for (let i = 0; i < FILLED_TUBES; i++) {
-                const tube = [];
-                for (let j = 0; j < TUBE_CAPACITY; j++) {
-                    tube.push(i); // 色番号
-                }
-                tubes.push(tube);
-            }
-            // 空チューブを追加
-            for (let i = 0; i < EMPTY_TUBES; i++) {
-                tubes.push([]);
-            }
+            let attempts = 0;
+            const maxAttempts = 100;
 
-            // 2. 逆順にランダム移動してシャッフル
-            shufflePuzzle(SHUFFLE_MOVES);
+            do {
+                // 1. 全液体をプールに作成
+                const allLiquids = [];
+                for (let color = 0; color < FILLED_TUBES; color++) {
+                    for (let j = 0; j < TUBE_CAPACITY; j++) {
+                        allLiquids.push(color);
+                    }
+                }
+
+                // 2. シャッフル（Fisher-Yates）
+                for (let i = allLiquids.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [allLiquids[i], allLiquids[j]] = [allLiquids[j], allLiquids[i]];
+                }
+
+                // 3. チューブに配置
+                tubes = [];
+                let index = 0;
+                for (let i = 0; i < FILLED_TUBES; i++) {
+                    const tube = [];
+                    for (let j = 0; j < TUBE_CAPACITY; j++) {
+                        tube.push(allLiquids[index++]);
+                    }
+                    tubes.push(tube);
+                }
+                // 空チューブを追加
+                for (let i = 0; i < EMPTY_TUBES; i++) {
+                    tubes.push([]);
+                }
+
+                attempts++;
+            } while (!isSolvable() && attempts < maxAttempts);
 
             // 初期状態を保存
             initialState = tubes.map(t => [...t]);
@@ -468,15 +486,77 @@
             renderLegend();
         }
 
-        function shufflePuzzle(moves) {
-            for (let i = 0; i < moves; i++) {
-                // ゲームルールに従った有効な移動を取得
-                const validMoves = getValidMoves();
-                if (validMoves.length === 0) break;
+        // 解けるかどうかをBFSで検証
+        function isSolvable() {
+            const initial = tubes.map(t => [...t]);
+            const visited = new Set();
+            const queue = [initial];
+            visited.add(stateToString(initial));
 
-                const move = validMoves[Math.floor(Math.random() * validMoves.length)];
-                // 1ユニットだけ移動（まとめて移動しない）
-                tubes[move.to].push(tubes[move.from].pop());
+            let iterations = 0;
+            const maxIterations = 50000;
+
+            while (queue.length > 0 && iterations < maxIterations) {
+                iterations++;
+                const current = queue.shift();
+
+                if (isComplete(current)) {
+                    return true;
+                }
+
+                // 全ての有効な移動を試す
+                for (let from = 0; from < current.length; from++) {
+                    if (current[from].length === 0) continue;
+
+                    for (let to = 0; to < current.length; to++) {
+                        if (from === to) continue;
+                        if (!canPourState(current, from, to)) continue;
+
+                        // 移動を実行
+                        const next = current.map(t => [...t]);
+                        pourState(next, from, to);
+
+                        const key = stateToString(next);
+                        if (!visited.has(key)) {
+                            visited.add(key);
+                            queue.push(next);
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        function stateToString(state) {
+            return state.map(t => t.join(',')).join('|');
+        }
+
+        function isComplete(state) {
+            for (const tube of state) {
+                if (tube.length === 0) continue;
+                if (tube.length !== TUBE_CAPACITY) return false;
+                const color = tube[0];
+                for (let i = 1; i < tube.length; i++) {
+                    if (tube[i] !== color) return false;
+                }
+            }
+            return true;
+        }
+
+        function canPourState(state, from, to) {
+            if (state[from].length === 0) return false;
+            if (state[to].length >= TUBE_CAPACITY) return false;
+            if (state[to].length === 0) return true;
+            return state[from][state[from].length - 1] === state[to][state[to].length - 1];
+        }
+
+        function pourState(state, from, to) {
+            const color = state[from][state[from].length - 1];
+            while (state[from].length > 0 &&
+                   state[to].length < TUBE_CAPACITY &&
+                   state[from][state[from].length - 1] === color) {
+                state[to].push(state[from].pop());
             }
         }
 
