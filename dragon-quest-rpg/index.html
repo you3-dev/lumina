@@ -1379,9 +1379,17 @@
 
                 if (data.chestStates) {
                     for (const mapId in data.chestStates) {
+                        // maps側に復元
                         if (maps[mapId] && maps[mapId].chests) {
                             for (const savedChest of data.chestStates[mapId]) {
                                 const chest = maps[mapId].chests.find(c => c.id === savedChest.id);
+                                if (chest) chest.isOpened = savedChest.isOpened;
+                            }
+                        }
+                        // currentMap側にも復元（現在のマップの場合）
+                        if (mapId === currentMapId && currentMap && currentMap.chests) {
+                            for (const savedChest of data.chestStates[mapId]) {
+                                const chest = currentMap.chests.find(c => c.id === savedChest.id);
                                 if (chest) chest.isOpened = savedChest.isOpened;
                             }
                         }
@@ -3738,6 +3746,22 @@
                 player.x = targetX;
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
+
+                // セーブデータから宝箱の開封状態を復元
+                try {
+                    const savedData = localStorage.getItem(SAVE_KEY);
+                    if (savedData) {
+                        const data = JSON.parse(savedData);
+                        if (data.chestStates && data.chestStates[currentMapId] && currentMap.chests) {
+                            for (const savedChest of data.chestStates[currentMapId]) {
+                                const chest = currentMap.chests.find(c => c.id === savedChest.id);
+                                if (chest) chest.isOpened = savedChest.isOpened;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('宝箱状態の復元に失敗:', e);
+                }
                 updateMapPinVisibility();
                 updateCamera();
                 saveGame();
