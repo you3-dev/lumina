@@ -954,8 +954,9 @@
         const menu = {
             active: false,
             selectedIndex: 0,
-            mode: 'status', // 'status' or 'items'
+            mode: 'status', // 'status', 'items', 'spells'
             itemCursor: 0,  // アイテムリスト上のカーソル位置
+            spellCursor: 0, // 呪文リスト上のカーソル位置
             showItemAction: false, // アイテムアクションサブメニュー表示
             itemActionIndex: 0 // 0: つかう/そうびする, 1: すてる, 2: やめる
         };
@@ -1354,19 +1355,23 @@
 
             drawWindow(menuX, menuY, menuWidth, menuHeight);
 
-            // タブ表示
+            // タブ表示（3タブ：つよさ、じゅもん、もちもの）
             const tabY = menuY + 10;
-            ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
 
             // つよさタブ
             ctx.fillStyle = menu.mode === 'status' ? '#ffd700' : 'rgba(255, 255, 255, 0.5)';
-            ctx.fillText('つよさ', menuX + menuWidth * 0.25, tabY);
+            ctx.fillText('つよさ', menuX + menuWidth * 0.17, tabY);
+
+            // じゅもんタブ
+            ctx.fillStyle = menu.mode === 'spells' ? '#ffd700' : 'rgba(255, 255, 255, 0.5)';
+            ctx.fillText('じゅもん', menuX + menuWidth * 0.5, tabY);
 
             // もちものタブ
             ctx.fillStyle = menu.mode === 'items' ? '#ffd700' : 'rgba(255, 255, 255, 0.5)';
-            ctx.fillText('もちもの', menuX + menuWidth * 0.75, tabY);
+            ctx.fillText('もちもの', menuX + menuWidth * 0.83, tabY);
 
             // 区切り線
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
@@ -1457,7 +1462,47 @@
                 y += lineHeight;
                 ctx.fillText(`🛡️ E: ${armor ? armor.name : 'なし'}`, col1X, y);
 
-            } else {
+            } else if (menu.mode === 'spells') {
+                // じゅもん（呪文画面）
+                ctx.fillStyle = '#fff';
+                ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                ctx.textAlign = 'left';
+                const spellStartY = contentY + 10;
+
+                // フィールドで使える呪文をフィルタ（回復系のみ）
+                const fieldSpells = player.spells.filter(spellId => {
+                    const spell = spells[spellId];
+                    return spell && spell.type === 'heal';
+                });
+
+                if (player.spells.length === 0) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('呪文を覚えていない', canvasWidth / 2, spellStartY);
+                } else {
+                    player.spells.forEach((spellId, i) => {
+                        const spell = spells[spellId];
+                        if (spell) {
+                            const isSelected = (i === menu.spellCursor);
+                            const canUseInField = spell.type === 'heal';
+
+                            // フィールドで使えない呪文は暗く表示
+                            if (canUseInField) {
+                                ctx.fillStyle = isSelected ? '#ffd700' : '#fff';
+                            } else {
+                                ctx.fillStyle = isSelected ? '#aa8800' : 'rgba(255, 255, 255, 0.4)';
+                            }
+
+                            const cursor = isSelected ? '▶' : '・';
+                            ctx.fillText(`${cursor}${spell.name}`, menuX + 30, spellStartY + i * lineHeight);
+
+                            // MP表示
+                            ctx.fillStyle = player.mp >= spell.mp ? '#88f' : '#f44';
+                            ctx.fillText(`${spell.mp}MP`, menuX + menuWidth - 70, spellStartY + i * lineHeight);
+                        }
+                    });
+                }
+            } else if (menu.mode === 'items') {
                 // もちもの（アイテム画面）
                 ctx.fillStyle = '#fff';
                 ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
@@ -1526,7 +1571,8 @@
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
             ctx.font = `${tileSize * 0.3}px 'MS Gothic', monospace`;
             ctx.textAlign = 'center';
-            if (menu.mode === 'items' && player.inventory.length > 0) {
+            if ((menu.mode === 'items' && player.inventory.length > 0) ||
+                (menu.mode === 'spells' && player.spells.length > 0)) {
                 ctx.fillText('↑↓選択 / A決定 / B戻る', canvasWidth / 2, menuY + menuHeight - 25);
             } else {
                 ctx.fillText('← → タブ切替 / Bで閉じる', canvasWidth / 2, menuY + menuHeight - 25);
@@ -3137,6 +3183,50 @@
             return success;
         }
 
+        // フィールドで呪文を使用
+        function useSpellInField() {
+            if (player.spells.length === 0) return;
+
+            const spellId = player.spells[menu.spellCursor];
+            const spell = spells[spellId];
+            if (!spell) return;
+
+            // フィールドで使えるのは回復呪文のみ
+            if (spell.type !== 'heal') {
+                closeMenu();
+                startDialog(['ここでは 使えない！']);
+                return;
+            }
+
+            // MP不足チェック
+            if (player.mp < spell.mp) {
+                closeMenu();
+                startDialog(['MPが 足りない！']);
+                return;
+            }
+
+            // HP満タンチェック
+            if (player.hp >= player.maxHp) {
+                closeMenu();
+                startDialog(['HPは まんたんだ！']);
+                return;
+            }
+
+            // MP消費
+            player.mp -= spell.mp;
+
+            // HP回復
+            const healAmount = Math.min(spell.power, player.maxHp - player.hp);
+            player.hp += healAmount;
+
+            // メニューを閉じてダイアログ表示
+            closeMenu();
+            startDialog([
+                `${player.name}は ${spell.name}を となえた！`,
+                `HPが ${healAmount} 回復した！`
+            ]);
+        }
+
         function equipItem(itemId) {
             const item = items[itemId];
             if (!item) return;
@@ -3748,10 +3838,11 @@
                             menu.itemCursor = (menu.itemCursor + 1) % player.inventory.length;
                             break;
                         case 'ArrowLeft': case 'a': case 'A':
-                            menu.mode = 'status';
+                            menu.mode = 'spells';
+                            menu.spellCursor = 0;
                             break;
                         case 'ArrowRight': case 'd': case 'D':
-                            // 既にitemsモードなので何もしない
+                            // 既にitemsモードなので何もしない（一番右のタブ）
                             break;
                         case 'Enter': case ' ': case 'z': case 'Z':
                             menu.showItemAction = true;
@@ -3761,15 +3852,55 @@
                             closeMenu();
                             break;
                     }
-                } else {
-                    // タブ切り替えモード
+                } else if (menu.mode === 'spells' && player.spells.length > 0) {
+                    // 呪文リスト操作
                     switch (e.key) {
+                        case 'ArrowUp': case 'w': case 'W':
+                            menu.spellCursor = (menu.spellCursor + player.spells.length - 1) % player.spells.length;
+                            break;
+                        case 'ArrowDown': case 's': case 'S':
+                            menu.spellCursor = (menu.spellCursor + 1) % player.spells.length;
+                            break;
                         case 'ArrowLeft': case 'a': case 'A':
                             menu.mode = 'status';
                             break;
                         case 'ArrowRight': case 'd': case 'D':
                             menu.mode = 'items';
                             menu.itemCursor = 0;
+                            break;
+                        case 'Enter': case ' ': case 'z': case 'Z':
+                            useSpellInField();
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            closeMenu();
+                            break;
+                    }
+                } else {
+                    // タブ切り替えモード（アイテム・呪文がない場合やstatusモード）
+                    switch (e.key) {
+                        case 'ArrowLeft': case 'a': case 'A':
+                            // status → items(右端へ) / spells → status / items → spells
+                            if (menu.mode === 'status') {
+                                menu.mode = 'items';
+                                menu.itemCursor = 0;
+                            } else if (menu.mode === 'spells') {
+                                menu.mode = 'status';
+                            } else if (menu.mode === 'items') {
+                                menu.mode = 'spells';
+                                menu.spellCursor = 0;
+                            }
+                            break;
+                        case 'ArrowRight': case 'd': case 'D':
+                            // status → spells / spells → items / items → status(左端へ)
+                            if (menu.mode === 'status') {
+                                menu.mode = 'spells';
+                                menu.spellCursor = 0;
+                            } else if (menu.mode === 'spells') {
+                                menu.mode = 'items';
+                                menu.itemCursor = 0;
+                            } else if (menu.mode === 'items') {
+                                menu.mode = 'status';
+                            }
                             break;
                         case 'Escape': case 'x': case 'b': case 'B':
                             closeMenu();
@@ -3869,8 +4000,33 @@
                 }
                 // メニュー
                 if (menu.active) {
-                    if (dx < 0) menu.mode = 'status';
-                    else if (dx > 0) menu.mode = 'items';
+                    if (menu.showItemAction) {
+                        // アイテムアクションサブメニュー
+                        if (dy < 0) menu.itemActionIndex = (menu.itemActionIndex + 2) % 3;
+                        else if (dy > 0) menu.itemActionIndex = (menu.itemActionIndex + 1) % 3;
+                    } else if (menu.mode === 'items' && player.inventory.length > 0) {
+                        // アイテムリスト
+                        if (dy < 0) menu.itemCursor = (menu.itemCursor + player.inventory.length - 1) % player.inventory.length;
+                        else if (dy > 0) menu.itemCursor = (menu.itemCursor + 1) % player.inventory.length;
+                        else if (dx < 0) { menu.mode = 'spells'; menu.spellCursor = 0; }
+                    } else if (menu.mode === 'spells' && player.spells.length > 0) {
+                        // 呪文リスト
+                        if (dy < 0) menu.spellCursor = (menu.spellCursor + player.spells.length - 1) % player.spells.length;
+                        else if (dy > 0) menu.spellCursor = (menu.spellCursor + 1) % player.spells.length;
+                        else if (dx < 0) menu.mode = 'status';
+                        else if (dx > 0) { menu.mode = 'items'; menu.itemCursor = 0; }
+                    } else {
+                        // タブ切り替え（status/呪文なし/アイテムなしの場合）
+                        if (dx < 0) {
+                            if (menu.mode === 'status') { menu.mode = 'items'; menu.itemCursor = 0; }
+                            else if (menu.mode === 'spells') menu.mode = 'status';
+                            else if (menu.mode === 'items') { menu.mode = 'spells'; menu.spellCursor = 0; }
+                        } else if (dx > 0) {
+                            if (menu.mode === 'status') { menu.mode = 'spells'; menu.spellCursor = 0; }
+                            else if (menu.mode === 'spells') { menu.mode = 'items'; menu.itemCursor = 0; }
+                            else if (menu.mode === 'items') menu.mode = 'status';
+                        }
+                    }
                     return;
                 }
                 if (isTransitioning || dialog.active) return;
@@ -3913,6 +4069,16 @@
                 handleShopInput('confirm');
             } else if (inn.active) {
                 confirmInn();
+            } else if (menu.active) {
+                // メニュー内操作
+                if (menu.showItemAction) {
+                    executeItemAction();
+                } else if (menu.mode === 'items' && player.inventory.length > 0) {
+                    menu.showItemAction = true;
+                    menu.itemActionIndex = 0;
+                } else if (menu.mode === 'spells' && player.spells.length > 0) {
+                    useSpellInField();
+                }
             } else {
                 interact();
             }
@@ -3929,7 +4095,11 @@
             } else if (dialog.active) {
                 closeDialog();
             } else if (menu.active) {
-                closeMenu();
+                if (menu.showItemAction) {
+                    menu.showItemAction = false;
+                } else {
+                    closeMenu();
+                }
             } else {
                 openMenu();
             }
