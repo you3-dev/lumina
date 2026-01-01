@@ -3613,11 +3613,17 @@
                 encounterRate: fieldMap.encounterRate
             };
 
-            // 宝箱の開封状態をリセット
-            openedChests.clear();
+            // 宝箱の開封状態をリセット（内部マップ用）
+            for (const mapId in maps) {
+                if (maps[mapId].chests) {
+                    maps[mapId].chests.forEach(chest => chest.isOpened = false);
+                }
+            }
 
             // ゲームクリアフラグをリセット
-            gameCleared = false;
+            if (typeof gameCleared !== 'undefined') {
+                gameCleared = false;
+            }
         }
 
         // タイトル画面のイベントリスナー
