@@ -246,6 +246,95 @@
         .title-menu.active ~ .press-start {
             display: none;
         }
+
+        /* ワールドマップ表示 */
+        #worldMapOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        #worldMapOverlay.active {
+            display: flex;
+        }
+
+        .map-frame {
+            background: linear-gradient(135deg, #d4a574 0%, #c9956c 25%, #e6c9a8 50%, #c9956c 75%, #d4a574 100%);
+            border: 8px solid #8b4513;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow:
+                inset 0 0 30px rgba(139, 69, 19, 0.3),
+                0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            max-width: 90vw;
+            max-height: 85vh;
+        }
+
+        .map-frame::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border: 2px solid rgba(139, 69, 19, 0.4);
+            border-radius: 5px;
+            pointer-events: none;
+        }
+
+        .map-title {
+            text-align: center;
+            font-size: 1.3rem;
+            color: #4a2c0a;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5);
+            font-weight: bold;
+        }
+
+        #worldMapCanvas {
+            display: block;
+            border: 3px solid #5c3317;
+            border-radius: 5px;
+            background: #1a1a2e;
+        }
+
+        .map-legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+            color: #4a2c0a;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border: 1px solid #5c3317;
+            border-radius: 2px;
+        }
+
+        .map-close-hint {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #6b4423;
+        }
     </style>
 </head>
 <body>
@@ -268,6 +357,23 @@
                 </div>
             </div>
             <p class="press-start" id="pressStart">Press ENTER or Tap to Start</p>
+        </div>
+    </div>
+
+    <!-- ワールドマップオーバーレイ -->
+    <div id="worldMapOverlay">
+        <div class="map-frame">
+            <div class="map-title" id="worldMapTitle">フィールド</div>
+            <canvas id="worldMapCanvas"></canvas>
+            <div class="map-legend">
+                <div class="legend-item"><div class="legend-color" style="background: #44aa44;"></div>草原</div>
+                <div class="legend-item"><div class="legend-color" style="background: #886644;"></div>山</div>
+                <div class="legend-item"><div class="legend-color" style="background: #2244aa;"></div>海</div>
+                <div class="legend-item"><div class="legend-color" style="background: #116611;"></div>森</div>
+                <div class="legend-item"><div class="legend-color" style="background: #ffffff;"></div>建物</div>
+                <div class="legend-item"><div class="legend-color" style="background: #ff3333;"></div>現在地</div>
+            </div>
+            <div class="map-close-hint">Mキー または タップで閉じる</div>
         </div>
     </div>
 
@@ -308,7 +414,8 @@
             INN: 'inn',
             SHOP: 'shop',
             DIALOG: 'dialog',
-            ENDING: 'ending'
+            ENDING: 'ending',
+            MAP_VIEW: 'map_view'
         };
 
         let gameMode = MODE.TITLE;
@@ -955,7 +1062,7 @@
         const menu = {
             active: false,
             selectedIndex: 0,
-            mode: 'status', // 'status', 'items', 'spells'
+            mode: 'status', // 'status', 'items', 'spells', 'map'
             itemCursor: 0,  // アイテムリスト上のカーソル位置
             spellCursor: 0, // 呪文リスト上のカーソル位置
             showItemAction: false, // アイテムアクションサブメニュー表示
@@ -1356,23 +1463,27 @@
 
             drawWindow(menuX, menuY, menuWidth, menuHeight);
 
-            // タブ表示（3タブ：つよさ、じゅもん、もちもの）
+            // タブ表示（4タブ：つよさ、じゅもん、もちもの、ちず）
             const tabY = menuY + 10;
-            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.32}px 'MS Gothic', monospace`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
 
             // つよさタブ
             ctx.fillStyle = menu.mode === 'status' ? '#ffd700' : 'rgba(255, 255, 255, 0.5)';
-            ctx.fillText('つよさ', menuX + menuWidth * 0.17, tabY);
+            ctx.fillText('つよさ', menuX + menuWidth * 0.125, tabY);
 
             // じゅもんタブ
             ctx.fillStyle = menu.mode === 'spells' ? '#ffd700' : 'rgba(255, 255, 255, 0.5)';
-            ctx.fillText('じゅもん', menuX + menuWidth * 0.5, tabY);
+            ctx.fillText('じゅもん', menuX + menuWidth * 0.375, tabY);
 
             // もちものタブ
             ctx.fillStyle = menu.mode === 'items' ? '#ffd700' : 'rgba(255, 255, 255, 0.5)';
-            ctx.fillText('もちもの', menuX + menuWidth * 0.83, tabY);
+            ctx.fillText('もちもの', menuX + menuWidth * 0.625, tabY);
+
+            // ちずタブ
+            ctx.fillStyle = menu.mode === 'map' ? '#ffd700' : 'rgba(255, 255, 255, 0.5)';
+            ctx.fillText('ちず', menuX + menuWidth * 0.875, tabY);
 
             // 区切り線
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
@@ -1567,6 +1678,23 @@
                         }
                     }
                 }
+            } else if (menu.mode === 'map') {
+                // ちず（マップ画面への案内）
+                ctx.fillStyle = '#fff';
+                ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                ctx.textAlign = 'center';
+
+                const mapInfoY = contentY + 30;
+                ctx.fillStyle = '#ffd700';
+                ctx.fillText(`📍 ${currentMap.name || 'フィールド'}`, canvasWidth / 2, mapInfoY);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+                ctx.fillText('Aボタンで地図を開く', canvasWidth / 2, mapInfoY + lineHeight * 2);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.font = `${tileSize * 0.3}px 'MS Gothic', monospace`;
+                ctx.fillText('（Mキーでいつでも開けます）', canvasWidth / 2, mapInfoY + lineHeight * 3.5);
             }
 
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
@@ -1575,6 +1703,8 @@
             if ((menu.mode === 'items' && player.inventory.length > 0) ||
                 (menu.mode === 'spells' && player.spells.length > 0)) {
                 ctx.fillText('↑↓選択 / A決定 / B戻る', canvasWidth / 2, menuY + menuHeight - 25);
+            } else if (menu.mode === 'map') {
+                ctx.fillText('A決定 / ← → タブ切替 / Bで閉じる', canvasWidth / 2, menuY + menuHeight - 25);
             } else {
                 ctx.fillText('← → タブ切替 / Bで閉じる', canvasWidth / 2, menuY + menuHeight - 25);
             }
@@ -3696,6 +3826,23 @@
         document.addEventListener('keydown', (e) => {
             if (isTransitioning) return;
 
+            // ワールドマップ表示中
+            if (gameMode === MODE.MAP_VIEW) {
+                if (e.key === 'm' || e.key === 'M' || e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+                    closeWorldMap();
+                }
+                e.preventDefault();
+                return;
+            }
+
+            // Mキーでマップを開く（フィールド、メニュー、ダイアログ中）
+            if ((e.key === 'm' || e.key === 'M') &&
+                (gameMode === MODE.FIELD || gameMode === MODE.MENU || gameMode === MODE.DIALOG)) {
+                openWorldMap();
+                e.preventDefault();
+                return;
+            }
+
             // タイトル画面
             if (gameMode === MODE.TITLE) {
                 if (!titleMenuActive) {
@@ -4019,13 +4166,15 @@
                     } else {
                         // タブ切り替え（status/呪文なし/アイテムなしの場合）
                         if (dx < 0) {
-                            if (menu.mode === 'status') { menu.mode = 'items'; menu.itemCursor = 0; }
+                            if (menu.mode === 'status') menu.mode = 'map';
                             else if (menu.mode === 'spells') menu.mode = 'status';
                             else if (menu.mode === 'items') { menu.mode = 'spells'; menu.spellCursor = 0; }
+                            else if (menu.mode === 'map') { menu.mode = 'items'; menu.itemCursor = 0; }
                         } else if (dx > 0) {
                             if (menu.mode === 'status') { menu.mode = 'spells'; menu.spellCursor = 0; }
                             else if (menu.mode === 'spells') { menu.mode = 'items'; menu.itemCursor = 0; }
-                            else if (menu.mode === 'items') menu.mode = 'status';
+                            else if (menu.mode === 'items') menu.mode = 'map';
+                            else if (menu.mode === 'map') menu.mode = 'status';
                         }
                     }
                     return;
@@ -4079,6 +4228,10 @@
                     menu.itemActionIndex = 0;
                 } else if (menu.mode === 'spells' && player.spells.length > 0) {
                     useSpellInField();
+                } else if (menu.mode === 'map') {
+                    // ちずタブでAボタン → ワールドマップを開く
+                    closeMenu();
+                    openWorldMap();
                 }
             } else {
                 interact();
@@ -4165,6 +4318,177 @@
             draw();
             requestAnimationFrame(gameLoop);
         }
+
+        // ========================================
+        // ワールドマップ表示システム
+        // ========================================
+        const worldMapOverlay = document.getElementById('worldMapOverlay');
+        const worldMapCanvas = document.getElementById('worldMapCanvas');
+        const worldMapCtx = worldMapCanvas.getContext('2d');
+        const worldMapTitle = document.getElementById('worldMapTitle');
+
+        // オフスクリーンキャンバス（地形描画用）
+        let worldMapOffscreen = null;
+        let worldMapOffscreenCtx = null;
+
+        // 地図の色設定
+        const MAP_TILE_COLORS = {
+            0: '#44aa44', // 草原/平地
+            1: '#886644', // 山/岩場
+            2: '#2244aa', // 海/水域
+            3: '#ffffff', // 城
+            4: '#ffffff', // 街/建物
+            5: '#8866aa', // 階段
+            6: '#996633', // 床（ダンジョン）
+            7: '#555555', // 壁
+            8: '#116611'  // 森
+        };
+
+        // 地図表示の状態
+        let worldMapAnimationId = null;
+        let playerBlinkState = true;
+
+        function openWorldMap() {
+            if (gameMode === MODE.BATTLE || gameMode === MODE.TITLE || gameMode === MODE.ENDING) {
+                return;
+            }
+
+            const previousMode = gameMode;
+            gameMode = MODE.MAP_VIEW;
+
+            // マップタイトルを設定
+            worldMapTitle.textContent = currentMap.name || 'ワールドマップ';
+
+            // オーバーレイを表示
+            worldMapOverlay.classList.add('active');
+
+            // 地図を描画
+            renderWorldMap();
+
+            // 点滅アニメーション開始
+            startPlayerMarkerAnimation();
+        }
+
+        function closeWorldMap() {
+            gameMode = MODE.FIELD;
+            worldMapOverlay.classList.remove('active');
+
+            // アニメーション停止
+            if (worldMapAnimationId) {
+                cancelAnimationFrame(worldMapAnimationId);
+                worldMapAnimationId = null;
+            }
+        }
+
+        function renderWorldMap() {
+            const mapData = currentMap.data;
+            const rows = currentMap.rows;
+            const cols = currentMap.cols;
+
+            // 表示サイズを計算（最大サイズを設定）
+            const maxWidth = Math.min(window.innerWidth * 0.7, 500);
+            const maxHeight = Math.min(window.innerHeight * 0.5, 400);
+
+            // タイルサイズを自動計算
+            const tileW = Math.floor(maxWidth / cols);
+            const tileH = Math.floor(maxHeight / rows);
+            const tileSize = Math.max(2, Math.min(tileW, tileH, 10)); // 2〜10px
+
+            const canvasW = cols * tileSize;
+            const canvasH = rows * tileSize;
+
+            // キャンバスサイズを設定
+            worldMapCanvas.width = canvasW;
+            worldMapCanvas.height = canvasH;
+
+            // オフスクリーンキャンバスを作成（地形を一度だけ描画）
+            worldMapOffscreen = document.createElement('canvas');
+            worldMapOffscreen.width = canvasW;
+            worldMapOffscreen.height = canvasH;
+            worldMapOffscreenCtx = worldMapOffscreen.getContext('2d');
+
+            // 地形を描画
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const tile = mapData[row][col];
+                    const color = MAP_TILE_COLORS[tile] || '#333333';
+                    worldMapOffscreenCtx.fillStyle = color;
+                    worldMapOffscreenCtx.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+                }
+            }
+
+            // グリッド線（オプション、大きいマップでは省略）
+            if (cols <= 30 && rows <= 30 && tileSize >= 4) {
+                worldMapOffscreenCtx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                worldMapOffscreenCtx.lineWidth = 0.5;
+                for (let row = 0; row <= rows; row++) {
+                    worldMapOffscreenCtx.beginPath();
+                    worldMapOffscreenCtx.moveTo(0, row * tileSize);
+                    worldMapOffscreenCtx.lineTo(canvasW, row * tileSize);
+                    worldMapOffscreenCtx.stroke();
+                }
+                for (let col = 0; col <= cols; col++) {
+                    worldMapOffscreenCtx.beginPath();
+                    worldMapOffscreenCtx.moveTo(col * tileSize, 0);
+                    worldMapOffscreenCtx.lineTo(col * tileSize, canvasH);
+                    worldMapOffscreenCtx.stroke();
+                }
+            }
+
+            // オフスクリーンから転送
+            worldMapCtx.drawImage(worldMapOffscreen, 0, 0);
+        }
+
+        function startPlayerMarkerAnimation() {
+            const mapData = currentMap.data;
+            const rows = currentMap.rows;
+            const cols = currentMap.cols;
+            const tileSize = worldMapCanvas.width / cols;
+
+            function animateMarker() {
+                // オフスクリーンを再描画
+                worldMapCtx.drawImage(worldMapOffscreen, 0, 0);
+
+                // プレイヤー位置を描画（点滅）
+                if (playerBlinkState) {
+                    const px = player.x * tileSize + tileSize / 2;
+                    const py = player.y * tileSize + tileSize / 2;
+                    const radius = Math.max(3, tileSize * 0.6);
+
+                    // 外側の光彩
+                    worldMapCtx.beginPath();
+                    worldMapCtx.arc(px, py, radius + 2, 0, Math.PI * 2);
+                    worldMapCtx.fillStyle = 'rgba(255, 100, 100, 0.5)';
+                    worldMapCtx.fill();
+
+                    // 中心のマーカー
+                    worldMapCtx.beginPath();
+                    worldMapCtx.arc(px, py, radius, 0, Math.PI * 2);
+                    worldMapCtx.fillStyle = '#ff3333';
+                    worldMapCtx.fill();
+                    worldMapCtx.strokeStyle = '#ffffff';
+                    worldMapCtx.lineWidth = 1;
+                    worldMapCtx.stroke();
+                }
+
+                playerBlinkState = !playerBlinkState;
+
+                if (gameMode === MODE.MAP_VIEW) {
+                    worldMapAnimationId = setTimeout(() => {
+                        requestAnimationFrame(animateMarker);
+                    }, 400); // 400msごとに点滅
+                }
+            }
+
+            animateMarker();
+        }
+
+        // ワールドマップのクリックイベント
+        worldMapOverlay.addEventListener('click', () => {
+            if (gameMode === MODE.MAP_VIEW) {
+                closeWorldMap();
+            }
+        });
 
         // ========================================
         // タイトル画面
