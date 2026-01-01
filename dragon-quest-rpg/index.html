@@ -64,16 +64,43 @@
             z-index: 10;
         }
 
-        #mapName {
+        #mapNameArea {
             position: absolute;
             top: 10px;
             right: 10px;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             background: rgba(0, 0, 0, 0.5);
             padding: 5px 12px;
             border-radius: 4px;
-            pointer-events: none;
+            pointer-events: auto;
+        }
+
+        #mapName {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .map-pin-btn {
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .map-pin-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .map-pin-btn:active {
+            transform: scale(0.95);
+        }
+
+        .map-pin-btn.hidden {
+            display: none;
         }
 
         #dpad {
@@ -378,7 +405,10 @@
     </div>
 
     <div id="hud">
-        <div id="mapName">フィールド</div>
+        <div id="mapNameArea">
+            <span id="mapName">フィールド</span>
+            <span id="mapPinBtn" class="map-pin-btn">📍</span>
+        </div>
 
         <!-- デバッグ表示（開発用、コメントアウトで非表示）
         <div id="encounterDebug" style="position: fixed; top: 40px; right: 10px; background: rgba(0,0,0,0.7); color: #0f0; padding: 5px 10px; font-size: 12px; font-family: monospace; border-radius: 4px; z-index: 1000;"></div>
@@ -3509,6 +3539,7 @@
                 player.x = targetX;
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
+                updateMapPinVisibility();
                 updateCamera();
                 saveGame();
 
@@ -3531,6 +3562,7 @@
                     player.x = targetX;
                     player.y = targetY;
                     mapNameElement.textContent = currentMap.name;
+                    updateMapPinVisibility();
                     updateCamera();
                 }
                 fadeOverlay.classList.remove('active');
@@ -3553,6 +3585,7 @@
                 player.x = targetX;
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
+                updateMapPinVisibility();
                 updateCamera();
                 saveGame();
 
@@ -4512,6 +4545,27 @@
             }
         });
 
+        // 📍ボタンの要素とクリックイベント
+        const mapPinBtn = document.getElementById('mapPinBtn');
+
+        mapPinBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (gameMode === MODE.FIELD || gameMode === MODE.MENU || gameMode === MODE.DIALOG) {
+                openWorldMap();
+            }
+        });
+
+        // マップタイプに応じて📍ボタンの表示/非表示を更新
+        function updateMapPinVisibility() {
+            // フィールドタイプのマップでのみ📍を表示
+            const showPin = currentMap && (currentMap.type === 'field' || currentMap.cols >= 20 || currentMap.rows >= 20);
+            if (showPin) {
+                mapPinBtn.classList.remove('hidden');
+            } else {
+                mapPinBtn.classList.add('hidden');
+            }
+        }
+
         // ========================================
         // タイトル画面
         // ========================================
@@ -4600,6 +4654,7 @@
 
             // マップ名を更新
             document.getElementById('mapName').textContent = currentMap.name || 'フィールド';
+            updateMapPinVisibility();
 
             console.log('[DEBUG] resize前 tileSize:', tileSize, 'canvasWidth:', canvasWidth);
             resize();
