@@ -59,3 +59,31 @@ cubeAnimations // Track in-flight color animations
 - Touch: drag to rotate, tap to toggle
 - RESET button: returns to stage's initial shuffled state
 - HINT button: highlights recommended move with blinking animation
+
+## Working with Large Files
+
+When working with large single-file applications (e.g., dragon-quest-rpg/index.html with 3000+ lines), use SubAgents (Task tool) to parallelize analysis and avoid context limitations:
+
+### When to Use SubAgents
+- File exceeds 1000 lines
+- Multiple unrelated systems need investigation
+- Complex bug requiring analysis of multiple code paths
+
+### SubAgent Strategy
+1. **Divide by system**: Spawn separate agents for different subsystems (e.g., save/load, battle, map transitions)
+2. **Use offset/limit**: When reading large files, always use `offset` and `limit` parameters
+3. **Search first**: Use Grep to find relevant line numbers before reading
+4. **Report only**: SubAgents should analyze and report findings, not modify code directly
+
+### Example Usage
+```
+Task 1: "Investigate saveGame() and loadGame() functions (lines 900-1100)"
+Task 2: "Analyze chest system and isOpened state management"
+Task 3: "Check map transition functions for state preservation"
+```
+
+### Combining Results
+After SubAgents complete, synthesize their findings to identify:
+- Root cause of the issue
+- All affected code locations
+- Recommended fix approach

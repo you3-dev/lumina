@@ -2608,6 +2608,11 @@
                 const item = items[chest.itemId];
                 if (item) {
                     chest.isOpened = true;
+                    // mapsオブジェクトの宝箱も同期（セーブデータに反映させるため）
+                    if (maps[currentMapId] && maps[currentMapId].chests) {
+                        const mapChest = maps[currentMapId].chests.find(c => c.id === chest.id);
+                        if (mapChest) mapChest.isOpened = true;
+                    }
                     player.inventory.push(item.id);
                     startDialog(['宝箱をあけた！', `${item.name} を手に入れた！`]);
                     saveGame();
