@@ -1,2 +1,2 @@
-最初に開いた画面。![alt text](image-4.png)
-またシャッフルされていない...
+magnetic-slider.htmlはイマイチだったのでindex.htmlから非表示にしておいて。
+ファイルは消さないでね。
