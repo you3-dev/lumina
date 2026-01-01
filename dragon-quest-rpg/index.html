@@ -717,6 +717,11 @@
         const ENCOUNTER_RATE_PER_STEP = 0.02;  // 歩数あたりの確率上昇率（2%）
         const MAX_ENCOUNTER_RATE = 0.95;       // 最大エンカウント率
 
+        // 連続移動システム（押し続けて移動）
+        let moveInterval = null;
+        let currentMoveDirection = { dx: 0, dy: 0 };
+        const CONTINUOUS_MOVE_DELAY = 150;  // 連続移動の間隔（ミリ秒）
+
         // プレイヤー
         const player = {
             x: 3,
@@ -3448,15 +3453,49 @@
             }
 
             switch (e.key) {
-                case 'ArrowUp': case 'w': case 'W': movePlayer(0, -1); break;
-                case 'ArrowDown': case 's': case 'S': movePlayer(0, 1); break;
-                case 'ArrowLeft': case 'a': case 'A': movePlayer(-1, 0); break;
-                case 'ArrowRight': case 'd': case 'D': movePlayer(1, 0); break;
+                case 'ArrowUp': case 'w': case 'W': startContinuousMove(0, -1); break;
+                case 'ArrowDown': case 's': case 'S': startContinuousMove(0, 1); break;
+                case 'ArrowLeft': case 'a': case 'A': startContinuousMove(-1, 0); break;
+                case 'ArrowRight': case 'd': case 'D': startContinuousMove(1, 0); break;
                 case 'Enter': case ' ': case 'z': interact(); break;
                 case 'Escape': case 'x': case 'b': case 'B': openMenu(); break;
             }
             e.preventDefault();
         });
+
+        // キーを離した時に連続移動を停止
+        document.addEventListener('keyup', (e) => {
+            switch (e.key) {
+                case 'ArrowUp': case 'w': case 'W':
+                case 'ArrowDown': case 's': case 'S':
+                case 'ArrowLeft': case 'a': case 'A':
+                case 'ArrowRight': case 'd': case 'D':
+                    stopContinuousMove();
+                    break;
+            }
+        });
+
+        // 連続移動の開始
+        function startContinuousMove(dx, dy) {
+            currentMoveDirection = { dx, dy };
+            movePlayer(dx, dy);  // 即座に1回移動
+            stopContinuousMove();  // 既存のインターバルをクリア
+            moveInterval = setInterval(() => {
+                if (gameMode === MODE.FIELD && !isTransitioning && !dialog.active &&
+                    !menu.active && !inn.active && !shop.active) {
+                    movePlayer(currentMoveDirection.dx, currentMoveDirection.dy);
+                }
+            }, CONTINUOUS_MOVE_DELAY);
+        }
+
+        // 連続移動の停止
+        function stopContinuousMove() {
+            if (moveInterval) {
+                clearInterval(moveInterval);
+                moveInterval = null;
+            }
+            currentMoveDirection = { dx: 0, dy: 0 };
+        }
 
         // タッチボタン
         function setupDpadButton(id, dx, dy) {
@@ -3496,9 +3535,13 @@
                 }
                 if (isTransitioning || dialog.active) return;
                 btn.classList.add('pressed');
-                movePlayer(dx, dy);
+                // 連続移動を開始
+                startContinuousMove(dx, dy);
             };
-            const handleRelease = () => { btn.classList.remove('pressed'); };
+            const handleRelease = () => {
+                btn.classList.remove('pressed');
+                stopContinuousMove();
+            };
             btn.addEventListener('touchstart', handlePress, { passive: false });
             btn.addEventListener('touchend', handleRelease);
             btn.addEventListener('mousedown', handlePress);
