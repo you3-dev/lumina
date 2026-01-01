@@ -699,14 +699,14 @@
         // ========================================
         const spells = {
             // 回復呪文
-            hoimi: { id: 'hoimi', name: 'ホイミ', mp: 3, type: 'heal', power: 30, learnLevel: 1, element: 'heal', flashColor: 'rgba(0, 255, 100, 0.5)' },
+            hoimi: { id: 'hoimi', name: 'ホイミ', mp: 3, type: 'heal', power: 30, learnLevel: 2, element: 'heal', flashColor: 'rgba(0, 255, 100, 0.5)' },
             // 攻撃呪文
-            mera: { id: 'mera', name: 'メラ', mp: 2, type: 'attack', power: 15, learnLevel: 1, element: 'fire', flashColor: 'rgba(255, 100, 0, 0.6)' },
-            hyado: { id: 'hyado', name: 'ヒャド', mp: 4, type: 'attack', power: 25, learnLevel: 4, element: 'ice', flashColor: 'rgba(100, 200, 255, 0.6)' },
-            gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', power: 35, learnLevel: 6, element: 'light', flashColor: 'rgba(255, 255, 100, 0.6)' },
+            mera: { id: 'mera', name: 'メラ', mp: 2, type: 'attack', power: 15, learnLevel: 3, element: 'fire', flashColor: 'rgba(255, 100, 0, 0.6)' },
+            hyado: { id: 'hyado', name: 'ヒャド', mp: 4, type: 'attack', power: 25, learnLevel: 6, element: 'ice', flashColor: 'rgba(100, 200, 255, 0.6)' },
+            gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', power: 35, learnLevel: 8, element: 'light', flashColor: 'rgba(255, 255, 100, 0.6)' },
             // 状態異常呪文
-            rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 3, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
-            manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 5, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' }
+            rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 5, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
+            manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 9, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' }
         };
 
         // 状態異常の定義
@@ -2849,7 +2849,7 @@
             player.dir = 0;
             player.inventory = [];
             player.equipment = { weapon: null, armor: null };
-            player.spells = ['hoimi', 'mera'];
+            player.spells = [];
             player.status = { sleep: 0, poison: 0, blind: 0 };
 
             openedChests = [];
@@ -4688,11 +4688,11 @@
             player.shield = null;
             player.helmet = null;
             player.accessory = null;
-            player.spells = ['hoimi', 'mera']; // 初期呪文
+            player.spells = []; // Lv1では呪文なし
             player.statusEffects = [];
 
-            // インベントリをリセット
-            player.inventory = [{ id: 1, quantity: 3 }];
+            // インベントリをリセット（薬草3つ）
+            player.inventory = [1, 1, 1];
 
             // マップをリセット（外部JSONを優先してロード）
             currentMapId = 'field';
