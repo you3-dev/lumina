@@ -758,13 +758,30 @@
         const spells = {
             // 回復呪文
             hoimi: { id: 'hoimi', name: 'ホイミ', mp: 3, type: 'heal', power: 30, learnLevel: 2, element: 'heal', flashColor: 'rgba(0, 255, 100, 0.5)' },
-            // 攻撃呪文
+            behoimi: { id: 'behoimi', name: 'ベホイミ', mp: 6, type: 'heal', power: 80, learnLevel: 12, element: 'heal', flashColor: 'rgba(0, 255, 100, 0.6)' },
+            behoma: { id: 'behoma', name: 'ベホマ', mp: 12, type: 'heal', power: 999, learnLevel: 32, element: 'heal', flashColor: 'rgba(0, 255, 100, 0.8)' },
+            behomazun: { id: 'behomazun', name: 'ベホマズン', mp: 40, type: 'heal', power: 999, learnLevel: 60, element: 'heal', flashColor: 'rgba(0, 255, 100, 1.0)' },
+            // 復活呪文
+            zaoraru: { id: 'zaoraru', name: 'ザオラル', mp: 10, type: 'revive', successRate: 0.5, learnLevel: 22, element: 'heal', flashColor: 'rgba(255, 255, 200, 0.7)' },
+            // 攻撃呪文（単体）
             mera: { id: 'mera', name: 'メラ', mp: 2, type: 'attack', power: 15, learnLevel: 3, element: 'fire', flashColor: 'rgba(255, 100, 0, 0.6)' },
+            merami: { id: 'merami', name: 'メラミ', mp: 8, type: 'attack', power: 80, learnLevel: 28, element: 'fire', flashColor: 'rgba(255, 100, 0, 0.8)' },
+            merazoma: { id: 'merazoma', name: 'メラゾーマ', mp: 15, type: 'attack', power: 200, learnLevel: 45, element: 'fire', flashColor: 'rgba(255, 50, 0, 1.0)' },
             hyado: { id: 'hyado', name: 'ヒャド', mp: 4, type: 'attack', power: 25, learnLevel: 6, element: 'ice', flashColor: 'rgba(100, 200, 255, 0.6)' },
-            gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', power: 35, learnLevel: 8, element: 'light', flashColor: 'rgba(255, 255, 100, 0.6)' },
+            // 攻撃呪文（全体）
+            gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', power: 35, learnLevel: 8, element: 'fire', flashColor: 'rgba(255, 255, 100, 0.6)' },
+            begirama: { id: 'begirama', name: 'ベギラマ', mp: 10, type: 'attack', power: 70, learnLevel: 18, element: 'fire', flashColor: 'rgba(255, 200, 50, 0.8)' },
+            begiragon: { id: 'begiragon', name: 'ベギラゴン', mp: 20, type: 'attack', power: 150, learnLevel: 40, element: 'fire', flashColor: 'rgba(255, 150, 0, 1.0)' },
+            gigadein: { id: 'gigadein', name: 'ギガデイン', mp: 30, type: 'attack', power: 300, learnLevel: 50, element: 'light', flashColor: 'rgba(255, 255, 100, 1.0)' },
+            minadein: { id: 'minadein', name: 'ミナデイン', mp: 50, type: 'attack', power: 1000, learnLevel: 99, element: 'light', flashColor: 'rgba(255, 255, 255, 1.0)' },
             // 状態異常呪文
             rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 5, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
-            manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 9, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' }
+            manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 9, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
+            // 補助呪文
+            sukuruto: { id: 'sukuruto', name: 'スクルト', mp: 4, type: 'buff', buffType: 'defense', buffRate: 1.5, learnLevel: 25, element: 'buff', flashColor: 'rgba(100, 200, 255, 0.5)' },
+            baikiruto: { id: 'baikiruto', name: 'バイキルト', mp: 6, type: 'buff', buffType: 'attack', buffRate: 2.0, learnLevel: 35, element: 'buff', flashColor: 'rgba(255, 100, 100, 0.6)' },
+            // 移動呪文
+            riremito: { id: 'riremito', name: 'リレミト', mp: 4, type: 'escape', learnLevel: 15, element: 'move', flashColor: 'rgba(200, 200, 255, 0.5)' }
         };
 
         // 状態異常の定義
