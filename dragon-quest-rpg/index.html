@@ -3595,8 +3595,7 @@
             player.statusEffects = [];
 
             // インベントリをリセット
-            inventory.length = 0;
-            inventory.push({ id: 1, quantity: 3 });
+            player.inventory = [{ id: 1, quantity: 3 }];
 
             // マップをリセット
             currentMapId = 'field';
