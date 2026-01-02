@@ -8,6 +8,7 @@
   "isSafe": false,
   "encounterRate": 0.15,
   "encounterTable": "quicksand_cave",
+  "isOutdoor": false,
   "data": [
     [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
     [7,6,6,6,6,7,7,7,7,7,7,7,7,7,6,6,6,6,6,7],

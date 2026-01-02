@@ -1115,7 +1115,8 @@
             sukuruto: { id: 'sukuruto', name: 'スクルト', mp: 4, type: 'buff', buffType: 'defense', buffRate: 1.5, learnLevel: 25, element: 'buff', flashColor: 'rgba(100, 200, 255, 0.5)' },
             baikiruto: { id: 'baikiruto', name: 'バイキルト', mp: 6, type: 'buff', buffType: 'attack', buffRate: 2.0, learnLevel: 35, element: 'buff', flashColor: 'rgba(255, 100, 100, 0.6)' },
             // 移動呪文
-            riremito: { id: 'riremito', name: 'リレミト', mp: 4, type: 'escape', learnLevel: 15, element: 'move', flashColor: 'rgba(200, 200, 255, 0.5)' }
+            riremito: { id: 'riremito', name: 'リレミト', mp: 4, type: 'escape', learnLevel: 12, element: 'move', flashColor: 'rgba(200, 200, 255, 0.5)' },
+            rura: { id: 'rura', name: 'ルーラ', mp: 8, type: 'warp', learnLevel: 15, element: 'move', flashColor: 'rgba(100, 200, 255, 0.7)' }
         };
 
         // 状態異常の定義
@@ -1181,7 +1182,11 @@
             // エリア別進行状態
             areas: {},
             // 発見済み隠し通路（マップID -> 座標配列）
-            openedPassages: {}
+            openedPassages: {},
+            // ルーラ用：訪問済み拠点リスト
+            visitedLocations: [],
+            // リレミト用：ダンジョン進入直前の位置
+            lastEntrance: null
         };
 
         // フラグ操作ヘルパー関数
@@ -1255,6 +1260,47 @@
                     mapData.data[p.y][p.x] = TILE.FLOOR;
                 }
             });
+        }
+
+        // ルーラ用：訪問済み拠点の登録
+        function registerVisitedLocation(mapData) {
+            if (!mapData.isSettlement) return;
+
+            // 既に登録済みかチェック
+            const exists = gameProgress.visitedLocations.some(loc => loc.mapId === mapData.mapId);
+            if (exists) return;
+
+            // 拠点を登録
+            gameProgress.visitedLocations.push({
+                mapId: mapData.mapId,
+                displayName: mapData.name,
+                arrivalX: mapData.arrivalX || 0,
+                arrivalY: mapData.arrivalY || 0
+            });
+        }
+
+        // リレミト用：ダンジョン進入前の位置を記憶
+        function recordDungeonEntrance(prevMapData, prevX, prevY, prevMapPath) {
+            // 屋外から屋内/ダンジョンへ移動した場合のみ記憶
+            if (prevMapData && prevMapData.isOutdoor === true) {
+                gameProgress.lastEntrance = {
+                    mapId: prevMapData.mapId,
+                    mapPath: prevMapPath,
+                    x: prevX,
+                    y: prevY,
+                    name: prevMapData.name
+                };
+            }
+        }
+
+        // ダンジョン入口情報を取得
+        function getLastEntrance() {
+            return gameProgress.lastEntrance;
+        }
+
+        // 現在のマップが屋外かどうか
+        function isCurrentMapOutdoor() {
+            return currentMap && currentMap.isOutdoor === true;
         }
 
         // クエストフラグ操作
@@ -1890,7 +1936,9 @@
                     storyFlags: { ...gameProgress.storyFlags },
                     areas: { ...gameProgress.areas },
                     quests: JSON.parse(JSON.stringify(gameProgress.quests)),
-                    openedPassages: JSON.parse(JSON.stringify(gameProgress.openedPassages))
+                    openedPassages: JSON.parse(JSON.stringify(gameProgress.openedPassages)),
+                    visitedLocations: JSON.parse(JSON.stringify(gameProgress.visitedLocations)),
+                    lastEntrance: gameProgress.lastEntrance ? { ...gameProgress.lastEntrance } : null
                 },
                 // キメラのつばさ用：最後に訪れた町
                 lastTown: { ...lastTown }
@@ -2068,6 +2116,14 @@
                     // 隠し通路の復元
                     if (data.gameProgress.openedPassages) {
                         gameProgress.openedPassages = JSON.parse(JSON.stringify(data.gameProgress.openedPassages));
+                    }
+                    // ルーラ用：訪問済み拠点の復元
+                    if (data.gameProgress.visitedLocations) {
+                        gameProgress.visitedLocations = JSON.parse(JSON.stringify(data.gameProgress.visitedLocations));
+                    }
+                    // リレミト用：ダンジョン入口の復元
+                    if (data.gameProgress.lastEntrance) {
+                        gameProgress.lastEntrance = { ...data.gameProgress.lastEntrance };
                     }
                 } else {
                     // 旧セーブデータからの移行：gameClearedからmaou撃破フラグを推測
@@ -3120,6 +3176,7 @@
                 drawMenu();
                 drawInn();
                 drawShop();
+                drawRuraSelection();
             }
 
             ctx.restore();
@@ -4807,13 +4864,6 @@
             const spell = spells[spellId];
             if (!spell) return;
 
-            // フィールドで使えるのは回復呪文のみ
-            if (spell.type !== 'heal') {
-                closeMenu();
-                startDialog(['ここでは 使えない！']);
-                return;
-            }
-
             // MP不足チェック
             if (player.mp < spell.mp) {
                 closeMenu();
@@ -4821,26 +4871,220 @@
                 return;
             }
 
-            // HP満タンチェック
-            if (player.hp >= player.maxHp) {
+            // 呪文タイプ別処理
+            if (spell.type === 'heal') {
+                // 回復呪文
+                if (player.hp >= player.maxHp) {
+                    closeMenu();
+                    startDialog(['HPは まんたんだ！']);
+                    return;
+                }
+
+                player.mp -= spell.mp;
+                const healAmount = Math.min(spell.power, player.maxHp - player.hp);
+                player.hp += healAmount;
+
                 closeMenu();
-                startDialog(['HPは まんたんだ！']);
+                startDialog([
+                    `${spell.name}を となえた！`,
+                    `HPが ${healAmount} 回復した！`
+                ]);
+
+            } else if (spell.type === 'warp') {
+                // ルーラ（拠点ワープ）
+                useRura();
+
+            } else if (spell.type === 'escape') {
+                // リレミト（ダンジョン脱出）
+                useRiremito();
+
+            } else {
+                closeMenu();
+                startDialog(['ここでは 使えない！']);
+            }
+        }
+
+        // ルーラ用：拠点選択状態
+        let ruraState = {
+            active: false,
+            cursor: 0
+        };
+
+        // ルーラを使用（拠点選択UIを表示）
+        function useRura() {
+            const spell = spells.rura;
+
+            // 天井判定：屋内では使えない
+            if (currentMap.isOutdoor === false) {
+                player.mp -= spell.mp;
+                closeMenu();
+                startDialog([
+                    `${spell.name}を となえた！`,
+                    'しかし 天井に 頭を ぶつけてしまった！'
+                ]);
                 return;
             }
 
-            // MP消費
-            player.mp -= spell.mp;
+            // 訪問済み拠点がない場合
+            if (gameProgress.visitedLocations.length === 0) {
+                closeMenu();
+                startDialog(['まだ どこにも 行ったことがない！']);
+                return;
+            }
 
-            // HP回復
-            const healAmount = Math.min(spell.power, player.maxHp - player.hp);
-            player.hp += healAmount;
-
-            // メニューを閉じてダイアログ表示
+            // 拠点選択UIを表示
+            ruraState.active = true;
+            ruraState.cursor = 0;
             closeMenu();
-            startDialog([
-                `${spell.name}を となえた！`,
-                `HPが ${healAmount} 回復した！`
-            ]);
+        }
+
+        // ルーラ実行（拠点を選択して移動）
+        async function executeRura(locationIndex) {
+            const spell = spells.rura;
+            const location = gameProgress.visitedLocations[locationIndex];
+            if (!location) return;
+
+            player.mp -= spell.mp;
+            ruraState.active = false;
+
+            // ルーラ演出（白フラッシュ）
+            await playRuraAnimation();
+
+            // ダイアログを表示してワープ
+            startDialogWithCallback(
+                [`${location.displayName}へ 向かって 飛び立った！`],
+                () => {
+                    const mapPath = `maps/${location.mapId}.json`;
+                    performWarp(mapPath, location.arrivalX, location.arrivalY);
+                }
+            );
+        }
+
+        // ルーラ演出
+        async function playRuraAnimation() {
+            return new Promise(resolve => {
+                // 白フラッシュ
+                spellFlash.active = true;
+                spellFlash.color = 'rgba(100, 200, 255, 0.8)';
+                spellFlash.alpha = 1.0;
+
+                setTimeout(() => {
+                    spellFlash.active = false;
+                    resolve();
+                }, 500);
+            });
+        }
+
+        // リレミトを使用（ダンジョン脱出）
+        function useRiremito() {
+            const spell = spells.riremito;
+
+            // フィールドでは使えない
+            if (currentMap.isOutdoor === true) {
+                closeMenu();
+                startDialog([
+                    `${spell.name}を となえた！`,
+                    'しかし ここでは 意味がない！'
+                ]);
+                return;
+            }
+
+            // ダンジョン入口情報がない場合
+            const entrance = getLastEntrance();
+            if (!entrance) {
+                closeMenu();
+                startDialog(['脱出先が 見つからない！']);
+                return;
+            }
+
+            player.mp -= spell.mp;
+            closeMenu();
+
+            // リレミト演出（白フラッシュ）
+            playRiremitoAnimation().then(() => {
+                startDialogWithCallback(
+                    ['ゆうしゃは 呪文を となえて 脱出した！'],
+                    () => {
+                        performWarp(entrance.mapPath, entrance.x, entrance.y);
+                    }
+                );
+            });
+        }
+
+        // リレミト演出
+        async function playRiremitoAnimation() {
+            return new Promise(resolve => {
+                spellFlash.active = true;
+                spellFlash.color = 'rgba(200, 200, 255, 0.8)';
+                spellFlash.alpha = 1.0;
+
+                setTimeout(() => {
+                    spellFlash.active = false;
+                    resolve();
+                }, 400);
+            });
+        }
+
+        // ルーラ拠点選択UIの描画
+        function drawRuraSelection() {
+            if (!ruraState.active) return;
+
+            const locations = gameProgress.visitedLocations;
+            if (locations.length === 0) return;
+
+            // ウィンドウサイズ計算
+            const lineHeight = tileSize * 0.5;
+            const windowWidth = canvasWidth * 0.6;
+            const windowHeight = lineHeight * (locations.length + 2) + 40;
+            const windowX = (canvasWidth - windowWidth) / 2;
+            const windowY = (canvasHeight - windowHeight) / 2;
+
+            // ウィンドウ描画
+            drawWindow(windowX, windowY, windowWidth, windowHeight);
+
+            // タイトル
+            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = '#ffd700';
+            ctx.fillText('どこへ いきますか？', canvasWidth / 2, windowY + 15);
+
+            // 区切り線
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(windowX + 20, windowY + 40);
+            ctx.lineTo(windowX + windowWidth - 20, windowY + 40);
+            ctx.stroke();
+
+            // 拠点リスト
+            ctx.textAlign = 'left';
+            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+            const listStartY = windowY + 55;
+
+            for (let i = 0; i < locations.length; i++) {
+                const y = listStartY + i * lineHeight;
+
+                // カーソル表示
+                if (i === ruraState.cursor) {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillText('▶', windowX + 25, y);
+                }
+
+                // 拠点名
+                ctx.fillStyle = i === ruraState.cursor ? '#fff' : 'rgba(255, 255, 255, 0.7)';
+                ctx.fillText(locations[i].displayName, windowX + 50, y);
+            }
+
+            // 操作説明
+            ctx.font = `${tileSize * 0.25}px 'MS Gothic', monospace`;
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.fillText('↑↓:選択  Enter:決定  Esc:キャンセル', canvasWidth / 2, windowY + windowHeight - 20);
+        }
+
+        // ルーラ選択をキャンセル
+        function cancelRuraSelection() {
+            ruraState.active = false;
         }
 
         function equipItem(itemId) {
@@ -5029,6 +5273,12 @@
         async function performWarp(targetMap, targetX, targetY) {
             if (isTransitioning) return;
 
+            // リレミト用：進入前のマップ情報を保存
+            const prevMapData = currentMap;
+            const prevX = player.x;
+            const prevY = player.y;
+            const prevMapPath = currentMapPath;
+
             // 新形式（maps/*.json）か旧形式（mapId）かを判定
             const isNewFormat = isMapPath(targetMap);
             const targetMapPath = isNewFormat ? targetMap : getMapPathFromId(targetMap);
@@ -5100,6 +5350,14 @@
                     stepsSinceLastBattle = 0;
                 }
 
+                // ルーラ用：拠点の登録
+                registerVisitedLocation(currentMap);
+
+                // リレミト用：ダンジョン進入時に入口を記憶
+                if (currentMap.isOutdoor === false && prevMapData) {
+                    recordDungeonEntrance(prevMapData, prevX, prevY, prevMapPath);
+                }
+
                 // 町・城に入ったらキメラのつばさ用に記録
                 if (currentMap.type === 'town' || currentMap.type === 'castle') {
                     lastTown = {
@@ -5138,6 +5396,13 @@
         // 旧形式のワープ処理（互換性維持）
         function performLegacyWarp(targetMapId, targetX, targetY) {
             if (isTransitioning || !maps[targetMapId]) return;
+
+            // リレミト用：進入前のマップ情報を保存
+            const prevMapData = currentMap;
+            const prevX = player.x;
+            const prevY = player.y;
+            const prevMapPath = currentMapPath;
+
             isTransitioning = true;
             fadeOverlay.classList.add('active');
 
@@ -5157,6 +5422,14 @@
                 // 安全なマップ（街・城など）に入ったら歩数リセット
                 if (currentMap.encounterRate <= 0) {
                     stepsSinceLastBattle = 0;
+                }
+
+                // ルーラ用：拠点の登録
+                registerVisitedLocation(currentMap);
+
+                // リレミト用：ダンジョン進入時に入口を記憶
+                if (currentMap.isOutdoor === false && prevMapData) {
+                    recordDungeonEntrance(prevMapData, prevX, prevY, prevMapPath);
                 }
 
                 // 町・城に入ったらキメラのつばさ用に記録
@@ -5867,6 +6140,27 @@
                     case 'Escape': case 'x': case 'b': case 'B':
                         closeInn();
                         startDialog(['またのお越しを おまちしております。']);
+                        break;
+                }
+                e.preventDefault();
+                return;
+            }
+
+            // ルーラ拠点選択
+            if (ruraState.active) {
+                const locations = gameProgress.visitedLocations;
+                switch (e.key) {
+                    case 'ArrowUp': case 'w': case 'W':
+                        ruraState.cursor = (ruraState.cursor + locations.length - 1) % locations.length;
+                        break;
+                    case 'ArrowDown': case 's': case 'S':
+                        ruraState.cursor = (ruraState.cursor + 1) % locations.length;
+                        break;
+                    case 'Enter': case ' ': case 'z': case 'Z':
+                        executeRura(ruraState.cursor);
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        cancelRuraSelection();
                         break;
                 }
                 e.preventDefault();
