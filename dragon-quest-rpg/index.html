@@ -471,7 +471,8 @@
             SAND: 11,        // 砂漠
             OASIS: 12,       // オアシス
             PYRAMID: 13,     // ピラミッド入口
-            QUICKSAND: 14    // 流砂（ワープ用）
+            QUICKSAND: 14,   // 流砂（ワープ用）
+            HIDDEN_WALL: 15  // 隠し壁（調べると通路になる）
         };
 
         // マップタイプ別のタイル色
@@ -519,7 +520,8 @@
             [TILE.SAND]: '#d4a559',        // 砂漠（黄土色）
             [TILE.OASIS]: '#2d8a57',       // オアシス（緑）
             [TILE.PYRAMID]: '#c4a040',     // ピラミッド（金色）
-            [TILE.QUICKSAND]: '#b89050'    // 流砂（暗い砂色）
+            [TILE.QUICKSAND]: '#b89050',   // 流砂（暗い砂色）
+            [TILE.HIDDEN_WALL]: '#2a2a2a'  // 隠し壁（壁と同じ色）
         };
 
         const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR, TILE.PORTAL, TILE.STAIRS_UP, TILE.STAIRS_DOWN, TILE.SAND, TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND];
@@ -549,6 +551,7 @@
             // エリア2 武器・防具
             15: { id: 15, name: 'さばくのつるぎ', type: 'weapon', value: 45, price: 1500, equippable: ['hero'] },
             16: { id: 16, name: 'ファラオのつるぎ', type: 'weapon', value: 55, price: 3000, equippable: ['hero'] },
+            17: { id: 17, name: 'おうごんのつめ', type: 'weapon', value: 65, price: 0, equippable: ['hero'] }, // 隠し通路の宝箱
             25: { id: 25, name: 'さばくのよろい', type: 'armor', value: 40, price: 1800, equippable: ['hero'] },
             26: { id: 26, name: 'ファラオのよろい', type: 'armor', value: 50, price: 3500, equippable: ['hero'] },
             // クエストアイテム（エリア2）
@@ -564,7 +567,7 @@
 
         // ショップ商品リスト（エリア別対応）
         const shopItemsByArea = {
-            default: [11, 12, 13, 21, 22, 23, 24], // どうのつるぎ〜まほうのよろい
+            default: [11, 12, 13, 21, 22, 23], // どうのつるぎ〜てつのよろい
             area2_shop: [12, 13, 14, 22, 23, 24, 1, 2, 3], // より強い装備 + 回復アイテム
             // 砂漠エリアのショップ
             oasis_shop: [1, 2, 4, 9, 12, 13, 22, 23], // オアシスの村：基本装備と回復
@@ -748,7 +751,7 @@
                 sprite: '🗿',
                 level: 9,
                 hp: 100,
-                atk: 28,
+                atk: 35,
                 def: 18,
                 speed: 6,
                 exp: 80,
@@ -1147,7 +1150,10 @@
             // ストーリー進行フラグ
             storyFlags: {
                 reportedMidBossDefeat: false,  // 中ボス撃破を王様に報告
-                portalRoomUnlocked: false      // 旅の扉の部屋への通行許可
+                portalRoomUnlocked: false,     // 旅の扉の部屋への通行許可
+                bazaarUnlocked: false,         // バザールの町への通行許可
+                desertPortalUnlocked: false,   // 砂漠の旅の扉開放
+                desertCastleUnlocked: false    // 太陽の城塞への通行許可
             },
             // クエストフラグ（エリア2）
             quests: {
@@ -1173,7 +1179,9 @@
                 }
             },
             // エリア別進行状態
-            areas: {}
+            areas: {},
+            // 発見済み隠し通路（マップID -> 座標配列）
+            openedPassages: {}
         };
 
         // フラグ操作ヘルパー関数
@@ -1217,6 +1225,36 @@
                 });
             });
             gameProgress.areas = {};
+            gameProgress.openedPassages = {};
+        }
+
+        // 隠し通路操作ヘルパー
+        function isPassageOpened(mapId, x, y) {
+            const passages = gameProgress.openedPassages[mapId];
+            if (!passages) return false;
+            return passages.some(p => p.x === x && p.y === y);
+        }
+
+        function openPassage(mapId, x, y) {
+            if (!gameProgress.openedPassages[mapId]) {
+                gameProgress.openedPassages[mapId] = [];
+            }
+            if (!isPassageOpened(mapId, x, y)) {
+                gameProgress.openedPassages[mapId].push({ x, y });
+            }
+        }
+
+        // マップ読み込み時に発見済み隠し通路を適用
+        function applyOpenedPassages(mapData) {
+            const mapId = mapData.mapId;
+            const passages = gameProgress.openedPassages[mapId];
+            if (!passages || !mapData.data) return;
+
+            passages.forEach(p => {
+                if (mapData.data[p.y] && mapData.data[p.y][p.x] === TILE.HIDDEN_WALL) {
+                    mapData.data[p.y][p.x] = TILE.FLOOR;
+                }
+            });
         }
 
         // クエストフラグ操作
@@ -1499,6 +1537,14 @@
             }
         };
 
+        // 最後に訪れた町（キメラのつばさ用）
+        let lastTown = {
+            mapPath: 'maps/town.json',
+            x: 9,
+            y: 9,
+            name: 'アルカディアの街'
+        };
+
         // 装備込みのステータスを計算して更新
         function updateActualStats() {
             const weapon = items[player.equipment.weapon];
@@ -1596,10 +1642,10 @@
         }
 
         // レベルアップに必要な経験値（指数関数的増加）
-        // 計算式: Math.floor(10 * Math.pow(2.5, level-1))
+        // 計算式: Math.floor(10 * Math.pow(2.2, level-1))
         function getExpForLevel(level) {
             if (level <= 1) return 0;
-            return Math.floor(10 * Math.pow(2.5, level - 2));
+            return Math.floor(10 * Math.pow(2.2, level - 2));
         }
 
         // レベル1-10の必要経験値テーブル（累積）
@@ -1686,6 +1732,7 @@
         const ctx = canvas.getContext('2d');
         const fadeOverlay = document.getElementById('fadeOverlay');
         const mapNameElement = document.getElementById('mapName');
+        const mapNameArea = document.getElementById('mapNameArea');
 
         let tileSize = 32;
         let cameraX = 0;
@@ -1739,8 +1786,12 @@
                 gameProgress: {
                     bossDefeated: { ...gameProgress.bossDefeated },
                     storyFlags: { ...gameProgress.storyFlags },
-                    areas: { ...gameProgress.areas }
-                }
+                    areas: { ...gameProgress.areas },
+                    quests: JSON.parse(JSON.stringify(gameProgress.quests)),
+                    openedPassages: JSON.parse(JSON.stringify(gameProgress.openedPassages))
+                },
+                // キメラのつばさ用：最後に訪れた町
+                lastTown: { ...lastTown }
             };
 
             try {
@@ -1904,11 +1955,28 @@
                     if (data.gameProgress.areas) {
                         gameProgress.areas = { ...data.gameProgress.areas };
                     }
+                    // クエストフラグの復元
+                    if (data.gameProgress.quests) {
+                        for (const questName in data.gameProgress.quests) {
+                            if (gameProgress.quests[questName]) {
+                                Object.assign(gameProgress.quests[questName], data.gameProgress.quests[questName]);
+                            }
+                        }
+                    }
+                    // 隠し通路の復元
+                    if (data.gameProgress.openedPassages) {
+                        gameProgress.openedPassages = JSON.parse(JSON.stringify(data.gameProgress.openedPassages));
+                    }
                 } else {
                     // 旧セーブデータからの移行：gameClearedからmaou撃破フラグを推測
                     gameProgress.bossDefeated.maou = gameCleared;
                     gameProgress.storyFlags.reportedMidBossDefeat = false;
                     gameProgress.storyFlags.portalRoomUnlocked = false;
+                }
+
+                // キメラのつばさ用：最後に訪れた町を復元
+                if (data.lastTown) {
+                    lastTown = { ...data.lastTown };
                 }
 
                 // ロード後にステータスを再計算
@@ -2961,6 +3029,9 @@
 
             gameMode = MODE.BATTLE;
 
+            // バトル中はマップ名を非表示
+            mapNameArea.style.display = 'none';
+
             // フラッシュアニメーション
             const flashInterval = setInterval(() => {
                 battle.flashCount--;
@@ -3587,6 +3658,8 @@
             setTimeout(() => {
                 gameMode = MODE.FIELD;
                 battle.active = false;
+                // マップ名を再表示
+                mapNameArea.style.display = 'flex';
                 updateCamera();
                 saveGame();
             }, 500);
@@ -4263,6 +4336,28 @@
                     success = true;
                     break;
 
+                case 'escape':
+                    // キメラのつばさ：町に戻る
+                    if (currentMap.type === 'town' || currentMap.type === 'castle') {
+                        message = 'ここでは 使えない！';
+                    } else {
+                        // アイテム消費
+                        removeItem(itemId, 1);
+                        if (menu.itemCursor >= player.inventory.length && menu.itemCursor > 0) {
+                            menu.itemCursor--;
+                        }
+                        // メニューを閉じてダイアログ表示、完了後にワープ
+                        closeMenu();
+                        startDialogWithCallback(
+                            [`${item.name}を使った！`, `${lastTown.name}に 飛んでいく...`],
+                            () => {
+                                performMapWarp(lastTown.mapPath, lastTown.x, lastTown.y);
+                            }
+                        );
+                        return true;
+                    }
+                    break;
+
                 case 'key':
                     // 鍵：フィールドでは使えない
                     message = 'ここでは 使えない！';
@@ -4561,6 +4656,9 @@
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
 
+                // 発見済み隠し通路を適用
+                applyOpenedPassages(currentMap);
+
                 // セーブデータから宝箱の開封状態を復元
                 try {
                     const savedData = localStorage.getItem(SAVE_KEY);
@@ -4584,6 +4682,16 @@
                 // 安全なマップ（街・城など）に入ったら歩数リセット
                 if (currentMap.encounterRate <= 0) {
                     stepsSinceLastBattle = 0;
+                }
+
+                // 町・城に入ったらキメラのつばさ用に記録
+                if (currentMap.type === 'town' || currentMap.type === 'castle') {
+                    lastTown = {
+                        mapPath: targetMapPath,
+                        x: targetX,
+                        y: targetY,
+                        name: currentMap.name
+                    };
                 }
 
                 // フェードイン
@@ -4624,6 +4732,7 @@
                 player.x = targetX;
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
+                applyOpenedPassages(currentMap);
                 updateMapPinVisibility();
                 updateFloorDisplay();
                 updateCamera();
@@ -4632,6 +4741,16 @@
                 // 安全なマップ（街・城など）に入ったら歩数リセット
                 if (currentMap.encounterRate <= 0) {
                     stepsSinceLastBattle = 0;
+                }
+
+                // 町・城に入ったらキメラのつばさ用に記録
+                if (currentMap.type === 'town' || currentMap.type === 'castle') {
+                    lastTown = {
+                        mapPath: currentMapPath,
+                        x: targetX,
+                        y: targetY,
+                        name: currentMap.name
+                    };
                 }
 
                 setTimeout(() => {
@@ -4730,7 +4849,51 @@
             }
 
             const chest = getChestAt(front.x, front.y);
-            if (chest) { openChest(chest); }
+            if (chest) { openChest(chest); return; }
+
+            // 隠し壁のチェック
+            checkHiddenWall(front.x, front.y);
+        }
+
+        // 隠し壁を調べる
+        function checkHiddenWall(x, y) {
+            if (x < 0 || y < 0 || y >= currentMap.rows || x >= currentMap.cols) return;
+
+            const tile = currentMap.data[y][x];
+            if (tile === TILE.HIDDEN_WALL) {
+                // 隠し通路を発見！
+                revealHiddenPassage(x, y);
+            }
+        }
+
+        // 隠し通路を開く
+        function revealHiddenPassage(x, y) {
+            // タイルを通路に変更
+            currentMap.data[y][x] = TILE.FLOOR;
+
+            // 進行状況に記録
+            openPassage(currentMapId, x, y);
+
+            // フラッシュ演出
+            flashScreen('#ffffff', 200);
+
+            // メッセージ表示
+            startDialogWithCallback(
+                ['なんと！', 'かくしつうろを みつけた！'],
+                () => {
+                    saveGame();
+                }
+            );
+        }
+
+        // 画面フラッシュ演出
+        function flashScreen(color, duration) {
+            fadeOverlay.style.backgroundColor = color;
+            fadeOverlay.classList.add('active');
+            setTimeout(() => {
+                fadeOverlay.classList.remove('active');
+                fadeOverlay.style.backgroundColor = '';
+            }, duration);
         }
 
         // 王様との会話処理（条件分岐）
@@ -4915,6 +5078,9 @@
             player.status = { sleep: 0, poison: 0, blind: 0 };
             gameMode = MODE.BATTLE;
 
+            // バトル中はマップ名を非表示
+            mapNameArea.style.display = 'none';
+
             // フラッシュ演出
             const flashInterval = setInterval(() => {
                 battle.flashCount--;
@@ -4964,6 +5130,9 @@
 
             player.status = { sleep: 0, poison: 0, blind: 0 };
             gameMode = MODE.BATTLE;
+
+            // バトル中はマップ名を非表示
+            mapNameArea.style.display = 'none';
 
             // 激しいフラッシュ演出
             const flashInterval = setInterval(() => {
@@ -5716,9 +5885,9 @@
             gameMode = MODE.FIELD;
             worldMapOverlay.classList.remove('active');
 
-            // アニメーション停止
+            // アニメーション停止（setTimeoutを使用しているためclearTimeoutで停止）
             if (worldMapAnimationId) {
-                cancelAnimationFrame(worldMapAnimationId);
+                clearTimeout(worldMapAnimationId);
                 worldMapAnimationId = null;
             }
         }

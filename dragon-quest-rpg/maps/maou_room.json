@@ -1,6 +1,6 @@
 {
   "mapId": "maouRoom",
-  "name": "魔王の間",
+  "name": "暗黒の玉座",
   "type": "dungeon",
   "cols": 15,
   "rows": 15,
@@ -27,7 +27,7 @@
     { "x": 7, "y": 12, "targetMap": "maps/dungeon.json", "targetX": 23, "targetY": 21 }
   ],
   "npcs": [
-    { "id": "maou", "x": 7, "y": 3, "sprite": "👿", "type": "maou", "messages": [] }
+    { "id": "midBoss", "x": 7, "y": 3, "sprite": "🗿", "type": "boss", "bossId": "midBoss", "messages": [] }
   ],
   "chests": []
 }
