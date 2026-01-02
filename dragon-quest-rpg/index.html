@@ -3952,23 +3952,52 @@
                     ctx.fillText(cmd, cmdX + 40, y);
                 });
 
-                // 呪文サブメニュー
+                // 呪文サブメニュー（スクロール対応）
                 if (battle.showSpells) {
                     const currentMember = getCurrentPartyMember();
+                    const validSpells = currentMember.spells.filter(id => spells[id]);
+                    const maxVisibleSpells = 5; // 最大表示件数
                     const spellW = cmdW * 1.1;
-                    const spellH = Math.max(tileSize * 2.5, tileSize * 0.6 * currentMember.spells.length + 30);
+                    const rowHeight = tileSize * 0.6;
+                    const visibleCount = Math.min(validSpells.length, maxVisibleSpells);
+                    const spellH = rowHeight * visibleCount + 40; // 上下余白含む
                     const spellX = cmdX - spellW - 10;
                     const spellY = cmdY;
                     drawWindow(spellX, spellY, spellW, spellH);
 
-                    currentMember.spells.forEach((spellId, i) => {
+                    // スクロールオフセット計算（カーソルが常に表示範囲内になるよう調整）
+                    let scrollOffset = 0;
+                    if (validSpells.length > maxVisibleSpells) {
+                        // カーソルが下端を超えたらスクロール
+                        if (battle.spellIndex >= maxVisibleSpells) {
+                            scrollOffset = Math.min(
+                                battle.spellIndex - maxVisibleSpells + 1,
+                                validSpells.length - maxVisibleSpells
+                            );
+                        }
+                    }
+
+                    // 上矢印（スクロール可能な場合）
+                    if (scrollOffset > 0) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.fillText('▲', spellX + spellW / 2, spellY + 12);
+                        ctx.textAlign = 'left';
+                    }
+
+                    // 呪文リスト描画
+                    for (let i = 0; i < visibleCount; i++) {
+                        const spellIdx = i + scrollOffset;
+                        if (spellIdx >= validSpells.length) break;
+
+                        const spellId = validSpells[spellIdx];
                         const spell = spells[spellId];
-                        if (!spell) return; // 未定義の呪文はスキップ
-                        const y = spellY + 20 + i * tileSize * 0.6;
+                        const y = spellY + 22 + i * rowHeight;
                         const canUse = currentMember.mp >= spell.mp;
 
                         // 選択カーソル
-                        if (i === battle.spellIndex) {
+                        if (spellIdx === battle.spellIndex) {
                             ctx.fillStyle = canUse ? '#ffd700' : '#888';
                             ctx.fillText('▶', spellX + 10, y);
                         }
@@ -3981,12 +4010,21 @@
                         // MP消費量
                         ctx.fillStyle = canUse ? '#8cf' : '#444';
                         ctx.fillText(`${spell.mp}`, spellX + spellW - 40, y);
-                    });
+                    }
+
+                    // 下矢印（スクロール可能な場合）
+                    if (scrollOffset + maxVisibleSpells < validSpells.length) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.fillText('▼', spellX + spellW / 2, spellY + spellH - 18);
+                        ctx.textAlign = 'left';
+                    }
 
                     // 操作ガイド
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
                     ctx.font = `${tileSize * 0.25}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
-                    ctx.fillText('B:もどる', spellX + 10, spellY + spellH - 10);
+                    ctx.fillText('B:もどる', spellX + 10, spellY + spellH - 8);
                 }
 
                 // アイテムサブメニュー
@@ -8073,12 +8111,14 @@
 
                 if (battle.phase === 'command') {
                     if (battle.showSpells) {
+                        const currentMember = getCurrentPartyMember();
+                        const validSpells = currentMember.spells.filter(id => spells[id]);
                         switch (e.key) {
                             case 'ArrowUp': case 'w': case 'W':
                                 battle.spellIndex = Math.max(0, battle.spellIndex - 1);
                                 break;
                             case 'ArrowDown': case 's': case 'S':
-                                battle.spellIndex = Math.min(player.spells.length - 1, battle.spellIndex + 1);
+                                battle.spellIndex = Math.min(validSpells.length - 1, battle.spellIndex + 1);
                                 break;
                             case 'Enter': case ' ': case 'z':
                                 executeBattleCommand();
@@ -8579,13 +8619,23 @@
                 // バトル中 - コマンド選択
                 if (gameMode === MODE.BATTLE && battle.phase === 'command') {
                     if (dy < 0) {
-                        if (battle.showSpells) battle.spellIndex = Math.max(0, battle.spellIndex - 1);
-                        else if (battle.showItems) battle.itemCursor = Math.max(0, battle.itemCursor - 1);
-                        else battle.commandIndex = Math.max(0, battle.commandIndex - 1);
+                        if (battle.showSpells) {
+                            battle.spellIndex = Math.max(0, battle.spellIndex - 1);
+                        } else if (battle.showItems) {
+                            battle.itemCursor = Math.max(0, battle.itemCursor - 1);
+                        } else {
+                            battle.commandIndex = Math.max(0, battle.commandIndex - 1);
+                        }
                     } else if (dy > 0) {
-                        if (battle.showSpells) battle.spellIndex = Math.min(player.spells.length - 1, battle.spellIndex + 1);
-                        else if (battle.showItems) battle.itemCursor = Math.min(Math.max(0, player.inventory.length - 1), battle.itemCursor + 1);
-                        else battle.commandIndex = Math.min(3, battle.commandIndex + 1);
+                        if (battle.showSpells) {
+                            const currentMember = getCurrentPartyMember();
+                            const validSpells = currentMember.spells.filter(id => spells[id]);
+                            battle.spellIndex = Math.min(validSpells.length - 1, battle.spellIndex + 1);
+                        } else if (battle.showItems) {
+                            battle.itemCursor = Math.min(Math.max(0, player.inventory.length - 1), battle.itemCursor + 1);
+                        } else {
+                            battle.commandIndex = Math.min(3, battle.commandIndex + 1);
+                        }
                     }
                     return;
                 }
