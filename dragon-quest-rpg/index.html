@@ -472,7 +472,11 @@
             OASIS: 12,       // オアシス
             PYRAMID: 13,     // ピラミッド入口
             QUICKSAND: 14,   // 流砂（ワープ用）
-            HIDDEN_WALL: 15  // 隠し壁（調べると通路になる）
+            HIDDEN_WALL: 15, // 隠し壁（調べると通路になる）
+            HOLE: 16,             // 穴（地底へ落下）
+            UNDERWORLD_FLOOR: 17, // 地底床
+            UNDERWORLD_WALL: 18,  // 地底壁
+            WEDGE_ALTAR: 19       // 楔の祭壇
         };
 
         // マップタイプ別のタイル色
@@ -521,10 +525,14 @@
             [TILE.OASIS]: '#2d8a57',       // オアシス（緑）
             [TILE.PYRAMID]: '#c4a040',     // ピラミッド（金色）
             [TILE.QUICKSAND]: '#b89050',   // 流砂（暗い砂色）
-            [TILE.HIDDEN_WALL]: '#2a2a2a'  // 隠し壁（壁と同じ色）
+            [TILE.HIDDEN_WALL]: '#2a2a2a', // 隠し壁（壁と同じ色）
+            [TILE.HOLE]: '#1a0a1a',
+            [TILE.UNDERWORLD_FLOOR]: '#2a1a2a',
+            [TILE.UNDERWORLD_WALL]: '#0a0a0a',
+            [TILE.WEDGE_ALTAR]: '#8a6a3a'
         };
 
-        const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR, TILE.PORTAL, TILE.STAIRS_UP, TILE.STAIRS_DOWN, TILE.SAND, TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND];
+        const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR, TILE.PORTAL, TILE.STAIRS_UP, TILE.STAIRS_DOWN, TILE.SAND, TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND, TILE.UNDERWORLD_FLOOR, TILE.WEDGE_ALTAR];
         const ENCOUNTER_TILES = [TILE.GRASS, TILE.FLOOR, TILE.SAND]; // エンカウントが発生するタイル（草原、ダンジョン床、砂漠）
 
         // ========================================
@@ -1020,6 +1028,125 @@
                 actions: 2,
                 resistances: { sleep: 0, blind: 0, poison: 0 }
             },
+            // ========================================
+            // エリア3: 暗黒の森と地底世界（Lv18~28想定）
+            // ========================================
+            // ===== エリア3地上用（Lv18~22）=====
+            shadowSlime: {
+                name: 'シャドースライム',
+                sprite: '🟣',
+                level: 18,
+                hp: 70,
+                atk: 40,
+                def: 20,
+                speed: 12,
+                exp: 100,
+                gold: 70,
+                resistances: { sleep: 0.3, poison: 0.5 }
+            },
+            darkBat: {
+                name: 'ダークバット',
+                sprite: '🦇',
+                level: 19,
+                hp: 55,
+                atk: 35,
+                def: 15,
+                speed: 25,
+                exp: 90,
+                gold: 55
+            },
+            cursedTree: {
+                name: 'じゅかい',
+                sprite: '🌳',
+                level: 20,
+                hp: 100,
+                atk: 45,
+                def: 30,
+                speed: 5,
+                exp: 130,
+                gold: 85
+            },
+            ancientGolem: {
+                name: 'いにしえゴーレム',
+                sprite: '🗿',
+                level: 22,
+                hp: 150,
+                atk: 55,
+                def: 45,
+                speed: 3,
+                exp: 200,
+                gold: 120,
+                resistances: { sleep: 0, blind: 0 }
+            },
+            darkKnight: {
+                name: 'ダークナイト',
+                sprite: '🖤',
+                level: 21,
+                hp: 90,
+                atk: 50,
+                def: 35,
+                speed: 15,
+                exp: 150,
+                gold: 100
+            },
+            // ===== エリア3地底用（Lv22~28）=====
+            underworldBat: {
+                name: 'ちていコウモリ',
+                sprite: '🦇',
+                level: 22,
+                hp: 65,
+                atk: 42,
+                def: 18,
+                speed: 28,
+                exp: 110,
+                gold: 65
+            },
+            shadowDragon: {
+                name: 'シャドードラゴン',
+                sprite: '🐉',
+                level: 25,
+                hp: 180,
+                atk: 70,
+                def: 40,
+                speed: 18,
+                exp: 300,
+                gold: 200
+            },
+            deathWraith: {
+                name: 'デスレイス',
+                sprite: '👻',
+                level: 24,
+                hp: 85,
+                atk: 55,
+                def: 25,
+                speed: 22,
+                exp: 180,
+                gold: 130,
+                resistances: { sleep: 0, poison: 0 }
+            },
+            stoneGuardian: {
+                name: 'いわのまもりて',
+                sprite: '🪨',
+                level: 23,
+                hp: 130,
+                atk: 48,
+                def: 50,
+                speed: 5,
+                exp: 160,
+                gold: 90
+            },
+            wedgeGuardian: {
+                name: 'くさびのしゅごしゃ',
+                sprite: '⚔️',
+                level: 28,
+                hp: 350,
+                atk: 80,
+                def: 50,
+                speed: 20,
+                exp: 800,
+                gold: 500,
+                isBoss: true
+            },
             // ===== ボス級 =====
             dragon: {
                 name: 'ドラゴン',
@@ -1085,7 +1212,15 @@
             desert_castle: ['sphinxMinor', 'djinn', 'mummyKing', 'ancientSoldier'],
             // 旧エリア2互換
             area2_field: ['sandSlime', 'sandSlime', 'desertScorpion', 'cactusMan', 'desertVulture', 'desertMummy'],
-            area2_dungeon: ['pyramidGuard', 'cursedPharaoh', 'desertGolem', 'sandWorm']
+            area2_dungeon: ['pyramidGuard', 'cursedPharaoh', 'desertGolem', 'sandWorm'],
+
+            // エリア3: 暗黒の森と地底世界（Lv18~28）
+            // エリア3地上（Lv18~22）
+            area3_surface: ['shadowSlime', 'darkBat', 'cursedTree', 'ancientGolem', 'darkKnight'],
+            // エリア3地底（Lv22~28）
+            area3_underworld: ['underworldBat', 'shadowDragon', 'deathWraith', 'stoneGuardian'],
+            // エリア3ボス戦
+            area3_boss: ['wedgeGuardian']
         };
 
         // 旧type名との互換用フォールバック
@@ -1117,11 +1252,14 @@
             gigadein: { id: 'gigadein', name: 'ギガデイン', mp: 30, type: 'attack', target: 'all', power: 300, learnLevel: 50, learnableBy: ['hero'], element: 'light', flashColor: 'rgba(255, 255, 100, 1.0)' },
             minadein: { id: 'minadein', name: 'ミナデイン', mp: 50, type: 'attack', target: 'all', power: 1000, learnLevel: 99, learnableBy: ['hero'], element: 'light', flashColor: 'rgba(255, 255, 255, 1.0)' },
             // 状態異常呪文 - 魔法使い系
-            rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 5, learnableBy: ['mage'], element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
+            rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 5, learnableBy: ['mage', 'seer'], element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
             manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 9, learnableBy: ['mage'], element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
+            // デバフ呪文 - 賢者系
+            rukani: { id: 'rukani', name: 'ルカニ', mp: 3, type: 'debuff', debuffType: 'defense', debuffRate: 0.5, successRate: 0.75, learnLevel: 3, learnableBy: ['seer'], element: 'status', flashColor: 'rgba(100, 50, 150, 0.5)' },
             // 補助呪文
             sukuruto: { id: 'sukuruto', name: 'スクルト', mp: 4, type: 'buff', buffType: 'defense', buffRate: 1.5, learnLevel: 25, learnableBy: ['hero'], element: 'buff', flashColor: 'rgba(100, 200, 255, 0.5)' },
             baikiruto: { id: 'baikiruto', name: 'バイキルト', mp: 6, type: 'buff', buffType: 'attack', buffRate: 2.0, learnLevel: 35, learnableBy: ['mage'], element: 'buff', flashColor: 'rgba(255, 100, 100, 0.6)' },
+            piorimu: { id: 'piorimu', name: 'ピオリム', mp: 4, type: 'buff', buffType: 'speed', buffRate: 2.0, duration: 99, learnLevel: 8, learnableBy: ['seer'], element: 'buff', flashColor: 'rgba(150, 255, 150, 0.5)' },
             // 移動呪文
             riremito: { id: 'riremito', name: 'リレミト', mp: 4, type: 'escape', learnLevel: 12, learnableBy: ['hero', 'mage'], element: 'move', flashColor: 'rgba(200, 200, 255, 0.5)' },
             rura: { id: 'rura', name: 'ルーラ', mp: 8, type: 'warp', learnLevel: 15, learnableBy: ['hero'], element: 'move', flashColor: 'rgba(100, 200, 255, 0.7)' }
@@ -1163,7 +1301,9 @@
                 bazaarUnlocked: false,         // バザールの町への通行許可
                 desertPortalUnlocked: false,   // 砂漠の旅の扉開放
                 desertCastleUnlocked: false,   // 太陽の城塞への通行許可
-                mageJoined: false              // 魔法使いが仲間になった
+                mageJoined: false,             // 魔法使いが仲間になった
+                serenJoined: false,            // 星読みセレンが仲間になった
+                ancientCastleUnlocked: false   // 古城最上階が開放された
             },
             // クエストフラグ（エリア2）
             quests: {
@@ -1186,6 +1326,21 @@
                     bossDefeated: false, // ピラミッドの守護者を倒した
                     itemObtained: false, // 紋章を入手
                     completed: false     // 城の門が開いた
+                },
+                // セレン加入クエスト
+                serenJoin: {
+                    stage1_met: false,        // 初回遭遇
+                    stage2_helped: false,     // クエスト受注
+                    stage3_completed: false,  // 条件達成
+                    joined: false             // 加入完了
+                },
+                // 楔クエスト
+                wedges: {
+                    wedge_north: false,  // 北の楔
+                    wedge_east: false,   // 東の楔
+                    wedge_south: false,  // 南の楔
+                    wedge_west: false,   // 西の楔
+                    allCollected: false  // 全収集完了
                 }
             },
             // エリア別進行状態
@@ -1233,6 +1388,7 @@
             gameProgress.storyFlags.reportedMidBossDefeat = false;
             gameProgress.storyFlags.portalRoomUnlocked = false;
             gameProgress.storyFlags.mageJoined = false;
+            gameProgress.storyFlags.ancientCastleUnlocked = false;
             // クエストリセット
             Object.keys(gameProgress.quests).forEach(questName => {
                 Object.keys(gameProgress.quests[questName]).forEach(flag => {
@@ -1959,7 +2115,8 @@
             // バフ状態（戦闘中のみ有効）
             buffs: {
                 attackUp: 0,   // バイキルト重ねがけ回数（最大2）
-                defenseUp: 0   // スクルト重ねがけ回数（最大2）
+                defenseUp: 0,  // スクルト重ねがけ回数（最大2）
+                speedUp: 0     // ピオリム重ねがけ回数（最大2）
             },
             // パーティバトル用
             currentPartyIndex: 0,     // 現在コマンド入力中のパーティメンバー
@@ -2071,6 +2228,15 @@
         const fadeOverlay = document.getElementById('fadeOverlay');
         const mapNameElement = document.getElementById('mapName');
         const mapNameArea = document.getElementById('mapNameArea');
+
+        // マップ名の色を更新（地底マップは紫系）
+        function updateMapNameColor() {
+            if (currentMap && currentMap.isUnderworld) {
+                mapNameElement.style.color = '#9966ff';
+            } else {
+                mapNameElement.style.color = 'rgba(255, 255, 255, 0.8)';
+            }
+        }
 
         let tileSize = 32;
         let cameraX = 0;
@@ -2373,6 +2539,7 @@
                     }
                 }
                 mapNameElement.textContent = currentMap.name;
+                updateMapNameColor();
 
                 if (data.chestStates) {
                     for (const mapId in data.chestStates) {
@@ -2488,6 +2655,32 @@
                     ctx.fillRect(screenX, screenY, tileSize + 1, tileSize + 1);
                     drawTileDecoration(tile, screenX, screenY, col, row);
                 }
+            }
+
+            // 地底マップの暗闘オーバーレイ
+            if (currentMap.isUnderworld && currentMap.darknessLevel) {
+                // 画面全体を暗く
+                ctx.fillStyle = `rgba(0, 0, 20, ${currentMap.darknessLevel})`;
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+                // プレイヤー周辺の明かり（円形グラデーション）
+                const playerScreenX = (player.x - cameraX) * tileSize + tileSize / 2;
+                const playerScreenY = (player.y - cameraY) * tileSize + tileSize / 2;
+                const lightRadius = tileSize * 4;
+
+                ctx.globalCompositeOperation = 'destination-out';
+                const gradient = ctx.createRadialGradient(
+                    playerScreenX, playerScreenY, 0,
+                    playerScreenX, playerScreenY, lightRadius
+                );
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
+                gradient.addColorStop(0.7, 'rgba(0, 0, 0, 0.5)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(playerScreenX, playerScreenY, lightRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
             }
         }
 
@@ -3959,7 +4152,7 @@
             });
 
             // バフをリセット（戦闘ごとにリセット）
-            battle.buffs = { attackUp: 0, defenseUp: 0 };
+            battle.buffs = { attackUp: 0, defenseUp: 0, speedUp: 0 };
 
             gameMode = MODE.BATTLE;
 
@@ -4142,6 +4335,54 @@
                             } else {
                                 battle.buffs.attackUp++;
                                 showBattleMessage('なかまたち の こうげき力が あがった！', () => {
+                                    processTurnEnd();
+                                });
+                            }
+                        } else if (spell.buffType === 'speed') {
+                            // ピオリム - 素早さアップ
+                            if (battle.buffs.speedUp >= MAX_BUFF_STACK) {
+                                showBattleMessage('しかし これ以上 すばやさは あがらない！', () => {
+                                    processTurnEnd();
+                                });
+                            } else {
+                                battle.buffs.speedUp++;
+                                showBattleMessage('なかまたち の すばやさが あがった！', () => {
+                                    processTurnEnd();
+                                });
+                            }
+                        }
+                    } else if (spell.type === 'debuff') {
+                        // デバフ呪文（最初の生存敵に対して使用）
+                        const targetEnemy = battle.enemies[getFirstAliveEnemyIndex()];
+                        const targetName = targetEnemy.displayName || targetEnemy.name;
+
+                        // デバフオブジェクトが存在しない場合は初期化
+                        if (!targetEnemy.debuffs) {
+                            targetEnemy.debuffs = {};
+                        }
+
+                        // 既にそのデバフがかかっている場合
+                        if (targetEnemy.debuffs[spell.debuffType]) {
+                            showBattleMessage(`しかし ${targetName} には きかなかった！`, () => {
+                                processTurnEnd();
+                            });
+                        } else {
+                            // 成功判定
+                            if (Math.random() < spell.successRate) {
+                                // デバフ適用
+                                targetEnemy.debuffs[spell.debuffType] = spell.debuffRate;
+                                let successMsg = '';
+                                if (spell.debuffType === 'defense') {
+                                    successMsg = `${targetName} の しゅび力が さがった！`;
+                                } else {
+                                    successMsg = `${targetName} に デバフが かかった！`;
+                                }
+                                showBattleMessage(successMsg, () => {
+                                    processTurnEnd();
+                                });
+                            } else {
+                                // 失敗
+                                showBattleMessage(`しかし ${targetName} には きかなかった！`, () => {
                                     processTurnEnd();
                                 });
                             }
@@ -4556,7 +4797,14 @@
             }
 
             const atk = attacker.actualAtk;
-            let damage = Math.max(1, Math.floor(atk / 2 - enemy.def / 4 + Math.random() * 5));
+
+            // 敵の実効防御力を計算（デバフ考慮）
+            let effectiveDefense = enemy.def;
+            if (enemy.debuffs && enemy.debuffs.defense) {
+                effectiveDefense = Math.floor(enemy.def * enemy.debuffs.defense);
+            }
+
+            let damage = Math.max(1, Math.floor(atk / 2 - effectiveDefense / 4 + Math.random() * 5));
 
             // バイキルトによるダメージ倍率適用
             if (battle.buffs.attackUp > 0) {
@@ -4644,7 +4892,14 @@
             const enemyName = enemy.displayName || enemy.name;
 
             // 敵の幻惑状態チェック
-            const hitRate = getHitRate(enemy);
+            let hitRate = getHitRate(enemy);
+
+            // ピオリムによる回避率向上（素早さアップ）
+            if (battle.buffs.speedUp > 0) {
+                const dodgeBonus = battle.buffs.speedUp * 0.15; // 1段階=15%, 2段階=30%
+                hitRate = hitRate * (1 - dodgeBonus);
+            }
+
             if (Math.random() > hitRate) {
                 showBattleMessage(`${enemyName} の こうげき！ しかし こうげきは はずれた！`, () => {
                     processCurrentEnemyTurnEnd();
@@ -5099,6 +5354,7 @@
                     currentMapId = 'castle';
                     currentMap = maps[currentMapId];
                     mapNameElement.textContent = currentMap.name;
+                    updateMapNameColor();
                     endBattle('lose');
                 });
             });
@@ -5186,6 +5442,7 @@
                     player.x = 7;
                     player.y = 9;
                     mapNameElement.textContent = currentMap.name;
+                    updateMapNameColor();
 
                     endingState.phase = 'castle';
                     gameMode = MODE.FIELD;
@@ -5322,6 +5579,7 @@
             currentMapId = 'castle';
             currentMap = maps[currentMapId];
             mapNameElement.textContent = currentMap.name;
+            updateMapNameColor();
 
             gameMode = MODE.FIELD;
             localStorage.removeItem('dragonQuestSave');
@@ -6512,6 +6770,13 @@
                 }
             }
 
+            // 穴タイルチェック（座標連動ワープ）
+            const currentTile = currentMap.tiles[player.y][player.x];
+            if (currentTile === TILE.HOLE && currentMap.linkedUnderworld) {
+                performHoleWarp(currentMap.linkedUnderworld, player.x, player.y);
+                return;
+            }
+
             // 通常ワープチェック
             if (!currentMap.warps) return;
             for (const warp of currentMap.warps) {
@@ -6548,6 +6813,38 @@
             // 通常のワープ処理を実行
             isTransitioning = false;
             await performWarp(stairWarp.targetMap, stairWarp.targetX, stairWarp.targetY);
+        }
+
+        // 穴への落下ワープ（落下演出付き）
+        async function performHoleWarp(targetMap, x, y) {
+            if (isTransitioning) return;
+            isTransitioning = true;
+
+            // 画面を暗くする演出
+            const duration = 600; // 0.6秒
+            const startTime = Date.now();
+
+            await new Promise(resolve => {
+                function animate() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+
+                    // 黒くフェードアウト
+                    fadeOverlay.style.background = `rgba(0, 0, 0, ${progress})`;
+                    fadeOverlay.classList.add('active');
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        resolve();
+                    }
+                }
+                animate();
+            });
+
+            // 通常のワープ処理を実行
+            isTransitioning = false;
+            await performWarp(targetMap, x, y);
         }
 
         // 旅の扉ワープ（特別演出付き）
@@ -6651,6 +6948,7 @@
                 player.x = targetX;
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
+                updateMapNameColor();
 
                 // 発見済み隠し通路を適用
                 applyOpenedPassages(currentMap);
@@ -6712,6 +7010,7 @@
                     player.x = targetX;
                     player.y = targetY;
                     mapNameElement.textContent = currentMap.name;
+                    updateMapNameColor();
                     updateMapPinVisibility();
                     updateFloorDisplay();
                     updateCamera();
@@ -6743,6 +7042,7 @@
                 player.x = targetX;
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
+                updateMapNameColor();
                 applyOpenedPassages(currentMap);
                 updateMapPinVisibility();
                 updateFloorDisplay();
@@ -6861,6 +7161,9 @@
                 } else if (npc.type === 'party_join') {
                     // パーティ加入NPC
                     handlePartyJoinNpc(npc);
+                } else if (npc.type === 'party_join_seren') {
+                    // セレン加入NPC（段階的な会話フロー）
+                    handleSerenJoinNpc(npc);
                 } else if (npc.type === 'portal_guard') {
                     // 旅の扉の番兵
                     if (getStoryFlag('portalRoomUnlocked') && npc.clearedMessages) {
@@ -6882,8 +7185,87 @@
             const chest = getChestAt(front.x, front.y);
             if (chest) { openChest(chest); return; }
 
+            // 楔の祭壇チェック
+            const frontTile = currentMap.data[front.y]?.[front.x];
+            if (frontTile === TILE.WEDGE_ALTAR) {
+                handleWedgeAltar(front.x, front.y);
+                return;
+            }
+
             // 隠し壁のチェック
             checkHiddenWall(front.x, front.y);
+        }
+
+        // 楔の祭壇との相互作用
+        function handleWedgeAltar(x, y) {
+            // 座標から楔の種類を判定
+            let wedgeId = null;
+            if (y < 50 && Math.abs(x - 50) < 10) wedgeId = 'wedge_north';
+            else if (y > 50 && Math.abs(x - 50) < 10) wedgeId = 'wedge_south';
+            else if (x < 50 && Math.abs(y - 50) < 10) wedgeId = 'wedge_west';
+            else if (x > 50 && Math.abs(y - 50) < 10) wedgeId = 'wedge_east';
+
+            if (!wedgeId) {
+                startDialog(['古代の祭壇だ...']);
+                return;
+            }
+
+            if (gameProgress.quests.wedges[wedgeId]) {
+                startDialog(['ここには既に楔がない...']);
+            } else {
+                collectWedge(wedgeId);
+            }
+        }
+
+        // 楔を収集する
+        function collectWedge(wedgeId) {
+            // wedgeId: 'wedge_north', 'wedge_east', 'wedge_south', 'wedge_west'
+            if (gameProgress.quests.wedges[wedgeId]) return; // 既に取得済み
+
+            gameProgress.quests.wedges[wedgeId] = true;
+
+            const wedgeNames = {
+                wedge_north: '北の楔',
+                wedge_east: '東の楔',
+                wedge_south: '南の楔',
+                wedge_west: '西の楔'
+            };
+
+            startDialogWithCallback([
+                `${wedgeNames[wedgeId]}を手に入れた！`,
+                '古代の力を感じる...'
+            ], () => {
+                checkAllWedgesCollected();
+
+                // セレンの加入条件を更新（楔1つ取得でstage3達成）
+                const collectedCount = Object.values(gameProgress.quests.wedges)
+                    .filter((v, i) => i < 4 && v).length;
+                if (collectedCount >= 1 && !gameProgress.quests.serenJoin.stage3_completed) {
+                    gameProgress.quests.serenJoin.stage3_completed = true;
+                }
+
+                saveGame();
+            });
+        }
+
+        // 全ての楔が揃ったかチェック
+        function checkAllWedgesCollected() {
+            const w = gameProgress.quests.wedges;
+            if (w.wedge_north && w.wedge_east && w.wedge_south && w.wedge_west) {
+                if (!w.allCollected) {
+                    w.allCollected = true;
+                    gameProgress.storyFlags.ancientCastleUnlocked = true;
+                    // 演出メッセージ
+                    startDialog([
+                        '4つの楔が揃った！',
+                        '古の封印が解かれる音が聞こえる...',
+                        '古城の最上階への道が開かれた！'
+                    ]);
+                    saveGame();
+                }
+                return true;
+            }
+            return false;
         }
 
         // 隠し壁を調べる
@@ -7116,6 +7498,46 @@
             });
         }
 
+        // セレン加入NPC処理（段階的な会話フロー）
+        function handleSerenJoinNpc(npc) {
+            // 既に仲間になっている場合
+            if (gameProgress.storyFlags.serenJoined) {
+                startDialog(npc.alreadyJoinedMessages || ['また会えて嬉しいですね。']);
+                return;
+            }
+
+            // パーティが満員の場合
+            if (party.length >= MAX_PARTY_SIZE) {
+                startDialog(['（パーティがいっぱいだ...）']);
+                return;
+            }
+
+            // 段階的な会話フロー
+            if (!gameProgress.quests.serenJoin.stage1_met) {
+                // 初回遭遇：紹介メッセージ
+                startDialogWithCallback(npc.stage1_messages || npc.messages, () => {
+                    gameProgress.quests.serenJoin.stage1_met = true;
+                    saveGame();
+                });
+            } else if (!gameProgress.quests.serenJoin.stage2_helped) {
+                // 2回目：クエスト説明
+                startDialogWithCallback(npc.stage2_messages || npc.messages, () => {
+                    gameProgress.quests.serenJoin.stage2_helped = true;
+                    saveGame();
+                });
+            } else if (gameProgress.quests.serenJoin.stage3_completed) {
+                // 条件達成後：加入確認ダイアログ
+                startDialogWithCallback(npc.joinOfferMessages || npc.messages, () => {
+                    partyJoinConfirm.active = true;
+                    partyJoinConfirm.npcId = npc.id;
+                    partyJoinConfirm.selectedIndex = 0;
+                });
+            } else {
+                // 条件未達成：待機メッセージ
+                startDialog(npc.waitingMessages || npc.messages);
+            }
+        }
+
         // パーティ加入実行
         function executePartyJoin(npcId) {
             const npc = getNpcById(npcId);
@@ -7146,7 +7568,41 @@
                 startDialogWithCallback(npc.joinAcceptMessages, () => {
                     saveGame();
                 });
+            } else if (npc.type === 'party_join_seren') {
+                // セレンをパーティに追加
+                executeSerenJoin();
             }
+        }
+
+        // セレン加入処理
+        function executeSerenJoin() {
+            if (gameProgress.quests.serenJoin.joined) return;
+
+            const seren = createPartyMember({
+                id: 'seer_seren',
+                name: 'セレン',
+                job: 'seer',
+                sprite: '🔮',
+                hp: 35,
+                maxHp: 35,
+                mp: 60,
+                maxMp: 60,
+                baseAtk: 8,
+                baseDef: 6,
+                speed: 14,
+                level: 15,
+                exp: 3500,
+                spells: ['rukani', 'rariho', 'piorimu'],
+                equipment: { weapon: null, armor: null }
+            });
+
+            party.push(seren);
+            gameProgress.quests.serenJoin.joined = true;
+            gameProgress.storyFlags.serenJoined = true;
+
+            startDialogWithCallback(['セレンが仲間になった！'], () => {
+                saveGame();
+            });
         }
 
         // NPC IDで取得するヘルパー
@@ -8435,14 +8891,17 @@
             5: '#8866aa', // 階段
             6: '#996633', // 床（ダンジョン）
             7: '#555555', // 壁
-            8: '#aa44aa', // 旅の扉（紫）
+            8: '#6a4aaa', // 旅の扉（紫）
             9: '#8866aa', // 上り階段
             10: '#664488', // 下り階段
             // 砂漠タイル
             11: '#d4a559', // 砂漠
             12: '#44aa66', // オアシス
             13: '#c4a040', // ピラミッド
-            14: '#b89050'  // 流砂
+            14: '#b89050', // 流砂
+            // 地底タイル
+            17: '#2a1a3a', // 地底床 - 暗い紫
+            18: '#0a0a1a'  // 地底壁 - ほぼ黒
         };
 
         // 地図表示の状態
@@ -8814,6 +9273,7 @@
 
             // マップ名を更新
             document.getElementById('mapName').textContent = currentMap.name || 'フィールド';
+            updateMapNameColor();
             updateMapPinVisibility();
             updateFloorDisplay();
 
