@@ -2001,30 +2001,20 @@
                 if (!monsterCounts[monsterType]) {
                     monsterCounts[monsterType] = 0;
                 }
-                const suffix = monsterCounts[monsterType] > 0 ? ENEMY_SUFFIXES[monsterCounts[monsterType] - 1] : '';
+                const suffix = ENEMY_SUFFIXES[monsterCounts[monsterType]];
                 monsterCounts[monsterType]++;
 
                 enemies.push({
                     ...monsterData,
                     id: `${monsterType}_${i}`,
                     type: monsterType,
-                    displayName: monsterCounts[monsterType] > 1 || enemyCount > 1 ?
-                        `${monsterData.name}${suffix || 'A'}` : monsterData.name,
+                    displayName: enemyCount > 1 ?
+                        `${monsterData.name}${suffix}` : monsterData.name,
                     currentHp: monsterData.hp,
                     currentMp: monsterData.mp || 0,
                     status: { sleep: 0, poison: 0, blind: 0 },
                     index: i
                 });
-            }
-
-            // 同種が2体以上いる場合、最初の個体にもサフィックスを付ける
-            for (const type in monsterCounts) {
-                if (monsterCounts[type] > 1) {
-                    const firstOfType = enemies.find(e => e.type === type && !e.displayName.match(/[A-F]$/));
-                    if (firstOfType) {
-                        firstOfType.displayName = `${monsters[type].name}A`;
-                    }
-                }
             }
 
             return enemies;
