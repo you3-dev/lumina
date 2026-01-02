@@ -1765,18 +1765,26 @@
             return currentIndex;
         }
 
+        // エリア1のエンカウンターテーブル（単体のみ）
+        const AREA1_ENCOUNTER_TABLES = ['field', 'forest', 'dungeon'];
+
         // 敵グループを生成（1〜4体）
         function generateEnemyGroup(encounterTable) {
             const enemies = [];
             const monsterPool = encounterTables[encounterTable] || encounterTables.field;
 
-            // 出現数を決定（1〜4体、重み付け）
-            const countRoll = Math.random();
+            // エリア1は常に1体、エリア2以降は複数出現
             let enemyCount;
-            if (countRoll < 0.3) enemyCount = 1;       // 30%: 1体
-            else if (countRoll < 0.6) enemyCount = 2; // 30%: 2体
-            else if (countRoll < 0.85) enemyCount = 3; // 25%: 3体
-            else enemyCount = 4;                       // 15%: 4体
+            if (AREA1_ENCOUNTER_TABLES.includes(encounterTable)) {
+                enemyCount = 1;
+            } else {
+                // 出現数を決定（1〜4体、重み付け）
+                const countRoll = Math.random();
+                if (countRoll < 0.3) enemyCount = 1;       // 30%: 1体
+                else if (countRoll < 0.6) enemyCount = 2; // 30%: 2体
+                else if (countRoll < 0.85) enemyCount = 3; // 25%: 3体
+                else enemyCount = 4;                       // 15%: 4体
+            }
 
             // モンスターをカウント（同種のサフィックス用）
             const monsterCounts = {};
