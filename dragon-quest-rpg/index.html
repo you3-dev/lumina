@@ -1938,10 +1938,13 @@
         }
 
         // 次の生存敵のインデックスを取得
-        function getNextAliveEnemyIndex(currentIndex) {
+        // wrap=true: UIターゲット選択用（循環する）
+        // wrap=false: ターン処理用（-1を返す）
+        function getNextAliveEnemyIndex(currentIndex, wrap = true) {
             for (let i = currentIndex + 1; i < battle.enemies.length; i++) {
                 if (battle.enemies[i].currentHp > 0) return i;
             }
+            if (!wrap) return -1;  // ターン処理用：次がいなければ-1
             for (let i = 0; i < currentIndex; i++) {
                 if (battle.enemies[i].currentHp > 0) return i;
             }
@@ -4416,7 +4419,7 @@
 
         // 次の敵のターンへ進む
         function nextEnemyTurn() {
-            const nextIndex = getNextAliveEnemyIndex(battle.currentEnemyIndex);
+            const nextIndex = getNextAliveEnemyIndex(battle.currentEnemyIndex, false);
             if (nextIndex === -1) {
                 // 全ての敵が行動完了、プレイヤーターンへ
                 startPlayerTurn();
