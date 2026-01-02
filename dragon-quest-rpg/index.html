@@ -7355,6 +7355,9 @@
                     } else {
                         startDialog(npc.messages);
                     }
+                } else if (npc.type === 'healer') {
+                    // ヒーラーNPC - HP/MP全回復
+                    handleHealerNpc(npc);
                 } else {
                     // ゲームクリア後はNPCのセリフが変わる
                     if (gameCleared && npc.clearedMessages) {
@@ -7491,6 +7494,37 @@
                 fadeOverlay.classList.remove('active');
                 fadeOverlay.style.backgroundColor = '';
             }, duration);
+        }
+
+        // ヒーラーNPC処理（HP/MP全回復）
+        function handleHealerNpc(npc) {
+            // 最初のメッセージを表示
+            const messages = npc.messages || ['癒しの力を授けましょう。'];
+            startDialogWithCallback(messages, () => {
+                // 回復演出
+                spellFlash.active = true;
+                spellFlash.color = 'rgba(100, 255, 150, 0.6)';
+                spellFlash.alpha = 1.0;
+
+                setTimeout(() => {
+                    spellFlash.active = false;
+
+                    // パーティ全員のHP/MPを全回復
+                    party.forEach(member => {
+                        if (member.isAlive !== false && member.hp > 0) {
+                            member.hp = member.actualMaxHp || member.maxHp;
+                            member.mp = member.actualMaxMp || member.maxMp;
+                        }
+                    });
+
+                    // 回復メッセージを表示
+                    const healMessages = npc.healMessages || ['聖なる光よ...'];
+                    const resultMessages = [...healMessages, 'パーティ全員のHP/MPが 回復した！'];
+                    startDialog(resultMessages);
+
+                    saveGame();
+                }, 400);
+            });
         }
 
         // 王様との会話処理（条件分岐）
