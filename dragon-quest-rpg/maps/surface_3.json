@@ -10,6 +10,7 @@
   "linkedUnderworld": "maps/underworld_3.json",
   "isUnderworld": false,
   "isOutdoor": true,
+  "area": "area3",
   "data": [
     [
       1,

@@ -11,6 +11,7 @@
   "isUnderworld": true,
   "darknessLevel": 0.6,
   "isOutdoor": false,
+  "area": "area3",
   "data": [
     [
       18,

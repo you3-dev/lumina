@@ -1305,7 +1305,9 @@
                 desertCastleUnlocked: false,   // 太陽の城塞への通行許可
                 mageJoined: false,             // 魔法使いが仲間になった
                 serenJoined: false,            // 星読みセレンが仲間になった
-                ancientCastleUnlocked: false   // 古城最上階が開放された
+                ancientCastleUnlocked: false,  // 古城最上階が開放された
+                area3Entered: false,           // エリア3に入った（ルーラ制限判定用）
+                area3SealActivated: false      // 封印が発動した
             },
             // クエストフラグ（エリア2）
             quests: {
@@ -1391,6 +1393,8 @@
             gameProgress.storyFlags.portalRoomUnlocked = false;
             gameProgress.storyFlags.mageJoined = false;
             gameProgress.storyFlags.ancientCastleUnlocked = false;
+            gameProgress.storyFlags.area3Entered = false;
+            gameProgress.storyFlags.area3SealActivated = false;
             // クエストリセット
             Object.keys(gameProgress.quests).forEach(questName => {
                 Object.keys(gameProgress.quests[questName]).forEach(flag => {
@@ -1438,13 +1442,24 @@
             const exists = gameProgress.visitedLocations.some(loc => loc.mapId === mapData.mapId);
             if (exists) return;
 
-            // 拠点を登録
+            // 拠点を登録（エリア情報も保存）
             gameProgress.visitedLocations.push({
                 mapId: mapData.mapId,
                 displayName: mapData.name,
+                area: mapData.area || 'area1',
                 arrivalX: mapData.arrivalX || 0,
                 arrivalY: mapData.arrivalY || 0
             });
+        }
+
+        // ルーラで移動可能な拠点を取得（エリア制限対応）
+        function getAvailableRuraLocations() {
+            // エリア3にいる場合、エリア3の拠点のみ返す
+            if (currentMap.area === 'area3') {
+                return gameProgress.visitedLocations.filter(loc => loc.area === 'area3');
+            }
+            // それ以外は全拠点（エリア3以外）
+            return gameProgress.visitedLocations.filter(loc => loc.area !== 'area3');
         }
 
         // リレミト用：ダンジョン進入前の位置を記憶
@@ -6601,10 +6616,17 @@
                 return;
             }
 
+            // エリア制限対応：利用可能な拠点を取得
+            const availableLocations = getAvailableRuraLocations();
+
             // 訪問済み拠点がない場合
-            if (gameProgress.visitedLocations.length === 0) {
+            if (availableLocations.length === 0) {
                 closeMenu();
-                startDialog(['まだ どこにも 行ったことがない！']);
+                if (currentMap.area === 'area3') {
+                    startDialog(['この大陸では まだ どこにも 行ったことがない！']);
+                } else {
+                    startDialog(['まだ どこにも 行ったことがない！']);
+                }
                 return;
             }
 
@@ -6618,7 +6640,10 @@
         // ルーラ実行（拠点を選択して移動）
         async function executeRura(locationIndex) {
             const spell = spells.rura;
-            const location = gameProgress.visitedLocations[locationIndex];
+
+            // エリア制限対応：利用可能な拠点から選択
+            const availableLocations = getAvailableRuraLocations();
+            const location = availableLocations[locationIndex];
             if (!location) return;
 
             const caster = party[ruraState.casterIndex] || party[0];
@@ -6708,7 +6733,8 @@
         function drawRuraSelection() {
             if (!ruraState.active) return;
 
-            const locations = gameProgress.visitedLocations;
+            // エリア制限対応：利用可能な拠点のみ表示
+            const locations = getAvailableRuraLocations();
             if (locations.length === 0) return;
 
             // ウィンドウサイズ計算
@@ -6959,12 +6985,63 @@
 
             isTransitioning = true;
 
+            // 封印イベント対応（エリア3への移行）
+            if (portal.sealEvent) {
+                await playPortalAnimation();
+                await playSealAnimation();
+
+                // フラグ設定
+                setStoryFlag('area3Entered', true);
+                setStoryFlag('area3SealActivated', true);
+                saveGame();
+
+                // 通常のワープ処理を実行
+                isTransitioning = false;
+                await performWarp(portal.targetMap, portal.targetX, portal.targetY);
+
+                // ワープ後にダイアログ表示
+                setTimeout(() => {
+                    startDialog([
+                        '扉が激しく輝き始めた！',
+                        '古の封印が発動した...',
+                        'もうこの扉は二度と開かない...'
+                    ]);
+                }, 500);
+                return;
+            }
+
             // 渦巻き＋フラッシュ演出
             await playPortalAnimation();
 
             // 通常のワープ処理を実行
             isTransitioning = false;  // performWarp内で再設定されるので一旦解除
             await performWarp(portal.targetMap, portal.targetX, portal.targetY);
+        }
+
+        // 封印発動演出
+        async function playSealAnimation() {
+            return new Promise(resolve => {
+                const duration = 1500;
+                const startTime = Date.now();
+
+                function animate() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+
+                    // 赤い閃光エフェクト（脈動）
+                    const intensity = Math.sin(progress * Math.PI * 4) * 0.6;
+                    fadeOverlay.style.background = `rgba(255, 50, 50, ${Math.abs(intensity)})`;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        // 最後に暗転
+                        fadeOverlay.style.background = 'rgba(0, 0, 0, 0.8)';
+                        resolve();
+                    }
+                }
+                animate();
+            });
         }
 
         // 旅の扉演出
@@ -7265,8 +7342,15 @@
                     // セレン加入NPC（段階的な会話フロー）
                     handleSerenJoinNpc(npc);
                 } else if (npc.type === 'portal_guard') {
-                    // 旅の扉の番兵
-                    if (getStoryFlag('portalRoomUnlocked') && npc.clearedMessages) {
+                    // 旅の扉の番兵 - NPCごとに異なるフラグをチェック
+                    let isUnlocked = false;
+                    if (npc.id === 'desert_portal_guard') {
+                        isUnlocked = getStoryFlag('desertPortalUnlocked');
+                    } else {
+                        isUnlocked = getStoryFlag('portalRoomUnlocked');
+                    }
+
+                    if (isUnlocked && npc.clearedMessages) {
                         startDialog(npc.clearedMessages);
                     } else {
                         startDialog(npc.messages);
@@ -7411,6 +7495,16 @@
 
         // 王様との会話処理（条件分岐）
         function handleKingDialog(npc) {
+            // 砂漠の王の場合は専用処理
+            if (npc.id === 'desert_king') {
+                if (isBossDefeated('desertGuardian') && npc.clearedMessages) {
+                    startDialog(npc.clearedMessages);
+                } else {
+                    startDialog(npc.messages);
+                }
+                return;
+            }
+
             // 魔王討伐済み
             if (gameCleared && npc.clearedMessages) {
                 startDialog(npc.clearedMessages);
@@ -8295,7 +8389,8 @@
 
             // ルーラ拠点選択
             if (ruraState.active) {
-                const locations = gameProgress.visitedLocations;
+                // エリア制限対応：利用可能な拠点のみ
+                const locations = getAvailableRuraLocations();
                 switch (e.key) {
                     case 'ArrowUp': case 'w': case 'W':
                         ruraState.cursor = (ruraState.cursor + locations.length - 1) % locations.length;

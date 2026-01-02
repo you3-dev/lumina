@@ -7,6 +7,7 @@
   "isSafe": true,
   "encounterRate": 0,
   "isOutdoor": false,
+  "area": "area1",
   "data": [
     [7,7,7,7,7,7,7,7,7,7,7],
     [7,6,6,6,6,6,6,6,6,6,7],
