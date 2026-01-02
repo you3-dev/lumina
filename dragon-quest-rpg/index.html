@@ -6830,7 +6830,7 @@
             }
 
             // 穴タイルチェック（座標連動ワープ）
-            const currentTile = currentMap.tiles[player.y][player.x];
+            const currentTile = currentMap.data[player.y][player.x];
             if (currentTile === TILE.HOLE && currentMap.linkedUnderworld) {
                 performHoleWarp(currentMap.linkedUnderworld, player.x, player.y);
                 return;
