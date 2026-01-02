@@ -1303,7 +1303,9 @@
                 desertCastleUnlocked: false,   // 太陽の城塞への通行許可
                 mageJoined: false,             // 魔法使いが仲間になった
                 serenJoined: false,            // 星読みセレンが仲間になった
-                ancientCastleUnlocked: false   // 古城最上階が開放された
+                ancientCastleUnlocked: false,  // 古城最上階が開放された
+                underworldEntered: false,      // 地底世界に入った
+                underworldPortalSealed: false  // 地底世界の扉が封印されている（地上への帰還不能）
             },
             // クエストフラグ（エリア2）
             quests: {
@@ -6541,7 +6543,8 @@
         let ruraState = {
             active: false,
             cursor: 0,
-            casterIndex: 0 // 呪文を唱えるメンバーのインデックス
+            casterIndex: 0, // 呪文を唱えるメンバーのインデックス
+            filteredLocations: [] // フィルタ済みの拠点リスト
         };
 
         // ルーラを使用（拠点選択UIを表示）
@@ -6560,10 +6563,23 @@
                 return;
             }
 
+            // 地底封印中の場合、地底マップのみにフィルタリング
+            let availableLocations = gameProgress.visitedLocations;
+            if (gameProgress.storyFlags.underworldPortalSealed) {
+                availableLocations = gameProgress.visitedLocations.filter(loc => loc.mapId.startsWith('underworld_'));
+            }
+
             // 訪問済み拠点がない場合
-            if (gameProgress.visitedLocations.length === 0) {
+            if (availableLocations.length === 0) {
                 closeMenu();
-                startDialog(['まだ どこにも 行ったことがない！']);
+                if (gameProgress.storyFlags.underworldPortalSealed) {
+                    startDialog([
+                        `${caster.name}は ${spell.name}を となえた！`,
+                        'しかし 強大な封印に阻まれて 地上へは戻れない！'
+                    ]);
+                } else {
+                    startDialog(['まだ どこにも 行ったことがない！']);
+                }
                 return;
             }
 
@@ -6571,13 +6587,14 @@
             ruraState.active = true;
             ruraState.cursor = 0;
             ruraState.casterIndex = menu.memberCursor;
+            ruraState.filteredLocations = availableLocations;  // フィルタ済みリストを保存
             closeMenu();
         }
 
         // ルーラ実行（拠点を選択して移動）
         async function executeRura(locationIndex) {
             const spell = spells.rura;
-            const location = gameProgress.visitedLocations[locationIndex];
+            const location = ruraState.filteredLocations[locationIndex];
             if (!location) return;
 
             const caster = party[ruraState.casterIndex] || party[0];
@@ -6667,7 +6684,7 @@
         function drawRuraSelection() {
             if (!ruraState.active) return;
 
-            const locations = gameProgress.visitedLocations;
+            const locations = ruraState.filteredLocations;
             if (locations.length === 0) return;
 
             // ウィンドウサイズ計算
@@ -7055,10 +7072,32 @@
                     };
                 }
 
-                // フェードイン
-                await new Promise(resolve => setTimeout(resolve, 100));
-                fadeOverlay.classList.remove('active');
-                await new Promise(resolve => setTimeout(resolve, 300));
+                // フェードイン前に地底到着演出をチェック
+                if (currentMapId === 'underworld_3' && !gameProgress.storyFlags.underworldEntered) {
+                    gameProgress.storyFlags.underworldEntered = true;
+                    gameProgress.storyFlags.underworldPortalSealed = true;
+
+                    // フェードイン
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    fadeOverlay.classList.remove('active');
+                    await new Promise(resolve => setTimeout(resolve, 300));
+
+                    // 帰還不能演出
+                    startDialogWithCallback([
+                        '地底世界に足を踏み入れた...',
+                        'ゴゴゴゴゴ...',
+                        '！！',
+                        '強大な力が働き 扉が消滅してしまった！',
+                        'しばらくは 地上に戻れそうにない...'
+                    ], () => {
+                        saveGame();
+                    });
+                } else {
+                    // 通常のフェードイン
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    fadeOverlay.classList.remove('active');
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
 
             } catch (error) {
                 console.error('マップロードエラー:', error);
@@ -7314,12 +7353,26 @@
                 if (!w.allCollected) {
                     w.allCollected = true;
                     gameProgress.storyFlags.ancientCastleUnlocked = true;
+
+                    // 地底封印の解除
+                    const wasSealed = gameProgress.storyFlags.underworldPortalSealed;
+                    if (wasSealed) {
+                        gameProgress.storyFlags.underworldPortalSealed = false;
+                    }
+
                     // 演出メッセージ
-                    startDialog([
+                    const messages = [
                         '4つの楔が揃った！',
                         '古の封印が解かれる音が聞こえる...',
                         '古城の最上階への道が開かれた！'
-                    ]);
+                    ];
+
+                    // 地底にいる場合は封印解除メッセージを追加
+                    if (wasSealed) {
+                        messages.push('', '！！', '地底世界の封印も解けた！', '地上への道が開かれた！');
+                    }
+
+                    startDialog(messages);
                     saveGame();
                 }
                 return true;
@@ -8234,7 +8287,7 @@
 
             // ルーラ拠点選択
             if (ruraState.active) {
-                const locations = gameProgress.visitedLocations;
+                const locations = ruraState.filteredLocations;
                 switch (e.key) {
                     case 'ArrowUp': case 'w': case 'W':
                         ruraState.cursor = (ruraState.cursor + locations.length - 1) % locations.length;
