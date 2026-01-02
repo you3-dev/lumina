@@ -4172,9 +4172,8 @@
                 if (battle.flashCount <= 0) {
                     clearInterval(flashInterval);
                     showBattleMessage(enemyMessage, () => {
-                        battle.phase = 'command';
-                        const currentMember = getCurrentPartyMember();
-                        battle.message = `${currentMember.name} の こうどう？`;
+                        // 行動順キューを生成して最初の行動者から開始
+                        startPlayerTurn();
                     });
                 }
             }, 100);
@@ -4837,8 +4836,8 @@
         function processCurrentEnemyTurn() {
             const enemy = battle.enemies[battle.currentEnemyIndex];
             if (!enemy || enemy.currentHp <= 0) {
-                // この敵は既に倒されている、次へ
-                nextEnemyTurn();
+                // この敵は既に倒されている、次の行動者へ
+                processCurrentEnemyTurnEnd();
                 return;
             }
 
@@ -5090,7 +5089,7 @@
             // 魔王からは逃げられない
             if (battle.enemy.isBoss) {
                 showBattleMessage('魔王 の ちから が ゆうしゃ を にがさない！', () => {
-                    enemyTurn();
+                    processTurnEnd();
                 });
                 return;
             }
@@ -5120,7 +5119,7 @@
                 });
             } else {
                 showBattleMessage('しかし まわりこまれてしまった！', () => {
-                    enemyTurn();
+                    processTurnEnd();
                 });
             }
         }
