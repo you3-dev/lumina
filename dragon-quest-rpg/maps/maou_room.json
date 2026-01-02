@@ -28,7 +28,7 @@
     { "x": 7, "y": 12, "targetMap": "maps/dungeon.json", "targetX": 23, "targetY": 21 }
   ],
   "npcs": [
-    { "id": "midBoss", "x": 7, "y": 3, "sprite": "🗿", "type": "boss", "bossId": "midBoss", "messages": [] }
+    { "id": "midBoss", "x": 7, "y": 3, "sprite": "🗿", "type": "boss", "bossId": "midBoss", "messages": ["我は洞窟の番人...", "ここを通りたくば 我を倒してみよ！"], "defeatedMessages": ["......。", "（石像は もう動かない）"] }
   ],
   "chests": []
 }
