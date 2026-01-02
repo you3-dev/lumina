@@ -1098,16 +1098,16 @@
             // 復活呪文
             zaoraru: { id: 'zaoraru', name: 'ザオラル', mp: 10, type: 'revive', successRate: 0.5, learnLevel: 22, element: 'heal', flashColor: 'rgba(255, 255, 200, 0.7)' },
             // 攻撃呪文（単体）
-            mera: { id: 'mera', name: 'メラ', mp: 2, type: 'attack', power: 15, learnLevel: 3, element: 'fire', flashColor: 'rgba(255, 100, 0, 0.6)' },
-            merami: { id: 'merami', name: 'メラミ', mp: 8, type: 'attack', power: 80, learnLevel: 28, element: 'fire', flashColor: 'rgba(255, 100, 0, 0.8)' },
-            merazoma: { id: 'merazoma', name: 'メラゾーマ', mp: 15, type: 'attack', power: 200, learnLevel: 45, element: 'fire', flashColor: 'rgba(255, 50, 0, 1.0)' },
-            hyado: { id: 'hyado', name: 'ヒャド', mp: 4, type: 'attack', power: 25, learnLevel: 6, element: 'ice', flashColor: 'rgba(100, 200, 255, 0.6)' },
+            mera: { id: 'mera', name: 'メラ', mp: 2, type: 'attack', target: 'single', power: 15, learnLevel: 3, element: 'fire', flashColor: 'rgba(255, 100, 0, 0.6)' },
+            merami: { id: 'merami', name: 'メラミ', mp: 8, type: 'attack', target: 'single', power: 80, learnLevel: 28, element: 'fire', flashColor: 'rgba(255, 100, 0, 0.8)' },
+            merazoma: { id: 'merazoma', name: 'メラゾーマ', mp: 15, type: 'attack', target: 'single', power: 200, learnLevel: 45, element: 'fire', flashColor: 'rgba(255, 50, 0, 1.0)' },
+            hyado: { id: 'hyado', name: 'ヒャド', mp: 4, type: 'attack', target: 'single', power: 25, learnLevel: 6, element: 'ice', flashColor: 'rgba(100, 200, 255, 0.6)' },
             // 攻撃呪文（全体）
-            gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', power: 35, learnLevel: 8, element: 'fire', flashColor: 'rgba(255, 255, 100, 0.6)' },
-            begirama: { id: 'begirama', name: 'ベギラマ', mp: 10, type: 'attack', power: 70, learnLevel: 18, element: 'fire', flashColor: 'rgba(255, 200, 50, 0.8)' },
-            begiragon: { id: 'begiragon', name: 'ベギラゴン', mp: 20, type: 'attack', power: 150, learnLevel: 40, element: 'fire', flashColor: 'rgba(255, 150, 0, 1.0)' },
-            gigadein: { id: 'gigadein', name: 'ギガデイン', mp: 30, type: 'attack', power: 300, learnLevel: 50, element: 'light', flashColor: 'rgba(255, 255, 100, 1.0)' },
-            minadein: { id: 'minadein', name: 'ミナデイン', mp: 50, type: 'attack', power: 1000, learnLevel: 99, element: 'light', flashColor: 'rgba(255, 255, 255, 1.0)' },
+            gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', target: 'all', power: 35, learnLevel: 8, element: 'fire', flashColor: 'rgba(255, 255, 100, 0.6)' },
+            begirama: { id: 'begirama', name: 'ベギラマ', mp: 10, type: 'attack', target: 'all', power: 70, learnLevel: 18, element: 'fire', flashColor: 'rgba(255, 200, 50, 0.8)' },
+            begiragon: { id: 'begiragon', name: 'ベギラゴン', mp: 20, type: 'attack', target: 'all', power: 150, learnLevel: 40, element: 'fire', flashColor: 'rgba(255, 150, 0, 1.0)' },
+            gigadein: { id: 'gigadein', name: 'ギガデイン', mp: 30, type: 'attack', target: 'all', power: 300, learnLevel: 50, element: 'light', flashColor: 'rgba(255, 255, 100, 1.0)' },
+            minadein: { id: 'minadein', name: 'ミナデイン', mp: 50, type: 'attack', target: 'all', power: 1000, learnLevel: 99, element: 'light', flashColor: 'rgba(255, 255, 255, 1.0)' },
             // 状態異常呪文
             rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 5, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
             manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 9, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
@@ -1703,8 +1703,12 @@
         // バトル状態
         const battle = {
             active: false,
-            enemy: null,
-            phase: 'start', // start, command, playerTurn, enemyTurn, result
+            enemy: null,              // 後方互換用（単体参照）
+            enemies: [],              // 複数敵の配列
+            currentEnemyIndex: 0,     // 敵ターン中の処理対象インデックス
+            targetIndex: 0,           // プレイヤーのターゲット選択
+            isSelectingTarget: false, // ターゲット選択モード中
+            phase: 'start', // start, command, target, playerTurn, enemyTurn, result
             commandIndex: 0,
             spellIndex: 0,
             showSpells: false,
@@ -1715,6 +1719,7 @@
             animationFrame: 0,
             flashCount: 0,
             result: null, // 'win', 'lose', 'escape'
+            pendingAction: null,      // ターゲット選択後に実行するアクション
             // バフ状態（戦闘中のみ有効）
             buffs: {
                 attackUp: 0,   // バイキルト重ねがけ回数（最大2）
@@ -1724,6 +1729,103 @@
 
         // バフの最大重ねがけ回数
         const MAX_BUFF_STACK = 2;
+
+        // 敵グループ生成用のアルファベット
+        const ENEMY_SUFFIXES = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+        // 生存している敵を取得
+        function getAliveEnemies() {
+            return battle.enemies.filter(e => e.currentHp > 0);
+        }
+
+        // 最初の生存敵のインデックスを取得
+        function getFirstAliveEnemyIndex() {
+            return battle.enemies.findIndex(e => e.currentHp > 0);
+        }
+
+        // 次の生存敵のインデックスを取得
+        function getNextAliveEnemyIndex(currentIndex) {
+            for (let i = currentIndex + 1; i < battle.enemies.length; i++) {
+                if (battle.enemies[i].currentHp > 0) return i;
+            }
+            for (let i = 0; i < currentIndex; i++) {
+                if (battle.enemies[i].currentHp > 0) return i;
+            }
+            return currentIndex;
+        }
+
+        // 前の生存敵のインデックスを取得
+        function getPrevAliveEnemyIndex(currentIndex) {
+            for (let i = currentIndex - 1; i >= 0; i--) {
+                if (battle.enemies[i].currentHp > 0) return i;
+            }
+            for (let i = battle.enemies.length - 1; i > currentIndex; i--) {
+                if (battle.enemies[i].currentHp > 0) return i;
+            }
+            return currentIndex;
+        }
+
+        // エリア1のエンカウンターテーブル（単体のみ）
+        const AREA1_ENCOUNTER_TABLES = ['field', 'forest', 'dungeon'];
+
+        // 敵グループを生成（1〜4体）
+        function generateEnemyGroup(encounterTable) {
+            const enemies = [];
+            const monsterPool = encounterTables[encounterTable] || encounterTables.field;
+
+            // エリア1は常に1体、エリア2以降は複数出現
+            let enemyCount;
+            if (AREA1_ENCOUNTER_TABLES.includes(encounterTable)) {
+                enemyCount = 1;
+            } else {
+                // 出現数を決定（1〜4体、重み付け）
+                const countRoll = Math.random();
+                if (countRoll < 0.3) enemyCount = 1;       // 30%: 1体
+                else if (countRoll < 0.6) enemyCount = 2; // 30%: 2体
+                else if (countRoll < 0.85) enemyCount = 3; // 25%: 3体
+                else enemyCount = 4;                       // 15%: 4体
+            }
+
+            // モンスターをカウント（同種のサフィックス用）
+            const monsterCounts = {};
+
+            for (let i = 0; i < enemyCount; i++) {
+                const monsterType = monsterPool[Math.floor(Math.random() * monsterPool.length)];
+                const monsterData = monsters[monsterType];
+                if (!monsterData) continue;
+
+                // 同種カウント
+                if (!monsterCounts[monsterType]) {
+                    monsterCounts[monsterType] = 0;
+                }
+                const suffix = monsterCounts[monsterType] > 0 ? ENEMY_SUFFIXES[monsterCounts[monsterType] - 1] : '';
+                monsterCounts[monsterType]++;
+
+                enemies.push({
+                    ...monsterData,
+                    id: `${monsterType}_${i}`,
+                    type: monsterType,
+                    displayName: monsterCounts[monsterType] > 1 || enemyCount > 1 ?
+                        `${monsterData.name}${suffix || 'A'}` : monsterData.name,
+                    currentHp: monsterData.hp,
+                    currentMp: monsterData.mp || 0,
+                    status: { sleep: 0, poison: 0, blind: 0 },
+                    index: i
+                });
+            }
+
+            // 同種が2体以上いる場合、最初の個体にもサフィックスを付ける
+            for (const type in monsterCounts) {
+                if (monsterCounts[type] > 1) {
+                    const firstOfType = enemies.find(e => e.type === type && !e.displayName.match(/[A-F]$/));
+                    if (firstOfType) {
+                        firstOfType.displayName = `${monsters[type].name}A`;
+                    }
+                }
+            }
+
+            return enemies;
+        }
 
         // ========================================
         // Canvas & カメラ
@@ -2754,34 +2856,69 @@
                 ctx.fillRect(0, 0, canvasWidth, canvasHeight);
             }
 
-            // モンスター表示
-            if (battle.enemy) {
-                ctx.font = `${tileSize * 4}px serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
+            // 複数モンスター表示
+            if (battle.enemies && battle.enemies.length > 0) {
+                const enemyCount = battle.enemies.length;
+                const spacing = canvasWidth / (enemyCount + 1);
+                const spriteSize = enemyCount === 1 ? tileSize * 4 : tileSize * (3 - enemyCount * 0.3);
 
-                // 色違いモンスター対応（hueRotateフィルタ）
-                if (battle.enemy.hueRotate) {
-                    ctx.save();
-                    ctx.filter = `hue-rotate(${battle.enemy.hueRotate}deg)`;
-                    ctx.fillText(battle.enemy.sprite, canvasWidth / 2, canvasHeight * 0.35);
-                    ctx.restore();
-                } else {
-                    ctx.fillText(battle.enemy.sprite, canvasWidth / 2, canvasHeight * 0.35);
-                }
+                battle.enemies.forEach((enemy, idx) => {
+                    const x = spacing * (idx + 1);
+                    const y = canvasHeight * 0.35;
 
-                // モンスター名と状態異常バッジ
-                ctx.fillStyle = '#fff';
-                ctx.font = `${tileSize * 0.5}px 'MS Gothic', monospace`;
-                ctx.fillText(battle.enemy.name, canvasWidth / 2, canvasHeight * 0.55);
+                    // 死亡している敵は薄く表示
+                    const isDead = enemy.currentHp <= 0;
+                    if (isDead) {
+                        ctx.globalAlpha = 0.3;
+                    }
 
-                // 状態異常バッジを名前の下に表示
-                const enemyStatusBadge = getStatusBadges(battle.enemy);
-                if (enemyStatusBadge) {
-                    ctx.fillStyle = '#f88';
+                    // モンスタースプライト
+                    ctx.font = `${spriteSize}px serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    // 色違いモンスター対応（hueRotateフィルタ）
+                    if (enemy.hueRotate) {
+                        ctx.save();
+                        ctx.filter = `hue-rotate(${enemy.hueRotate}deg)`;
+                        ctx.fillText(enemy.sprite, x, y);
+                        ctx.restore();
+                    } else {
+                        ctx.fillText(enemy.sprite, x, y);
+                    }
+
+                    // ターゲット選択中のカーソル表示
+                    if (battle.isSelectingTarget && idx === battle.targetIndex && !isDead) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.font = `${tileSize * 0.8}px serif`;
+                        ctx.fillText('👆', x, y - spriteSize / 2 - tileSize * 0.3);
+                    }
+
+                    // モンスター名
+                    ctx.fillStyle = isDead ? '#888' : '#fff';
                     ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
-                    ctx.fillText(enemyStatusBadge, canvasWidth / 2, canvasHeight * 0.55 + tileSize * 0.5);
-                }
+                    ctx.fillText(enemy.displayName, x, canvasHeight * 0.55);
+
+                    // HP表示（コマンド選択時）
+                    if (battle.phase === 'command' || battle.phase === 'target') {
+                        const hpText = isDead ? '倒した' : `HP:${enemy.currentHp}`;
+                        ctx.fillStyle = isDead ? '#888' : '#8f8';
+                        ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+                        ctx.fillText(hpText, x, canvasHeight * 0.55 + tileSize * 0.45);
+                    }
+
+                    // 状態異常バッジを名前の下に表示
+                    if (!isDead) {
+                        const enemyStatusBadge = getStatusBadges(enemy);
+                        if (enemyStatusBadge) {
+                            ctx.fillStyle = '#f88';
+                            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+                            ctx.fillText(enemyStatusBadge, x, canvasHeight * 0.55 + tileSize * 0.85);
+                        }
+                    }
+
+                    ctx.globalAlpha = 1.0;
+                });
             }
 
             // ステータスウィンドウ
@@ -2997,19 +3134,37 @@
         // ========================================
         // バトルシステム
         // ========================================
-        function startBattle(monsterType) {
-            const monsterData = monsters[monsterType];
+        function startBattle(monsterTypeOrTable) {
+            // 敵グループ生成（エンカウントテーブル名が渡された場合はグループ生成）
+            let enemies;
+            if (encounterTables[monsterTypeOrTable]) {
+                // テーブル名が渡された場合、グループ生成
+                enemies = generateEnemyGroup(monsterTypeOrTable);
+            } else if (monsters[monsterTypeOrTable]) {
+                // 単体モンスター名が渡された場合
+                const monsterData = monsters[monsterTypeOrTable];
+                enemies = [{
+                    ...monsterData,
+                    id: `${monsterTypeOrTable}_0`,
+                    type: monsterTypeOrTable,
+                    displayName: monsterData.name,
+                    currentHp: monsterData.hp,
+                    currentMp: monsterData.mp || 0,
+                    status: { sleep: 0, poison: 0, blind: 0 },
+                    index: 0
+                }];
+            } else {
+                console.error('Unknown monster or table:', monsterTypeOrTable);
+                return;
+            }
+
             battle.active = true;
-            battle.enemy = {
-                ...monsterData,
-                currentHp: monsterData.hp,
-                // 敵の状態異常
-                status: {
-                    sleep: 0,
-                    poison: 0,
-                    blind: 0
-                }
-            };
+            battle.enemies = enemies;
+            battle.enemy = enemies[0]; // 後方互換用
+            battle.targetIndex = 0;
+            battle.currentEnemyIndex = 0;
+            battle.isSelectingTarget = false;
+            battle.pendingAction = null;
             battle.phase = 'start';
             battle.commandIndex = 0;
             battle.spellIndex = 0;
@@ -3032,16 +3187,34 @@
             // バトル中はマップ名を非表示
             mapNameArea.style.display = 'none';
 
+            // 敵出現メッセージを生成
+            const enemyMessage = generateEnemyAppearMessage(enemies);
+
             // フラッシュアニメーション
             const flashInterval = setInterval(() => {
                 battle.flashCount--;
                 if (battle.flashCount <= 0) {
                     clearInterval(flashInterval);
-                    showBattleMessage(`${battle.enemy.name} が あらわれた！`, () => {
+                    showBattleMessage(enemyMessage, () => {
                         battle.phase = 'command';
                     });
                 }
             }, 100);
+        }
+
+        // 敵出現メッセージを生成
+        function generateEnemyAppearMessage(enemies) {
+            if (enemies.length === 1) {
+                return `${enemies[0].displayName} が あらわれた！`;
+            } else {
+                // グループメッセージ
+                const names = enemies.map(e => e.displayName);
+                if (names.length <= 3) {
+                    return `${names.join(' と ')} が あらわれた！`;
+                } else {
+                    return `${enemies[0].displayName}たち ${enemies.length}匹の まものが あらわれた！`;
+                }
+            }
         }
 
         function showBattleMessage(msg, callback) {
@@ -3061,12 +3234,38 @@
         function executeBattleCommand() {
             if (battle.showSpells) {
                 // 呪文実行
-                const spell = spells[player.spells[battle.spellIndex]];
+                const spellId = player.spells[battle.spellIndex];
+                const spell = spells[spellId];
                 if (player.mp < spell.mp) {
                     showBattleMessage('MPが たりない！', () => {
                         battle.phase = 'command';
                     });
                     return;
+                }
+
+                // 攻撃呪文の場合は特別処理
+                if (spell.type === 'attack') {
+                    battle.showSpells = false;
+
+                    if (spell.target === 'single') {
+                        // 単体攻撃呪文：複数敵がいる場合はターゲット選択
+                        const aliveCount = getAliveEnemies().length;
+                        if (aliveCount > 1) {
+                            startTargetSelection('spell', spellId);
+                            battle.message = 'だれに つかう？';
+                            return;
+                        } else {
+                            // 敵が1体の場合は直接実行
+                            player.mp -= spell.mp;
+                            executeSpellOnTarget(spellId, getFirstAliveEnemyIndex());
+                            return;
+                        }
+                    } else if (spell.target === 'all') {
+                        // 全体攻撃呪文：全ての敵にダメージ
+                        player.mp -= spell.mp;
+                        executeSpellOnAll(spellId);
+                        return;
+                    }
                 }
 
                 player.mp -= spell.mp;
@@ -3086,45 +3285,42 @@
                         showBattleMessage(`HPが ${healAmount} かいふくした！`, () => {
                             processTurnEnd();
                         });
-                    } else if (spell.type === 'attack') {
-                        const damage = spell.power + Math.floor(Math.random() * 5);
-                        battle.enemy.currentHp -= damage;
-                        showBattleMessage(`${battle.enemy.name} に ${damage} の ダメージ！`, () => {
-                            checkBattleEnd() || processTurnEnd();
-                        });
                     } else if (spell.type === 'status') {
-                        // 状態異常呪文
+                        // 状態異常呪文（最初の生存敵に対して使用）
+                        const targetEnemy = battle.enemies[getFirstAliveEnemyIndex()];
+                        const targetName = targetEnemy.displayName || targetEnemy.name;
+
                         // 既にその状態異常にかかっている場合
-                        if (battle.enemy.status[spell.statusEffect] > 0) {
-                            showBattleMessage(`しかし ${battle.enemy.name} には きかなかった！`, () => {
+                        if (targetEnemy.status[spell.statusEffect] > 0) {
+                            showBattleMessage(`しかし ${targetName} には きかなかった！`, () => {
                                 processTurnEnd();
                             });
                         } else {
                             // 耐性を考慮した成功率
-                            const effectiveRate = getEffectiveSuccessRate(spell, battle.enemy);
+                            const effectiveRate = getEffectiveSuccessRate(spell, targetEnemy);
                             if (effectiveRate <= 0) {
                                 // 完全耐性
-                                showBattleMessage(`しかし ${battle.enemy.name} には まったく きかなかった！`, () => {
+                                showBattleMessage(`しかし ${targetName} には まったく きかなかった！`, () => {
                                     processTurnEnd();
                                 });
                             } else if (Math.random() < effectiveRate) {
                                 // 成功
-                                applyStatusEffect(battle.enemy, spell.statusEffect);
+                                applyStatusEffect(targetEnemy, spell.statusEffect);
                                 let successMsg = '';
                                 if (spell.statusEffect === 'sleep') {
-                                    successMsg = `${battle.enemy.name} は ねむりにおちた！`;
+                                    successMsg = `${targetName} は ねむりにおちた！`;
                                 } else if (spell.statusEffect === 'blind') {
-                                    successMsg = `${battle.enemy.name} は まぼろしに つつまれた！`;
+                                    successMsg = `${targetName} は まぼろしに つつまれた！`;
                                 } else {
                                     const effectName = STATUS_EFFECTS[spell.statusEffect].name;
-                                    successMsg = `${battle.enemy.name} は ${effectName}状態に なった！`;
+                                    successMsg = `${targetName} は ${effectName}状態に なった！`;
                                 }
                                 showBattleMessage(successMsg, () => {
                                     processTurnEnd();
                                 });
                             } else {
                                 // 失敗（耐性で弾かれた）
-                                showBattleMessage(`しかし ${battle.enemy.name} には きかなかった！`, () => {
+                                showBattleMessage(`しかし ${targetName} には きかなかった！`, () => {
                                     processTurnEnd();
                                 });
                             }
@@ -3236,7 +3432,12 @@
             } else {
                 switch (battle.commandIndex) {
                     case 0: // たたかう
-                        playerAttack();
+                        // 複数敵がいる場合はターゲット選択
+                        if (getAliveEnemies().length > 1) {
+                            startTargetSelection('attack');
+                        } else {
+                            playerAttack();
+                        }
                         break;
                     case 1: // じゅもん
                         battle.showSpells = true;
@@ -3251,6 +3452,132 @@
                         break;
                 }
             }
+        }
+
+        // ターゲット選択開始
+        function startTargetSelection(actionType, spellId = null) {
+            battle.isSelectingTarget = true;
+            battle.targetIndex = getFirstAliveEnemyIndex();
+            battle.pendingAction = { type: actionType, spellId };
+            battle.message = 'だれを こうげきする？';
+        }
+
+        // ターゲット選択確定
+        function confirmTargetSelection() {
+            battle.isSelectingTarget = false;
+            const action = battle.pendingAction;
+            battle.pendingAction = null;
+
+            if (action.type === 'attack') {
+                playerAttack(battle.targetIndex);
+            } else if (action.type === 'spell') {
+                // ターゲット選択確定時にMP消費
+                const spell = spells[action.spellId];
+                player.mp -= spell.mp;
+                executeSpellOnTarget(action.spellId, battle.targetIndex);
+            }
+        }
+
+        // ターゲット選択キャンセル
+        function cancelTargetSelection() {
+            battle.isSelectingTarget = false;
+            battle.pendingAction = null;
+            battle.message = '';
+        }
+
+        // 単体攻撃呪文を特定ターゲットに実行
+        function executeSpellOnTarget(spellId, targetIndex) {
+            const spell = spells[spellId];
+            const enemy = battle.enemies[targetIndex];
+            if (!enemy || enemy.currentHp <= 0) {
+                // ターゲットが既に倒されている場合、別のターゲットを探す
+                const newTarget = getFirstAliveEnemyIndex();
+                if (newTarget === -1) {
+                    checkBattleEnd();
+                    return;
+                }
+                targetIndex = newTarget;
+            }
+            const target = battle.enemies[targetIndex];
+            const targetName = target.displayName || target.name;
+
+            // フラッシュ演出を開始
+            if (spell.flashColor) {
+                const isUltimate = ULTIMATE_SPELLS.includes(spell.id);
+                startSpellFlash(spell.flashColor, isUltimate);
+            }
+
+            battle.phase = 'playerTurn';
+            showBattleMessage(`ゆうしゃ は ${spell.name} を となえた！`, () => {
+                const damage = spell.power + Math.floor(Math.random() * 5);
+                target.currentHp -= damage;
+
+                showBattleMessage(`${targetName} に ${damage} の ダメージ！`, () => {
+                    if (target.currentHp <= 0) {
+                        target.currentHp = 0;
+                        showBattleMessage(`${targetName} を たおした！`, () => {
+                            checkBattleEnd() || processTurnEnd();
+                        });
+                    } else {
+                        checkBattleEnd() || processTurnEnd();
+                    }
+                });
+            });
+        }
+
+        // 全体攻撃呪文を実行（全ての敵にダメージ）
+        function executeSpellOnAll(spellId) {
+            const spell = spells[spellId];
+            const aliveEnemies = getAliveEnemies();
+
+            if (aliveEnemies.length === 0) {
+                checkBattleEnd();
+                return;
+            }
+
+            // フラッシュ演出を開始
+            if (spell.flashColor) {
+                const isUltimate = ULTIMATE_SPELLS.includes(spell.id);
+                startSpellFlash(spell.flashColor, isUltimate);
+            }
+
+            battle.phase = 'playerTurn';
+            showBattleMessage(`ゆうしゃ は ${spell.name} を となえた！`, () => {
+                // 全ての敵にダメージを与える（順番にメッセージ表示）
+                processAoeDamage(spell, 0);
+            });
+        }
+
+        // AOEダメージを順番に処理
+        function processAoeDamage(spell, enemyIndex) {
+            // 次の生存敵を探す
+            while (enemyIndex < battle.enemies.length && battle.enemies[enemyIndex].currentHp <= 0) {
+                enemyIndex++;
+            }
+
+            if (enemyIndex >= battle.enemies.length) {
+                // 全ての敵への攻撃が完了
+                checkBattleEnd() || processTurnEnd();
+                return;
+            }
+
+            const enemy = battle.enemies[enemyIndex];
+            const enemyName = enemy.displayName || enemy.name;
+            const damage = spell.power + Math.floor(Math.random() * 5);
+            enemy.currentHp -= damage;
+
+            const message = enemy.currentHp <= 0
+                ? `${enemyName} に ${damage} の ダメージ！ ${enemyName} を たおした！`
+                : `${enemyName} に ${damage} の ダメージ！`;
+
+            if (enemy.currentHp <= 0) {
+                enemy.currentHp = 0;
+            }
+
+            showBattleMessage(message, () => {
+                // 次の敵へ
+                processAoeDamage(spell, enemyIndex + 1);
+            });
         }
 
         // ターン終了処理（毒ダメージなど）
@@ -3269,8 +3596,19 @@
             }
         }
 
-        function playerAttack() {
+        function playerAttack(targetIndex = 0) {
             battle.phase = 'playerTurn';
+
+            // ターゲットが既に倒れている場合は別のターゲットを探す
+            if (!battle.enemies[targetIndex] || battle.enemies[targetIndex].currentHp <= 0) {
+                const newTarget = getFirstAliveEnemyIndex();
+                if (newTarget === -1) {
+                    checkBattleEnd();
+                    return;
+                }
+                targetIndex = newTarget;
+            }
+            const enemy = battle.enemies[targetIndex];
 
             // 幻惑状態なら命中率低下
             const hitRate = getHitRate(player);
@@ -3282,7 +3620,7 @@
             }
 
             const atk = getPlayerAtk();
-            let damage = Math.max(1, Math.floor(atk / 2 - battle.enemy.def / 4 + Math.random() * 5));
+            let damage = Math.max(1, Math.floor(atk / 2 - enemy.def / 4 + Math.random() * 5));
 
             // バイキルトによるダメージ倍率適用
             if (battle.buffs.attackUp > 0) {
@@ -3290,27 +3628,60 @@
                 damage = Math.floor(damage * attackMultiplier);
             }
 
-            battle.enemy.currentHp -= damage;
+            enemy.currentHp -= damage;
 
-            showBattleMessage(`ゆうしゃ の こうげき！ ${damage} の ダメージ！`, () => {
-                checkBattleEnd() || processTurnEnd();
+            // 敵の名前（サフィックス付き）を表示
+            const enemyName = enemy.displayName || enemy.name;
+
+            showBattleMessage(`ゆうしゃ の こうげき！ ${enemyName} に ${damage} の ダメージ！`, () => {
+                // この敵を倒したかチェック
+                if (enemy.currentHp <= 0) {
+                    enemy.currentHp = 0;
+                    showBattleMessage(`${enemyName} を たおした！`, () => {
+                        checkBattleEnd() || processTurnEnd();
+                    });
+                } else {
+                    checkBattleEnd() || processTurnEnd();
+                }
             });
         }
 
         function enemyTurn() {
-            // 魔王の場合は専用の行動ロジックを使用
-            if (battle.enemy.isBoss) {
+            battle.phase = 'enemyTurn';
+            // 最初の生存敵から行動開始
+            battle.currentEnemyIndex = getFirstAliveEnemyIndex();
+            if (battle.currentEnemyIndex === -1) {
+                // 全ての敵が倒されている
+                checkBattleEnd();
+                return;
+            }
+            processCurrentEnemyTurn();
+        }
+
+        // 現在のインデックスの敵が行動する
+        function processCurrentEnemyTurn() {
+            const enemy = battle.enemies[battle.currentEnemyIndex];
+            if (!enemy || enemy.currentHp <= 0) {
+                // この敵は既に倒されている、次へ
+                nextEnemyTurn();
+                return;
+            }
+
+            // 後方互換用にbattle.enemyを設定
+            battle.enemy = enemy;
+
+            // ボスの場合は専用の行動ロジックを使用
+            if (enemy.isBoss) {
                 maouTurn();
                 return;
             }
 
-            battle.phase = 'enemyTurn';
-
             // 敵の眠りチェック
-            const wakeResult = checkWakeUp(battle.enemy, battle.enemy.name);
+            const enemyName = enemy.displayName || enemy.name;
+            const wakeResult = checkWakeUp(enemy, enemyName);
             if (!wakeResult.awake) {
                 showBattleMessage(wakeResult.message, () => {
-                    processEnemyTurnEnd();
+                    processCurrentEnemyTurnEnd();
                 });
                 return;
             }
@@ -3326,11 +3697,14 @@
         }
 
         function executeEnemyAttack() {
+            const enemy = battle.enemies[battle.currentEnemyIndex];
+            const enemyName = enemy.displayName || enemy.name;
+
             // 敵の幻惑状態チェック
-            const hitRate = getHitRate(battle.enemy);
+            const hitRate = getHitRate(enemy);
             if (Math.random() > hitRate) {
-                showBattleMessage(`${battle.enemy.name} の こうげき！ しかし こうげきは はずれた！`, () => {
-                    processEnemyTurnEnd();
+                showBattleMessage(`${enemyName} の こうげき！ しかし こうげきは はずれた！`, () => {
+                    processCurrentEnemyTurnEnd();
                 });
                 return;
             }
@@ -3343,31 +3717,53 @@
                 def = Math.floor(def * defenseMultiplier);
             }
 
-            const damage = Math.max(1, Math.floor(battle.enemy.atk / 2 - def / 4 + Math.random() * 3));
+            const damage = Math.max(1, Math.floor(enemy.atk / 2 - def / 4 + Math.random() * 3));
             player.hp -= damage;
 
-            showBattleMessage(`${battle.enemy.name} の こうげき！ ${damage} の ダメージ！`, () => {
+            showBattleMessage(`${enemyName} の こうげき！ ${damage} の ダメージ！`, () => {
                 if (player.hp <= 0) {
                     player.hp = 0;
                     battleLose();
                 } else {
-                    processEnemyTurnEnd();
+                    processCurrentEnemyTurnEnd();
                 }
             });
         }
 
-        // 敵ターン終了処理
-        function processEnemyTurnEnd() {
+        // 現在の敵のターン終了、次の敵へ
+        function processCurrentEnemyTurnEnd() {
+            const enemy = battle.enemies[battle.currentEnemyIndex];
+            const enemyName = enemy ? (enemy.displayName || enemy.name) : '';
+
             // 敵の毒ダメージ
-            const poisonResult = processPoisonDamage(battle.enemy, battle.enemy.name, battle.enemy.hp);
-            if (poisonResult) {
-                showBattleMessage(poisonResult.message, () => {
-                    if (checkBattleEnd()) return;
-                    startPlayerTurn();
-                });
-            } else {
-                startPlayerTurn();
+            if (enemy && enemy.currentHp > 0) {
+                const poisonResult = processPoisonDamage(enemy, enemyName, enemy.hp);
+                if (poisonResult) {
+                    showBattleMessage(poisonResult.message, () => {
+                        if (checkBattleEnd()) return;
+                        nextEnemyTurn();
+                    });
+                    return;
+                }
             }
+            nextEnemyTurn();
+        }
+
+        // 次の敵のターンへ進む
+        function nextEnemyTurn() {
+            const nextIndex = getNextAliveEnemyIndex(battle.currentEnemyIndex);
+            if (nextIndex === -1) {
+                // 全ての敵が行動完了、プレイヤーターンへ
+                startPlayerTurn();
+            } else {
+                battle.currentEnemyIndex = nextIndex;
+                processCurrentEnemyTurn();
+            }
+        }
+
+        // 敵ターン終了処理（後方互換用）
+        function processEnemyTurnEnd() {
+            processCurrentEnemyTurnEnd();
         }
 
         // プレイヤーターン開始
@@ -3433,8 +3829,9 @@
         }
 
         function checkBattleEnd() {
-            if (battle.enemy.currentHp <= 0) {
-                battle.enemy.currentHp = 0;
+            // 全ての敵が倒されたかチェック
+            const aliveEnemies = getAliveEnemies();
+            if (aliveEnemies.length === 0) {
                 battleWin();
                 return true;
             }
@@ -3443,15 +3840,36 @@
 
         function battleWin() {
             battle.phase = 'result';
-            const isBossDefeat = battle.enemy.isBoss;
-            const isMaou = battle.enemy.name === '魔王';
-            const isMidBoss = battle.enemy.name === '洞窟の番人';
-            const exp = battle.enemy.exp;
-            const gold = battle.enemy.gold;
-            player.exp += exp;
-            player.gold += gold;
 
-            showBattleMessage(`${battle.enemy.name} を たおした！`, () => {
+            // 全敵の報酬を合算
+            let totalExp = 0;
+            let totalGold = 0;
+            let defeatedBoss = null;
+
+            for (const enemy of battle.enemies) {
+                totalExp += enemy.exp || 0;
+                totalGold += enemy.gold || 0;
+                if (enemy.isBoss) {
+                    defeatedBoss = enemy;
+                }
+            }
+
+            player.exp += totalExp;
+            player.gold += totalGold;
+
+            // ボス戦判定（後方互換用）
+            const isBossDefeat = defeatedBoss !== null;
+            const isMaou = defeatedBoss && defeatedBoss.name === '魔王';
+            const isMidBoss = defeatedBoss && defeatedBoss.name === '洞窟の番人';
+            const exp = totalExp;
+            const gold = totalGold;
+
+            // 勝利メッセージ
+            const winMessage = battle.enemies.length === 1
+                ? `${battle.enemies[0].displayName || battle.enemies[0].name} を たおした！`
+                : 'まものたちを やっつけた！';
+
+            showBattleMessage(winMessage, () => {
                 // 魔王討伐時は特別な演出
                 if (isBossDefeat && isMaou) {
                     screenShake.active = true;
@@ -3492,9 +3910,9 @@
                             });
                         });
                     });
-                } else if (isBossDefeat && battle.enemy.bossId) {
+                } else if (isBossDefeat && defeatedBoss.bossId) {
                     // 砂漠エリアのボス撃破処理
-                    handleDesertBossDefeat(battle.enemy.bossId, exp, gold);
+                    handleDesertBossDefeat(defeatedBoss.bossId, exp, gold);
                 } else {
                     showBattleMessage(`${exp} ポイントの けいけんちを かくとく！`, () => {
                         showBattleMessage(`${gold} ゴールドを てにいれた！`, () => {
@@ -3918,14 +4336,12 @@
                 // 3. typeベースのフォールバック
                 const mapId = currentMap.mapId || '';
                 let tableKey = currentMap.encounterTable || mapId;
-                let table = encounterTables[tableKey];
-                if (!table) {
+                if (!encounterTables[tableKey]) {
                     // mapIdで見つからなければtypeで探す
-                    const fallbackType = encounterTableFallback[currentMap.type] || 'field';
-                    table = encounterTables[fallbackType] || encounterTables.field;
+                    tableKey = encounterTableFallback[currentMap.type] || 'field';
                 }
-                const monsterType = table[Math.floor(Math.random() * table.length)];
-                startBattle(monsterType);
+                // tableKeyを渡してグループ生成
+                startBattle(tableKey);
             }
         }
 
@@ -5341,6 +5757,26 @@
 
             // バトル中
             if (gameMode === MODE.BATTLE) {
+                // ターゲット選択モード
+                if (battle.isSelectingTarget) {
+                    switch (e.key) {
+                        case 'ArrowLeft': case 'a': case 'A':
+                            battle.targetIndex = getPrevAliveEnemyIndex(battle.targetIndex);
+                            break;
+                        case 'ArrowRight': case 'd': case 'D':
+                            battle.targetIndex = getNextAliveEnemyIndex(battle.targetIndex);
+                            break;
+                        case 'Enter': case ' ': case 'z':
+                            confirmTargetSelection();
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            cancelTargetSelection();
+                            break;
+                    }
+                    e.preventDefault();
+                    return;
+                }
+
                 if (battle.phase === 'command') {
                     if (battle.showSpells) {
                         switch (e.key) {
