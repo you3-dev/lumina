@@ -6,6 +6,10 @@
   "rows": 15,
   "isSafe": true,
   "encounterRate": 0,
+  "isSettlement": true,
+  "isOutdoor": false,
+  "arrivalX": 7,
+  "arrivalY": 13,
   "data": [
     [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
     [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],

@@ -6,6 +6,7 @@
   "rows": 10,
   "isSafe": true,
   "encounterRate": 0,
+  "isOutdoor": false,
   "data": [
     [7,7,7,7,7,7,7,7,7,7,7],
     [7,6,6,6,6,6,6,6,6,6,7],

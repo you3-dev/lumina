@@ -9,6 +9,7 @@
   "isSafe": false,
   "encounterRate": 0.16,
   "encounterTable": "pyramid_deep",
+  "isOutdoor": false,
   "data": [
     [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7],
     [7,6,6,6,6,6,6,6,6,6,6,6,6,6,7],
