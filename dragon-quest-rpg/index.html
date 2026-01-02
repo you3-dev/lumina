@@ -1646,36 +1646,49 @@
 
         // 位置情報とゴールド・インベントリはpartyDataを使用
         // 後方互換性のためplayerオブジェクトにプロパティを追加
-        Object.defineProperties(player, {
-            x: {
-                get: () => partyData.x,
-                set: (v) => { partyData.x = v; }
-            },
-            y: {
-                get: () => partyData.y,
-                set: (v) => { partyData.y = v; }
-            },
-            direction: {
-                get: () => partyData.direction,
-                set: (v) => { partyData.direction = v; }
-            },
-            moving: {
-                get: () => partyData.moving,
-                set: (v) => { partyData.moving = v; }
-            },
-            moveDelay: {
-                get: () => partyData.moveDelay,
-                set: (v) => { partyData.moveDelay = v; }
-            },
-            gold: {
-                get: () => partyData.gold,
-                set: (v) => { partyData.gold = v; }
-            },
-            inventory: {
-                get: () => partyData.inventory,
-                set: (v) => { partyData.inventory = v; }
-            }
-        });
+        // 注意: player再代入後は必ずこの関数を呼び出すこと
+        function setupPlayerProxy() {
+            Object.defineProperties(player, {
+                x: {
+                    get: () => partyData.x,
+                    set: (v) => { partyData.x = v; },
+                    configurable: true
+                },
+                y: {
+                    get: () => partyData.y,
+                    set: (v) => { partyData.y = v; },
+                    configurable: true
+                },
+                direction: {
+                    get: () => partyData.direction,
+                    set: (v) => { partyData.direction = v; },
+                    configurable: true
+                },
+                moving: {
+                    get: () => partyData.moving,
+                    set: (v) => { partyData.moving = v; },
+                    configurable: true
+                },
+                moveDelay: {
+                    get: () => partyData.moveDelay,
+                    set: (v) => { partyData.moveDelay = v; },
+                    configurable: true
+                },
+                gold: {
+                    get: () => partyData.gold,
+                    set: (v) => { partyData.gold = v; },
+                    configurable: true
+                },
+                inventory: {
+                    get: () => partyData.inventory,
+                    set: (v) => { partyData.inventory = v; },
+                    configurable: true
+                }
+            });
+        }
+
+        // 初期化時にプロキシを設定
+        setupPlayerProxy();
 
         // パーティヘルパー関数
         function getAlivePartyMembers() {
@@ -2158,8 +2171,9 @@
                         partyData.inventory = data.partyData.inventory || [];
                     }
 
-                    // playerの参照を更新
+                    // playerの参照を更新し、プロキシを再設定
                     player = party[0];
+                    setupPlayerProxy();
 
                     // 各メンバーのステータス再計算
                     party.forEach(member => {
@@ -2239,6 +2253,7 @@
                     hero.isAlive = heroData.hp > 0;
                     party.push(hero);
                     player = party[0];
+                    setupPlayerProxy();
 
                     // partyDataの復元
                     partyData.x = heroData.x;
@@ -7909,6 +7924,7 @@
             });
             party.push(hero);
             player = party[0];
+            setupPlayerProxy();
 
             // partyDataをリセット
             partyData.x = 4;
