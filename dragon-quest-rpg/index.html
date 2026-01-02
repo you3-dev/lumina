@@ -6698,24 +6698,36 @@
             const hpRatio = battle.enemy.currentHp / battle.enemy.hp;
             const skills = battle.enemy.skills;
 
+            // スキルが定義されていないボスは通常攻撃のみ
+            if (!skills || !Array.isArray(skills) || skills.length === 0) {
+                return 'attack';
+            }
+
             // HP50%以下でベホマを使う確率が上がる
-            if (hpRatio < 0.5 && battle.enemy.currentMp >= 50 && Math.random() < 0.4) {
+            if (hpRatio < 0.5 && battle.enemy.currentMp >= 50 && skills.includes('behoma') && Math.random() < 0.4) {
                 return 'behoma';
             }
 
             // HP30%以下で強力な攻撃を多用
             if (hpRatio < 0.3) {
-                const aggressiveSkills = ['ionazun', 'hageshiiHonoo'];
-                return aggressiveSkills[Math.floor(Math.random() * aggressiveSkills.length)];
+                const aggressiveSkills = skills.filter(s => s === 'ionazun' || s === 'hageshiiHonoo');
+                if (aggressiveSkills.length > 0) {
+                    return aggressiveSkills[Math.floor(Math.random() * aggressiveSkills.length)];
+                }
             }
 
             // 通常時はランダムに行動（ベホマ以外）
             const normalSkills = skills.filter(s => s !== 'behoma');
+            if (normalSkills.length === 0) {
+                return 'attack';
+            }
             return normalSkills[Math.floor(Math.random() * normalSkills.length)];
         }
 
-        // 魔王のスキル実行
+        // ボスのスキル実行
         function executeMaouSkill(skillId, callback) {
+            const bossName = battle.enemy.displayName || battle.enemy.name || 'ボス';
+
             if (skillId === 'attack') {
                 // 通常攻撃
                 let def = getPlayerDef();
@@ -6731,7 +6743,7 @@
                 screenShake.intensity = 5;
                 screenShake.duration = 15;
 
-                showBattleMessage(`魔王 の こうげき！ ${damage} の ダメージ！`, () => {
+                showBattleMessage(`${bossName} の こうげき！ ${damage} の ダメージ！`, () => {
                     if (player.hp <= 0) {
                         player.hp = 0;
                         battleLose();
@@ -6758,10 +6770,10 @@
                     screenShake.duration = 20;
                 }
 
-                showBattleMessage(`魔王 は ${skill.name} を はなった！`, () => {
+                showBattleMessage(`${bossName} は ${skill.name} を はなった！`, () => {
                     if (skill.type === 'heal') {
                         battle.enemy.currentHp = Math.min(battle.enemy.hp, battle.enemy.currentHp + skill.power);
-                        showBattleMessage(`魔王 の HPが かいふくした！`, () => {
+                        showBattleMessage(`${bossName} の HPが かいふくした！`, () => {
                             callback();
                         });
                     } else if (skill.type === 'attack') {
@@ -6790,8 +6802,9 @@
         }
 
         function executeMaouActions() {
+            const bossName = battle.enemy.displayName || battle.enemy.name || 'ボス';
             // 眠りチェック
-            const wakeResult = checkWakeUp(battle.enemy, '魔王');
+            const wakeResult = checkWakeUp(battle.enemy, bossName);
             if (!wakeResult.awake) {
                 showBattleMessage(wakeResult.message, () => {
                     processEnemyTurnEnd();
@@ -6811,10 +6824,13 @@
             const skillId = selectMaouAction();
             battle.enemy.actionCount++;
 
+            const bossActions = battle.enemy.actions || 1; // デフォルトは1回行動
+            const bossName = battle.enemy.displayName || battle.enemy.name || 'ボス';
+
             executeMaouSkill(skillId, () => {
-                // 2回行動チェック
-                if (battle.enemy.actionCount < battle.enemy.actions && player.hp > 0) {
-                    showBattleMessage('魔王 は さらに こうげきを しかけてきた！', () => {
+                // 複数回行動チェック
+                if (battle.enemy.actionCount < bossActions && player.hp > 0) {
+                    showBattleMessage(`${bossName} は さらに こうげきを しかけてきた！`, () => {
                         doMaouAction();
                     });
                 } else {
