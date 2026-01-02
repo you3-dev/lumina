@@ -6280,8 +6280,8 @@
             const front = getFrontPosition();
             const npc = getNpcAt(front.x, front.y);
             if (npc) {
-                if (npc.type === 'inn') {
-                    openInn(npc.innCost);
+                if (npc.type === 'inn' || npc.type === 'innkeeper') {
+                    openInn(npc.innCost || npc.price);
                 } else if (npc.type === 'shop' || npc.type === 'shopkeeper') {
                     openShop(npc.shopId || 'default');
                 } else if (npc.type === 'maou') {
