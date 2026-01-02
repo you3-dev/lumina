@@ -24,7 +24,7 @@
 
         body {
             background: #000;
-            font-family: 'MS Gothic', 'Courier New', monospace;
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', 'Yu Gothic', sans-serif;
         }
 
         #gameCanvas {
@@ -2294,18 +2294,34 @@
         function drawMessageWindow() {
             if (!dialog.active) return;
             const padding = 20;
-            const windowHeight = tileSize * 2.5;
-            const windowY = canvasHeight - windowHeight - 180;
+            const textPadding = 20;
             const windowX = padding;
             const windowWidth = canvasWidth - padding * 2;
+            const maxTextWidth = windowWidth - textPadding * 2;
+
+            // フォント設定
+            const fontSize = Math.floor(tileSize * 0.42);
+            const lineHeight = fontSize * 1.4;
+            const font = `${fontSize}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+
+            // テキストの行数を計算してウィンドウの高さを動的に決定
+            const lines = wrapText(dialog.displayedText, maxTextWidth, font);
+            const minLines = 2;
+            const numLines = Math.max(minLines, lines.length);
+            const windowHeight = textPadding * 2 + lineHeight * numLines + 10;
+            const windowY = canvasHeight - windowHeight - 180;
 
             drawWindow(windowX, windowY, windowWidth, windowHeight);
 
             ctx.fillStyle = '#fff';
-            ctx.font = `${Math.floor(tileSize * 0.45)}px 'MS Gothic', monospace`;
+            ctx.font = font;
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
-            ctx.fillText(dialog.displayedText, windowX + 20, windowY + 20);
+
+            // 折り返しテキストを描画
+            for (let i = 0; i < lines.length; i++) {
+                ctx.fillText(lines[i], windowX + textPadding, windowY + textPadding + i * lineHeight);
+            }
 
             if (!dialog.isTyping && dialog.currentIndex < dialog.messages.length - 1) {
                 const blinkAlpha = Math.sin(Date.now() / 200) * 0.5 + 0.5;
@@ -2327,6 +2343,60 @@
             ctx.strokeRect(x + 8, y + 8, w - 16, h - 16);
         }
 
+        // テキストを指定幅で折り返して行の配列を返す
+        function wrapText(text, maxWidth, font) {
+            ctx.font = font;
+            const words = [];
+            // 日本語は文字単位、英数字は単語単位で分割
+            let currentWord = '';
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                // 日本語文字判定（ひらがな、カタカナ、漢字、全角記号）
+                if (/[\u3000-\u9FFF\uFF00-\uFFEF]/.test(char)) {
+                    if (currentWord) {
+                        words.push(currentWord);
+                        currentWord = '';
+                    }
+                    words.push(char);
+                } else if (char === ' ') {
+                    if (currentWord) {
+                        words.push(currentWord);
+                        currentWord = '';
+                    }
+                } else {
+                    currentWord += char;
+                }
+            }
+            if (currentWord) words.push(currentWord);
+
+            const lines = [];
+            let currentLine = '';
+
+            for (const word of words) {
+                const testLine = currentLine + word;
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width > maxWidth && currentLine !== '') {
+                    lines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            if (currentLine) lines.push(currentLine);
+
+            return lines.length > 0 ? lines : [''];
+        }
+
+        // 複数行テキストを描画
+        function drawWrappedText(text, x, y, maxWidth, lineHeight, font) {
+            ctx.font = font;
+            const lines = wrapText(text, maxWidth, font);
+            for (let i = 0; i < lines.length; i++) {
+                ctx.fillText(lines[i], x, y + i * lineHeight);
+            }
+            return lines.length;
+        }
+
         function drawMenu() {
             if (!menu.active) return;
             const menuWidth = canvasWidth * 0.85;
@@ -2338,7 +2408,7 @@
 
             // タブ表示（4タブ：つよさ、じゅもん、もちもの、ちず）
             const tabY = menuY + 10;
-            ctx.font = `${tileSize * 0.32}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.32}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
 
@@ -2371,7 +2441,7 @@
             if (menu.mode === 'status') {
                 // つよさ（ステータス画面）
                 ctx.fillStyle = '#fff';
-                ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                 ctx.textAlign = 'left';
 
                 const col1X = menuX + 20;
@@ -2450,7 +2520,7 @@
             } else if (menu.mode === 'spells') {
                 // じゅもん（呪文画面）
                 ctx.fillStyle = '#fff';
-                ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                 ctx.textAlign = 'left';
                 const spellStartY = contentY + 10;
 
@@ -2490,7 +2560,7 @@
             } else if (menu.mode === 'items') {
                 // もちもの（アイテム画面）
                 ctx.fillStyle = '#fff';
-                ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                 ctx.textAlign = 'left';
                 const itemStartY = contentY + 10;
 
@@ -2538,7 +2608,7 @@
 
                             drawWindow(subMenuX, subMenuY, subMenuWidth, subMenuHeight);
 
-                            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+                            ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                             ctx.textAlign = 'left';
 
                             // アクション選択肢
@@ -2561,7 +2631,7 @@
             } else if (menu.mode === 'map') {
                 // ちず（マップ画面への案内）
                 ctx.fillStyle = '#fff';
-                ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                 ctx.textAlign = 'center';
 
                 const mapInfoY = contentY + 30;
@@ -2569,16 +2639,16 @@
                 ctx.fillText(`📍 ${currentMap.name || 'フィールド'}`, canvasWidth / 2, mapInfoY);
 
                 ctx.fillStyle = '#fff';
-                ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+                ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                 ctx.fillText('Aボタンで地図を開く', canvasWidth / 2, mapInfoY + lineHeight * 2);
 
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-                ctx.font = `${tileSize * 0.3}px 'MS Gothic', monospace`;
+                ctx.font = `${tileSize * 0.3}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                 ctx.fillText('（Mキーでいつでも開けます）', canvasWidth / 2, mapInfoY + lineHeight * 3.5);
             }
 
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.font = `${tileSize * 0.3}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.3}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.textAlign = 'center';
             if ((menu.mode === 'items' && player.inventory.length > 0) ||
                 (menu.mode === 'spells' && player.spells.length > 0)) {
@@ -2601,7 +2671,7 @@
             drawWindow(windowX, windowY, windowWidth, windowHeight);
 
             ctx.fillStyle = '#fff';
-            ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.45}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
 
@@ -2623,7 +2693,7 @@
 
             // 所持金表示
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.fillText(`所持金: ${player.gold} G`, windowX + 20, windowY + windowHeight - tileSize * 0.6);
         }
 
@@ -2638,14 +2708,14 @@
             drawWindow(windowX, windowY, windowWidth, windowHeight);
 
             ctx.fillStyle = '#ffd700';
-            ctx.font = `${tileSize * 0.5}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.5}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             ctx.fillText('⚔️ ぶきぼうぐや 🛡️', canvasWidth / 2, windowY + 15);
 
             // 所持金表示
             ctx.fillStyle = '#fff';
-            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.textAlign = 'right';
             ctx.fillText(`💰 ${player.gold} G`, windowX + windowWidth - 20, windowY + 15);
 
@@ -2654,7 +2724,7 @@
 
             if (shop.mode === 'menu') {
                 // メニュー選択
-                ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+                ctx.font = `${tileSize * 0.45}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                 ctx.textAlign = 'left';
                 const menuItems = ['かう', 'うる', 'やめる'];
                 menuItems.forEach((menuItem, i) => {
@@ -2670,7 +2740,7 @@
             } else if (shop.mode === 'buy') {
                 if (shop.phase === 'list') {
                     // 購入リスト
-                    ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                    ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.textAlign = 'left';
 
                     getShopItems().forEach((itemId, i) => {
@@ -2697,14 +2767,14 @@
                     });
 
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                    ctx.font = `${tileSize * 0.3}px 'MS Gothic', monospace`;
+                    ctx.font = `${tileSize * 0.3}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.fillText('↑↓ 選択 / A 購入 / B 戻る', canvasWidth / 2, windowY + windowHeight - 25);
 
                 } else if (shop.phase === 'confirm') {
                     const item = shop.selectedItem;
                     ctx.fillStyle = '#fff';
-                    ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+                    ctx.font = `${tileSize * 0.45}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.textAlign = 'left';
                     ctx.fillText(`${item.name} を かいますか？`, windowX + 30, listY);
                     ctx.fillText(`（${item.price} ゴールド）`, windowX + 30, listY + lineHeight);
@@ -2723,7 +2793,7 @@
                 } else if (shop.phase === 'equip') {
                     const item = shop.selectedItem;
                     ctx.fillStyle = '#fff';
-                    ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+                    ctx.font = `${tileSize * 0.45}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.textAlign = 'left';
                     ctx.fillText(`${item.name} を てにいれた！`, windowX + 30, listY);
                     ctx.fillText('そうび しますか？', windowX + 30, listY + lineHeight);
@@ -2743,7 +2813,7 @@
             } else if (shop.mode === 'sell') {
                 if (shop.phase === 'list') {
                     // 売却リスト
-                    ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                    ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.textAlign = 'left';
 
                     if (shop.sellableItems.length === 0) {
@@ -2774,7 +2844,7 @@
                     }
 
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                    ctx.font = `${tileSize * 0.3}px 'MS Gothic', monospace`;
+                    ctx.font = `${tileSize * 0.3}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.fillText('↑↓ 選択 / A 売却 / B 戻る', canvasWidth / 2, windowY + windowHeight - 25);
 
@@ -2782,7 +2852,7 @@
                     const item = shop.selectedItem;
                     const sellPrice = Math.floor(item.price / 2);
                     ctx.fillStyle = '#fff';
-                    ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+                    ctx.font = `${tileSize * 0.45}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.textAlign = 'left';
                     ctx.fillText(`${item.name} を うりますか？`, windowX + 30, listY);
                     ctx.fillText(`（${sellPrice} ゴールド）`, windowX + 30, listY + lineHeight);
@@ -2802,7 +2872,7 @@
                     const item = shop.selectedItem;
                     const sellPrice = Math.floor(item.price / 2);
                     ctx.fillStyle = '#fff';
-                    ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+                    ctx.font = `${tileSize * 0.45}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.textAlign = 'left';
                     ctx.fillText(`${item.name} を うりました！`, windowX + 30, listY);
                     ctx.fillText(`${sellPrice} ゴールド てにいれた！`, windowX + 30, listY + lineHeight);
@@ -2952,14 +3022,14 @@
 
                     // モンスター名
                     ctx.fillStyle = isDead ? '#888' : '#fff';
-                    ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                    ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.fillText(enemy.displayName, x, canvasHeight * 0.55);
 
                     // HP表示（コマンド選択時）
                     if (battle.phase === 'command' || battle.phase === 'target') {
                         const hpText = isDead ? '倒した' : `HP:${enemy.currentHp}`;
                         ctx.fillStyle = isDead ? '#888' : '#8f8';
-                        ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+                        ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                         ctx.fillText(hpText, x, canvasHeight * 0.55 + tileSize * 0.45);
                     }
 
@@ -2968,7 +3038,7 @@
                         const enemyStatusBadge = getStatusBadges(enemy);
                         if (enemyStatusBadge) {
                             ctx.fillStyle = '#f88';
-                            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+                            ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                             ctx.fillText(enemyStatusBadge, x, canvasHeight * 0.55 + tileSize * 0.85);
                         }
                     }
@@ -2985,7 +3055,7 @@
             drawWindow(statusX, statusY, statusW, statusH);
 
             ctx.fillStyle = '#fff';
-            ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
 
@@ -3014,14 +3084,27 @@
             ctx.fillText(`MP: ${player.mp}/${player.maxMp}`, statusX + 15, statusY + 15 + tileSize * 1.0);
 
             // メッセージウィンドウ
-            const msgH = tileSize * 2;
+            const msgPadding = 15;
+            const msgWindowWidth = canvasWidth - 20;
+            const msgMaxTextWidth = msgWindowWidth - msgPadding * 2;
+            const msgFontSize = Math.floor(tileSize * 0.42);
+            const msgLineHeight = msgFontSize * 1.4;
+            const msgFont = `${msgFontSize}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+
+            // 折り返し行数に応じてウィンドウ高さを調整
+            const msgLines = wrapText(battle.message, msgMaxTextWidth, msgFont);
+            const msgNumLines = Math.max(2, msgLines.length);
+            const msgH = msgPadding * 2 + msgLineHeight * msgNumLines;
             const msgY = canvasHeight - msgH - 180;
-            drawWindow(10, msgY, canvasWidth - 20, msgH);
+            drawWindow(10, msgY, msgWindowWidth, msgH);
 
             ctx.fillStyle = '#fff';
-            ctx.font = `${tileSize * 0.45}px 'MS Gothic', monospace`;
+            ctx.font = msgFont;
             ctx.textAlign = 'left';
-            ctx.fillText(battle.message, 30, msgY + 25);
+            ctx.textBaseline = 'top';
+            for (let i = 0; i < msgLines.length; i++) {
+                ctx.fillText(msgLines[i], 10 + msgPadding, msgY + msgPadding + i * msgLineHeight);
+            }
 
             // コマンドウィンドウ
             if (battle.phase === 'command') {
@@ -3032,7 +3115,7 @@
                 drawWindow(cmdX, cmdY, cmdW, cmdH);
 
                 const commands = ['たたかう', 'じゅもん', 'どうぐ', 'にげる'];
-                ctx.font = `${tileSize * 0.5}px 'MS Gothic', monospace`;
+                ctx.font = `${tileSize * 0.5}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
 
                 commands.forEach((cmd, i) => {
                     const y = cmdY + 20 + i * tileSize * 0.7;
@@ -3065,7 +3148,7 @@
 
                         // 呪文名とMP（MP不足はグレーアウト）
                         ctx.fillStyle = canUse ? '#fff' : '#555';
-                        ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                        ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                         ctx.fillText(`${spell.name}`, spellX + 30, y);
 
                         // MP消費量
@@ -3075,7 +3158,7 @@
 
                     // 操作ガイド
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                    ctx.font = `${tileSize * 0.25}px 'MS Gothic', monospace`;
+                    ctx.font = `${tileSize * 0.25}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.fillText('B:もどる', spellX + 10, spellY + spellH - 10);
                 }
 
@@ -3089,7 +3172,7 @@
 
                     if (player.inventory.length === 0) {
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                        ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                        ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                         ctx.fillText('どうぐがない', itemX + 20, itemY + 30);
                     } else {
                         player.inventory.forEach((slot, i) => {
@@ -3106,7 +3189,7 @@
 
                             // アイテム名（装備品はグレーアウト）
                             ctx.fillStyle = canUse ? '#fff' : '#555';
-                            ctx.font = `${tileSize * 0.4}px 'MS Gothic', monospace`;
+                            ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                             let displayName = item.name;
                             if (slot.quantity > 1) {
                                 displayName += ` x ${slot.quantity}`;
@@ -3124,7 +3207,7 @@
 
                     // 操作ガイド
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                    ctx.font = `${tileSize * 0.25}px 'MS Gothic', monospace`;
+                    ctx.font = `${tileSize * 0.25}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.fillText('B:もどる', itemX + 10, itemY + itemH - 10);
                 }
             }
@@ -5043,7 +5126,7 @@
             drawWindow(windowX, windowY, windowWidth, windowHeight);
 
             // タイトル
-            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             ctx.fillStyle = '#ffd700';
@@ -5058,7 +5141,7 @@
 
             // 拠点リスト
             ctx.textAlign = 'left';
-            ctx.font = `${tileSize * 0.35}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             const listStartY = windowY + 55;
 
             for (let i = 0; i < locations.length; i++) {
@@ -5076,7 +5159,7 @@
             }
 
             // 操作説明
-            ctx.font = `${tileSize * 0.25}px 'MS Gothic', monospace`;
+            ctx.font = `${tileSize * 0.25}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.textAlign = 'center';
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.fillText('↑↓:選択  Enter:決定  Esc:キャンセル', canvasWidth / 2, windowY + windowHeight - 20);
