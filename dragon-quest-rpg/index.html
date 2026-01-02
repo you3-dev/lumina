@@ -3416,12 +3416,11 @@
                     ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.fillText(enemy.displayName, x, canvasHeight * 0.55);
 
-                    // HP表示（コマンド選択時）
-                    if (battle.phase === 'command' || battle.phase === 'target') {
-                        const hpText = isDead ? '倒した' : `HP:${enemy.currentHp}`;
-                        ctx.fillStyle = isDead ? '#888' : '#8f8';
+                    // 倒した表示（HPは非表示で緊張感を演出）
+                    if (isDead && (battle.phase === 'command' || battle.phase === 'target')) {
+                        ctx.fillStyle = '#888';
                         ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
-                        ctx.fillText(hpText, x, canvasHeight * 0.55 + tileSize * 0.45);
+                        ctx.fillText('倒した', x, canvasHeight * 0.55 + tileSize * 0.45);
                     }
 
                     // 状態異常バッジを名前の下に表示
