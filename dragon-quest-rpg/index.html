@@ -1830,14 +1830,14 @@
             return Math.floor(10 * Math.pow(2.2, level - 2));
         }
 
-        // レベル1-10の必要経験値テーブル（累積）
+        // レベル1-99の必要経験値テーブル（累積）
+        const MAX_LEVEL = 99;
         const expTable = [];
         let totalExp = 0;
-        for (let i = 0; i <= 10; i++) {
+        for (let i = 0; i <= MAX_LEVEL; i++) {
             expTable[i] = totalExp;
             totalExp += getExpForLevel(i + 1);
         }
-        // expTable = [0, 0, 10, 35, 97, 253, 643, 1618, 4056, 10150, 25386]
 
         // 会話状態
         const dialog = {
