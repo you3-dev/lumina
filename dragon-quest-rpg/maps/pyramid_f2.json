@@ -38,6 +38,7 @@
   "npcs": [],
   "chests": [
     { "id": "pyr2_chest1", "x": 5, "y": 5, "itemId": 2, "isOpened": false },
-    { "id": "pyr2_chest2", "x": 12, "y": 5, "itemId": 9, "isOpened": false }
+    { "id": "pyr2_chest2", "x": 12, "y": 5, "itemId": 9, "isOpened": false },
+    { "id": "pyr2_chest3", "x": 8, "y": 7, "itemId": 43, "isOpened": false }
   ]
 }

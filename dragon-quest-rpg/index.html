@@ -537,23 +537,31 @@
             3: { id: 3, name: '聖水', description: '弱い敵を退ける', type: 'holy', price: 20 },
             8: { id: 8, name: '魔法の鍵', description: '扉を開けることができる', type: 'key', price: 0 },
             // 武器 (equippable: 装備可能なジョブリスト)
-            10: { id: 10, name: 'こんぼう', type: 'weapon', value: 2, price: 10, equippable: ['hero'] },
+            10: { id: 10, name: 'こんぼう', type: 'weapon', value: 2, price: 10, equippable: ['hero', 'mage'] },
             11: { id: 11, name: 'どうのつるぎ', type: 'weapon', value: 10, price: 100, equippable: ['hero'] },
             12: { id: 12, name: 'てつのつるぎ', type: 'weapon', value: 20, price: 300, equippable: ['hero'] },
             13: { id: 13, name: 'はがねのつるぎ', type: 'weapon', value: 35, price: 700, equippable: ['hero'] },
             14: { id: 14, name: 'ほのおのつるぎ', type: 'weapon', value: 40, price: 0, equippable: ['hero'] },
             // 防具
-            20: { id: 20, name: 'たびびとのふく', type: 'armor', value: 1, price: 10, equippable: ['hero'] },
-            21: { id: 21, name: 'かわのよろい', type: 'armor', value: 5, price: 80, equippable: ['hero'] },
+            20: { id: 20, name: 'たびびとのふく', type: 'armor', value: 1, price: 10, equippable: ['hero', 'mage'] },
+            21: { id: 21, name: 'かわのよろい', type: 'armor', value: 5, price: 80, equippable: ['hero', 'mage'] },
             22: { id: 22, name: 'くさりかたびら', type: 'armor', value: 12, price: 250, equippable: ['hero'] },
             23: { id: 23, name: 'てつのよろい', type: 'armor', value: 22, price: 600, equippable: ['hero'] },
-            24: { id: 24, name: 'まほうのよろい', type: 'armor', value: 35, price: 1200, equippable: ['hero'] },
-            // エリア2 武器・防具
+            24: { id: 24, name: 'まほうのよろい', type: 'armor', value: 35, price: 1200, equippable: ['hero', 'mage'] },
+            // エリア2 武器・防具（勇者用）
             15: { id: 15, name: 'さばくのつるぎ', type: 'weapon', value: 45, price: 1500, equippable: ['hero'] },
             16: { id: 16, name: 'ファラオのつるぎ', type: 'weapon', value: 55, price: 3000, equippable: ['hero'] },
             17: { id: 17, name: 'おうごんのつめ', type: 'weapon', value: 65, price: 0, equippable: ['hero'] }, // 隠し通路の宝箱
             25: { id: 25, name: 'さばくのよろい', type: 'armor', value: 40, price: 1800, equippable: ['hero'] },
             26: { id: 26, name: 'ファラオのよろい', type: 'armor', value: 50, price: 3500, equippable: ['hero'] },
+            // エリア2 武器・防具（魔法使い用）
+            40: { id: 40, name: 'まどうしの杖', type: 'weapon', value: 15, price: 800, equippable: ['mage'] },
+            41: { id: 41, name: 'ほのおの杖', type: 'weapon', value: 28, price: 2000, equippable: ['mage'] },
+            42: { id: 42, name: 'いかずちの杖', type: 'weapon', value: 40, price: 4000, equippable: ['mage'] },
+            43: { id: 43, name: 'けんじゃの杖', type: 'weapon', value: 55, price: 0, equippable: ['mage'] }, // 宝箱限定
+            50: { id: 50, name: 'まどうしのローブ', type: 'armor', value: 18, price: 1000, equippable: ['mage'] },
+            51: { id: 51, name: 'ほしふるローブ', type: 'armor', value: 32, price: 2500, equippable: ['mage'] },
+            52: { id: 52, name: 'だいまどうローブ', type: 'armor', value: 45, price: 5000, equippable: ['mage'] },
             // クエストアイテム（エリア2）
             30: { id: 30, name: '清らかな水', description: 'オアシスの村を救う聖なる水', type: 'quest', price: 0 },
             31: { id: 31, name: '王家の紋章', description: '太陽の城塞への入城許可証', type: 'quest', price: 0 },
@@ -570,9 +578,9 @@
             default: [11, 12, 13, 21, 22, 23], // どうのつるぎ〜てつのよろい
             area2_shop: [12, 13, 14, 22, 23, 24, 1, 2, 3], // より強い装備 + 回復アイテム
             // 砂漠エリアのショップ
-            oasis_shop: [1, 2, 4, 9, 12, 13, 22, 23], // オアシスの村：基本装備と回復
-            bazaar_shop: [1, 2, 4, 5, 9, 13, 15, 23, 25], // バザールの町：中級装備
-            hidden_shop: [4, 5, 15, 16, 25, 26] // 隠れ里：高級装備
+            oasis_shop: [1, 2, 4, 9, 12, 13, 22, 23, 40, 50], // オアシスの村：基本装備と回復 + 魔法使い初期装備
+            bazaar_shop: [1, 2, 4, 5, 9, 13, 15, 23, 25, 41, 51], // バザールの町：中級装備 + 魔法使い中級装備
+            hidden_shop: [4, 5, 15, 16, 25, 26, 42, 52] // 隠れ里：高級装備 + 魔法使い高級装備
         };
         let currentShopId = 'default';
         const shopItems = shopItemsByArea.default; // 互換性のため維持
