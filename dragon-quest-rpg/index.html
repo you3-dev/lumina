@@ -6568,15 +6568,27 @@
                 return;
             }
 
-            battle.active = true;
-            battle.enemy = {
+            // ボスを敵配列に追加
+            const bossEnemy = {
                 ...monsterData,
+                id: `${bossId}_0`,
+                type: bossId,
+                displayName: monsterData.name,
                 currentHp: monsterData.hp,
                 currentMp: monsterData.mp || 0,
                 status: { sleep: 0, poison: 0, blind: 0 },
                 actionCount: 0,
-                bossId: bossId  // ボスIDを保存
+                bossId: bossId,
+                index: 0
             };
+
+            battle.active = true;
+            battle.enemies = [bossEnemy];
+            battle.enemy = bossEnemy; // 後方互換用
+            battle.targetIndex = 0;
+            battle.currentEnemyIndex = 0;
+            battle.isSelectingTarget = false;
+            battle.isSelectingAlly = false;
             battle.phase = 'start';
             battle.commandIndex = 0;
             battle.spellIndex = 0;
@@ -6588,13 +6600,21 @@
             battle.result = null;
             battle.flashCount = 8;
 
+            // パーティ関連の初期化
+            battle.currentPartyIndex = 0;
+            battle.partyActions = [];
+            battle.executingActionIndex = 0;
+
             // バフをリセット
             if (battle.buffs) {
                 battle.buffs.attackUp = 0;
                 battle.buffs.defenseUp = 0;
             }
 
-            player.status = { sleep: 0, poison: 0, blind: 0 };
+            // パーティ全員のステータスをリセット
+            party.forEach(member => {
+                member.status = { sleep: 0, poison: 0, blind: 0 };
+            });
             gameMode = MODE.BATTLE;
 
             // バトル中はマップ名を非表示
