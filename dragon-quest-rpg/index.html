@@ -2524,8 +2524,9 @@
         function drawNPCs() {
             if (!currentMap.npcs) return;
             for (const npc of currentMap.npcs) {
-                const screenX = npc.x * tileSize - cameraX;
-                const screenY = npc.y * tileSize - cameraY;
+                const pos = getNpcEffectivePosition(npc);
+                const screenX = pos.x * tileSize - cameraX;
+                const screenY = pos.y * tileSize - cameraY;
                 if (screenX < -tileSize || screenX > canvasWidth || screenY < -tileSize || screenY > canvasHeight) continue;
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
                 ctx.beginPath();
@@ -5104,9 +5105,31 @@
         // ========================================
         // NPC・宝箱
         // ========================================
+
+        // NPCの有効な位置を取得（ストーリー進行で移動するNPC対応）
+        function getNpcEffectivePosition(npc) {
+            let x = npc.x;
+            let y = npc.y;
+
+            // portal_guardタイプ: 旅の扉が開放されたら横にどく
+            if (npc.type === 'portal_guard' && getStoryFlag('portalRoomUnlocked')) {
+                x = npc.x + 1;  // 右に1マス移動
+            }
+
+            // desert_portal_guardの場合（砂漠エリア用）
+            if (npc.id === 'desert_portal_guard' && isBossDefeated('desertGuardian')) {
+                x = npc.x + 1;
+            }
+
+            return { x, y };
+        }
+
         function getNpcAt(x, y) {
             if (!currentMap.npcs) return null;
-            return currentMap.npcs.find(npc => npc.x === x && npc.y === y) || null;
+            return currentMap.npcs.find(npc => {
+                const pos = getNpcEffectivePosition(npc);
+                return pos.x === x && pos.y === y;
+            }) || null;
         }
 
         function getChestAt(x, y) {
@@ -6281,6 +6304,13 @@
                 } else if (npc.type === 'party_join') {
                     // パーティ加入NPC
                     handlePartyJoinNpc(npc);
+                } else if (npc.type === 'portal_guard') {
+                    // 旅の扉の番兵
+                    if (getStoryFlag('portalRoomUnlocked') && npc.clearedMessages) {
+                        startDialog(npc.clearedMessages);
+                    } else {
+                        startDialog(npc.messages);
+                    }
                 } else {
                     // ゲームクリア後はNPCのセリフが変わる
                     if (gameCleared && npc.clearedMessages) {
