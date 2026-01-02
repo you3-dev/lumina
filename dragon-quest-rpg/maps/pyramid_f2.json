@@ -32,8 +32,8 @@
   ],
   "warps": [
     { "x": 9, "y": 16, "targetMap": "maps/pyramid_f1.json", "targetX": 10, "targetY": 9, "stairType": "down" },
-    { "x": 8, "y": 8, "targetMap": "maps/pyramid_f3.json", "targetX": 8, "targetY": 14, "stairType": "up" },
-    { "x": 9, "y": 8, "targetMap": "maps/pyramid_f3.json", "targetX": 9, "targetY": 14, "stairType": "up" }
+    { "x": 8, "y": 8, "targetMap": "maps/pyramid_f3.json", "targetX": 8, "targetY": 13, "stairType": "up" },
+    { "x": 9, "y": 8, "targetMap": "maps/pyramid_f3.json", "targetX": 9, "targetY": 13, "stairType": "up" }
   ],
   "npcs": [],
   "chests": [
