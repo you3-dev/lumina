@@ -2635,15 +2635,15 @@
 
         let drawMapDebugCount = 0;
         function drawMap() {
-            if (drawMapDebugCount < 3) {
-                console.log('[DEBUG drawMap] tileSize:', tileSize, 'cameraX:', cameraX, 'cameraY:', cameraY);
-                console.log('[DEBUG drawMap] currentMap.cols:', currentMap.cols, 'currentMap.rows:', currentMap.rows);
-                drawMapDebugCount++;
-            }
+            // if (drawMapDebugCount < 3) {
+            //     console.log('[DEBUG drawMap] tileSize:', tileSize, 'cameraX:', cameraX, 'cameraY:', cameraY);
+            //     console.log('[DEBUG drawMap] currentMap.cols:', currentMap.cols, 'currentMap.rows:', currentMap.rows);
+            //     drawMapDebugCount++;
+            // }
 
             // tileSizeが0の場合は描画しない
             if (tileSize <= 0) {
-                console.warn('[DEBUG drawMap] tileSize is 0 or negative!');
+                // console.warn('[DEBUG drawMap] tileSize is 0 or negative!');
                 return;
             }
 
@@ -4051,10 +4051,10 @@
             }
 
             // デバッグ: 最初の数フレームだけログ出力
-            if (drawDebugCount < 5) {
-                console.log('[DEBUG draw] gameMode:', gameMode, 'tileSize:', tileSize, 'canvasWidth:', canvasWidth, 'currentMap.data:', !!currentMap.data);
-                drawDebugCount++;
-            }
+            // if (drawDebugCount < 5) {
+            //     console.log('[DEBUG draw] gameMode:', gameMode, 'tileSize:', tileSize, 'canvasWidth:', canvasWidth, 'currentMap.data:', !!currentMap.data);
+            //     drawDebugCount++;
+            // }
 
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvasWidth, canvasHeight);
@@ -6777,7 +6777,7 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const mapData = await response.json();
-                console.log(`マップをロードしました: ${mapPath}`);
+                // console.log(`マップをロードしました: ${mapPath}`);
                 return mapData;
             } catch (error) {
                 console.error(`マップロードエラー (${mapPath}):`, error);
@@ -9321,8 +9321,8 @@
                 return;
             }
 
-            console.log('[DEBUG] selectTitleMenuItem開始');
-            console.log('[DEBUG] hasSaveData:', hasSaveData, 'titleMenuIndex:', titleMenuIndex);
+            // console.log('[DEBUG] selectTitleMenuItem開始');
+            // console.log('[DEBUG] hasSaveData:', hasSaveData, 'titleMenuIndex:', titleMenuIndex);
 
             // フェードアウト
             const fadeOverlay = document.getElementById('fadeOverlay');
@@ -9333,22 +9333,22 @@
             // タイトル画面を非表示
             titleScreen.classList.add('hidden');
             gameMode = MODE.FIELD;
-            console.log('[DEBUG] gameMode変更:', gameMode);
+            // console.log('[DEBUG] gameMode変更:', gameMode);
 
             if (hasSaveData && titleMenuIndex === 0) {
                 // 続きから
-                console.log('[DEBUG] 続きからを選択');
+                // console.log('[DEBUG] 続きからを選択');
                 await loadGame();
             } else {
                 // はじめから（セーブデータをクリア）
-                console.log('[DEBUG] はじめからを選択');
+                // console.log('[DEBUG] はじめからを選択');
                 localStorage.removeItem(SAVE_KEY);
                 await resetGameState();
                 updateActualStats();
-                console.log('[DEBUG] resetGameState完了');
-                console.log('[DEBUG] currentMap:', currentMap);
-                console.log('[DEBUG] currentMap.data存在:', !!currentMap.data, 'rows:', currentMap.rows, 'cols:', currentMap.cols);
-                console.log('[DEBUG] player:', player.x, player.y);
+                // console.log('[DEBUG] resetGameState完了');
+                // console.log('[DEBUG] currentMap:', currentMap);
+                // console.log('[DEBUG] currentMap.data存在:', !!currentMap.data, 'rows:', currentMap.rows, 'cols:', currentMap.cols);
+                // console.log('[DEBUG] player:', player.x, player.y);
             }
 
             // マップ名を更新
@@ -9357,16 +9357,16 @@
             updateMapPinVisibility();
             updateFloorDisplay();
 
-            console.log('[DEBUG] resize前 tileSize:', tileSize, 'canvasWidth:', canvasWidth);
+            // console.log('[DEBUG] resize前 tileSize:', tileSize, 'canvasWidth:', canvasWidth);
             resize();
-            console.log('[DEBUG] resize後 tileSize:', tileSize, 'canvasWidth:', canvasWidth);
+            // console.log('[DEBUG] resize後 tileSize:', tileSize, 'canvasWidth:', canvasWidth);
             updateCamera();
-            console.log('[DEBUG] updateCamera後 cameraX:', cameraX, 'cameraY:', cameraY);
+            // console.log('[DEBUG] updateCamera後 cameraX:', cameraX, 'cameraY:', cameraY);
 
             // フェードイン
             await new Promise(resolve => setTimeout(resolve, 100));
             fadeOverlay.classList.remove('active');
-            console.log('[DEBUG] フェードイン完了, gameMode:', gameMode);
+            // console.log('[DEBUG] フェードイン完了, gameMode:', gameMode);
         }
 
         async function resetGameState() {
