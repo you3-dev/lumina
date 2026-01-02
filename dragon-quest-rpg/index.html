@@ -471,7 +471,8 @@
             SAND: 11,        // 砂漠
             OASIS: 12,       // オアシス
             PYRAMID: 13,     // ピラミッド入口
-            QUICKSAND: 14    // 流砂（ワープ用）
+            QUICKSAND: 14,   // 流砂（ワープ用）
+            HIDDEN_WALL: 15  // 隠し壁（調べると通路になる）
         };
 
         // マップタイプ別のタイル色
@@ -519,7 +520,8 @@
             [TILE.SAND]: '#d4a559',        // 砂漠（黄土色）
             [TILE.OASIS]: '#2d8a57',       // オアシス（緑）
             [TILE.PYRAMID]: '#c4a040',     // ピラミッド（金色）
-            [TILE.QUICKSAND]: '#b89050'    // 流砂（暗い砂色）
+            [TILE.QUICKSAND]: '#b89050',   // 流砂（暗い砂色）
+            [TILE.HIDDEN_WALL]: '#2a2a2a'  // 隠し壁（壁と同じ色）
         };
 
         const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR, TILE.PORTAL, TILE.STAIRS_UP, TILE.STAIRS_DOWN, TILE.SAND, TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND];
@@ -549,6 +551,7 @@
             // エリア2 武器・防具
             15: { id: 15, name: 'さばくのつるぎ', type: 'weapon', value: 45, price: 1500, equippable: ['hero'] },
             16: { id: 16, name: 'ファラオのつるぎ', type: 'weapon', value: 55, price: 3000, equippable: ['hero'] },
+            17: { id: 17, name: 'おうごんのつめ', type: 'weapon', value: 65, price: 0, equippable: ['hero'] }, // 隠し通路の宝箱
             25: { id: 25, name: 'さばくのよろい', type: 'armor', value: 40, price: 1800, equippable: ['hero'] },
             26: { id: 26, name: 'ファラオのよろい', type: 'armor', value: 50, price: 3500, equippable: ['hero'] },
             // クエストアイテム（エリア2）
@@ -1176,7 +1179,9 @@
                 }
             },
             // エリア別進行状態
-            areas: {}
+            areas: {},
+            // 発見済み隠し通路（マップID -> 座標配列）
+            openedPassages: {}
         };
 
         // フラグ操作ヘルパー関数
@@ -1220,6 +1225,36 @@
                 });
             });
             gameProgress.areas = {};
+            gameProgress.openedPassages = {};
+        }
+
+        // 隠し通路操作ヘルパー
+        function isPassageOpened(mapId, x, y) {
+            const passages = gameProgress.openedPassages[mapId];
+            if (!passages) return false;
+            return passages.some(p => p.x === x && p.y === y);
+        }
+
+        function openPassage(mapId, x, y) {
+            if (!gameProgress.openedPassages[mapId]) {
+                gameProgress.openedPassages[mapId] = [];
+            }
+            if (!isPassageOpened(mapId, x, y)) {
+                gameProgress.openedPassages[mapId].push({ x, y });
+            }
+        }
+
+        // マップ読み込み時に発見済み隠し通路を適用
+        function applyOpenedPassages(mapData) {
+            const mapId = mapData.mapId;
+            const passages = gameProgress.openedPassages[mapId];
+            if (!passages || !mapData.data) return;
+
+            passages.forEach(p => {
+                if (mapData.data[p.y] && mapData.data[p.y][p.x] === TILE.HIDDEN_WALL) {
+                    mapData.data[p.y][p.x] = TILE.FLOOR;
+                }
+            });
         }
 
         // クエストフラグ操作
@@ -1752,7 +1787,8 @@
                     bossDefeated: { ...gameProgress.bossDefeated },
                     storyFlags: { ...gameProgress.storyFlags },
                     areas: { ...gameProgress.areas },
-                    quests: JSON.parse(JSON.stringify(gameProgress.quests))
+                    quests: JSON.parse(JSON.stringify(gameProgress.quests)),
+                    openedPassages: JSON.parse(JSON.stringify(gameProgress.openedPassages))
                 },
                 // キメラのつばさ用：最後に訪れた町
                 lastTown: { ...lastTown }
@@ -1926,6 +1962,10 @@
                                 Object.assign(gameProgress.quests[questName], data.gameProgress.quests[questName]);
                             }
                         }
+                    }
+                    // 隠し通路の復元
+                    if (data.gameProgress.openedPassages) {
+                        gameProgress.openedPassages = JSON.parse(JSON.stringify(data.gameProgress.openedPassages));
                     }
                 } else {
                     // 旧セーブデータからの移行：gameClearedからmaou撃破フラグを推測
@@ -4616,6 +4656,9 @@
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
 
+                // 発見済み隠し通路を適用
+                applyOpenedPassages(currentMap);
+
                 // セーブデータから宝箱の開封状態を復元
                 try {
                     const savedData = localStorage.getItem(SAVE_KEY);
@@ -4689,6 +4732,7 @@
                 player.x = targetX;
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
+                applyOpenedPassages(currentMap);
                 updateMapPinVisibility();
                 updateFloorDisplay();
                 updateCamera();
@@ -4805,7 +4849,51 @@
             }
 
             const chest = getChestAt(front.x, front.y);
-            if (chest) { openChest(chest); }
+            if (chest) { openChest(chest); return; }
+
+            // 隠し壁のチェック
+            checkHiddenWall(front.x, front.y);
+        }
+
+        // 隠し壁を調べる
+        function checkHiddenWall(x, y) {
+            if (x < 0 || y < 0 || y >= currentMap.rows || x >= currentMap.cols) return;
+
+            const tile = currentMap.data[y][x];
+            if (tile === TILE.HIDDEN_WALL) {
+                // 隠し通路を発見！
+                revealHiddenPassage(x, y);
+            }
+        }
+
+        // 隠し通路を開く
+        function revealHiddenPassage(x, y) {
+            // タイルを通路に変更
+            currentMap.data[y][x] = TILE.FLOOR;
+
+            // 進行状況に記録
+            openPassage(currentMapId, x, y);
+
+            // フラッシュ演出
+            flashScreen('#ffffff', 200);
+
+            // メッセージ表示
+            startDialogWithCallback(
+                ['なんと！', 'かくしつうろを みつけた！'],
+                () => {
+                    saveGame();
+                }
+            );
+        }
+
+        // 画面フラッシュ演出
+        function flashScreen(color, duration) {
+            fadeOverlay.style.backgroundColor = color;
+            fadeOverlay.classList.add('active');
+            setTimeout(() => {
+                fadeOverlay.classList.remove('active');
+                fadeOverlay.style.backgroundColor = '';
+            }, duration);
         }
 
         // 王様との会話処理（条件分岐）
