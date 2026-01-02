@@ -1154,7 +1154,8 @@
                 portalRoomUnlocked: false,     // 旅の扉の部屋への通行許可
                 bazaarUnlocked: false,         // バザールの町への通行許可
                 desertPortalUnlocked: false,   // 砂漠の旅の扉開放
-                desertCastleUnlocked: false    // 太陽の城塞への通行許可
+                desertCastleUnlocked: false,   // 太陽の城塞への通行許可
+                mageJoined: false              // 魔法使いが仲間になった
             },
             // クエストフラグ（エリア2）
             quests: {
@@ -1223,6 +1224,7 @@
             gameProgress.bossDefeated.desertGuardian = false;
             gameProgress.storyFlags.reportedMidBossDefeat = false;
             gameProgress.storyFlags.portalRoomUnlocked = false;
+            gameProgress.storyFlags.mageJoined = false;
             // クエストリセット
             Object.keys(gameProgress.quests).forEach(questName => {
                 Object.keys(gameProgress.quests[questName]).forEach(flag => {
@@ -1548,40 +1550,164 @@
         let currentMoveDirection = { dx: 0, dy: 0 };
         const CONTINUOUS_MOVE_DELAY = 150;  // 連続移動の間隔（ミリ秒）
 
-        // プレイヤー
-        const player = {
+        // ========================================
+        // パーティシステム
+        // ========================================
+
+        // パーティメンバーを作成する関数
+        function createPartyMember(config) {
+            return {
+                // 識別情報
+                id: config.id || 'hero',
+                name: config.name || 'ゆうしゃ',
+                job: config.job || 'hero',
+                sprite: config.sprite || '🧙',
+
+                // HP/MP
+                hp: config.hp || 50,
+                maxHp: config.maxHp || 50,
+                mp: config.mp || 20,
+                maxMp: config.maxMp || 20,
+
+                // 基礎ステータス
+                baseAtk: config.baseAtk || 10,
+                baseDef: config.baseDef || 5,
+                speed: config.speed || 6,
+
+                // レベル・経験値
+                level: config.level || 1,
+                exp: config.exp || 0,
+
+                // 呪文
+                spells: config.spells || [],
+
+                // 装備
+                equipment: config.equipment || {
+                    weapon: null,
+                    armor: null
+                },
+
+                // 計算済みステータス
+                actualAtk: config.baseAtk || 10,
+                actualDef: config.baseDef || 5,
+
+                // 状態異常（残りターン数）
+                status: {
+                    sleep: 0,
+                    poison: 0,
+                    blind: 0
+                },
+
+                // 戦闘不能フラグ
+                isAlive: true
+            };
+        }
+
+        // パーティ配列（最大4人）
+        const MAX_PARTY_SIZE = 4;
+        const party = [];
+
+        // 勇者（初期メンバー）を作成してパーティに追加
+        party.push(createPartyMember({
+            id: 'hero',
+            name: 'ゆうしゃ',
+            job: 'hero',
+            sprite: '🦸',
+            hp: 50,
+            maxHp: 50,
+            mp: 20,
+            maxMp: 20,
+            baseAtk: 10,
+            baseDef: 5,
+            speed: 6,
+            level: 1,
+            exp: 0,
+            spells: ['hoimi', 'mera'],
+            equipment: {
+                weapon: 10,  // こんぼう
+                armor: 20    // たびびとのふく
+            }
+        }));
+
+        // 後方互換性：playerは常にparty[0]を参照
+        // 注意：playerを再代入しないこと（constではなくletで宣言し、参照を維持）
+        let player = party[0];
+
+        // パーティ共有データ（位置、ゴールド、アイテム）
+        const partyData = {
             x: 3,
             y: 3,
             direction: 'down',
             moving: false,
             moveDelay: 120,
-            hp: 50,
-            maxHp: 50,
-            mp: 20,
-            maxMp: 20,
-            baseAtk: 10,  // ちから（基礎攻撃力）
-            baseDef: 5,   // みのまもり（基礎防御力）
-            speed: 6,
-            level: 1,
-            exp: 0,
             gold: 0,
-            inventory: [],
-            spells: ['hoimi', 'mera'],
-            job: 'hero',  // 将来のパーティシステム用
-            equipment: {
-                weapon: 10,  // こんぼう（初期装備）
-                armor: 20    // たびびとのふく（初期装備）
-            },
-            // 計算済みステータス（updateActualStatsで更新）
-            actualAtk: 12,
-            actualDef: 6,
-            // 状態異常（残りターン数、0なら正常）
-            status: {
-                sleep: 0,
-                poison: 0,
-                blind: 0
-            }
+            inventory: []
         };
+
+        // 位置情報とゴールド・インベントリはpartyDataを使用
+        // 後方互換性のためplayerオブジェクトにプロパティを追加
+        Object.defineProperties(player, {
+            x: {
+                get: () => partyData.x,
+                set: (v) => { partyData.x = v; }
+            },
+            y: {
+                get: () => partyData.y,
+                set: (v) => { partyData.y = v; }
+            },
+            direction: {
+                get: () => partyData.direction,
+                set: (v) => { partyData.direction = v; }
+            },
+            moving: {
+                get: () => partyData.moving,
+                set: (v) => { partyData.moving = v; }
+            },
+            moveDelay: {
+                get: () => partyData.moveDelay,
+                set: (v) => { partyData.moveDelay = v; }
+            },
+            gold: {
+                get: () => partyData.gold,
+                set: (v) => { partyData.gold = v; }
+            },
+            inventory: {
+                get: () => partyData.inventory,
+                set: (v) => { partyData.inventory = v; }
+            }
+        });
+
+        // パーティヘルパー関数
+        function getAlivePartyMembers() {
+            return party.filter(m => m.isAlive && m.hp > 0);
+        }
+
+        function getPartyMember(index) {
+            return party[index] || null;
+        }
+
+        function addPartyMember(config) {
+            if (party.length >= MAX_PARTY_SIZE) {
+                console.warn('パーティは最大4人までです');
+                return false;
+            }
+            const member = createPartyMember(config);
+            updateMemberActualStats(member);
+            party.push(member);
+            return true;
+        }
+
+        function isPartyAlive() {
+            return party.some(m => m.isAlive && m.hp > 0);
+        }
+
+        // メンバー個別のステータス更新
+        function updateMemberActualStats(member) {
+            const weapon = items[member.equipment.weapon];
+            const armor = items[member.equipment.armor];
+            member.actualAtk = member.baseAtk + (weapon ? weapon.value : 0);
+            member.actualDef = member.baseDef + (armor ? armor.value : 0);
+        }
 
         // 最後に訪れた町（キメラのつばさ用）
         let lastTown = {
@@ -1591,12 +1717,9 @@
             name: 'アルカディアの街'
         };
 
-        // 装備込みのステータスを計算して更新
+        // 装備込みのステータスを計算して更新（全パーティメンバー）
         function updateActualStats() {
-            const weapon = items[player.equipment.weapon];
-            const armor = items[player.equipment.armor];
-            player.actualAtk = player.baseAtk + (weapon ? weapon.value : 0);
-            player.actualDef = player.baseDef + (armor ? armor.value : 0);
+            party.forEach(member => updateMemberActualStats(member));
         }
 
         // 装備込みのステータスを取得
@@ -1723,7 +1846,12 @@
             itemCursor: 0,  // アイテムリスト上のカーソル位置
             spellCursor: 0, // 呪文リスト上のカーソル位置
             showItemAction: false, // アイテムアクションサブメニュー表示
-            itemActionIndex: 0 // 0: つかう/そうびする, 1: すてる, 2: やめる
+            itemActionIndex: 0, // 0: つかう/そうびする, 1: すてる, 2: やめる
+            // パーティメンバー選択
+            memberCursor: 0, // 選択中のパーティメンバー
+            selectingMember: false, // メンバー選択モード（呪文/アイテム使用対象選択）
+            selectingSpellCaster: false, // 呪文詠唱者選択モード
+            targetMemberCursor: 0 // 使用対象のメンバー
         };
 
         // 宿屋状態
@@ -1754,7 +1882,7 @@
             currentEnemyIndex: 0,     // 敵ターン中の処理対象インデックス
             targetIndex: 0,           // プレイヤーのターゲット選択
             isSelectingTarget: false, // ターゲット選択モード中
-            phase: 'start', // start, command, target, playerTurn, enemyTurn, result
+            phase: 'start', // start, command, partyCommand, target, playerTurn, partyTurn, enemyTurn, result
             commandIndex: 0,
             spellIndex: 0,
             showSpells: false,
@@ -1770,7 +1898,14 @@
             buffs: {
                 attackUp: 0,   // バイキルト重ねがけ回数（最大2）
                 defenseUp: 0   // スクルト重ねがけ回数（最大2）
-            }
+            },
+            // パーティバトル用
+            currentPartyIndex: 0,     // 現在コマンド入力中のパーティメンバー
+            partyActions: [],         // 各メンバーの選択アクション [{type, target, spellId, itemId}, ...]
+            executingActionIndex: 0,  // 実行中のアクションインデックス
+            // 味方選択用（回復呪文のターゲットなど）
+            isSelectingAlly: false,
+            allyTargetIndex: 0
         };
 
         // バフの最大重ねがけ回数
@@ -1917,14 +2052,44 @@
                 }
             }
 
+            // パーティメンバーのセーブデータを作成
+            const savedParty = party.map(member => ({
+                id: member.id,
+                name: member.name,
+                job: member.job,
+                sprite: member.sprite,
+                hp: member.hp,
+                maxHp: member.maxHp,
+                mp: member.mp,
+                maxMp: member.maxMp,
+                baseAtk: member.baseAtk,
+                baseDef: member.baseDef,
+                speed: member.speed,
+                level: member.level,
+                exp: member.exp,
+                spells: [...member.spells],
+                equipment: { ...member.equipment },
+                isAlive: member.isAlive
+            }));
+
             const saveData = {
+                // パーティシステム用（新形式）
+                party: savedParty,
+                partyData: {
+                    x: partyData.x,
+                    y: partyData.y,
+                    direction: partyData.direction,
+                    gold: partyData.gold,
+                    inventory: JSON.parse(JSON.stringify(partyData.inventory))
+                },
+                // 後方互換用（旧形式も保持）
                 player: {
-                    x: player.x, y: player.y, direction: player.direction,
-                    hp: player.hp, maxHp: player.maxHp, mp: player.mp, maxMp: player.maxMp,
-                    baseAtk: player.baseAtk, baseDef: player.baseDef, speed: player.speed,
-                    level: player.level, exp: player.exp, gold: player.gold,
-                    inventory: player.inventory, spells: player.spells,
-                    equipment: player.equipment
+                    x: partyData.x, y: partyData.y, direction: partyData.direction,
+                    hp: party[0].hp, maxHp: party[0].maxHp, mp: party[0].mp, maxMp: party[0].maxMp,
+                    baseAtk: party[0].baseAtk, baseDef: party[0].baseDef, speed: party[0].speed,
+                    level: party[0].level, exp: party[0].exp, gold: partyData.gold,
+                    inventory: partyData.inventory, spells: party[0].spells,
+                    equipment: party[0].equipment
                 },
                 currentMapId: currentMapId,
                 currentMapPath: currentMapPath,
@@ -1958,53 +2123,136 @@
 
                 const data = JSON.parse(savedData);
 
-                // 旧セーブデータとの互換性（atk/defをbaseAtk/baseDefに変換）
-                if (data.player.atk !== undefined && data.player.baseAtk === undefined) {
-                    data.player.baseAtk = data.player.atk;
-                    delete data.player.atk;
-                }
-                if (data.player.def !== undefined && data.player.baseDef === undefined) {
-                    data.player.baseDef = data.player.def;
-                    delete data.player.def;
-                }
-
-                // 旧装備形式からの変換（equippedWeapon/equippedArmor → equipment）
-                if (data.player.equipment === undefined) {
-                    data.player.equipment = {
-                        weapon: data.player.equippedWeapon || 10,  // こんぼう
-                        armor: data.player.equippedArmor || 20     // たびびとのふく
-                    };
-                    delete data.player.equippedWeapon;
-                    delete data.player.equippedArmor;
-                }
-
-                // 旧インベントリ形式からの変換（[1, 1, 2] → [{ id: 1, quantity: 2 }, { id: 2, quantity: 1 }]）
-                if (data.player.inventory && Array.isArray(data.player.inventory) && data.player.inventory.length > 0) {
-                    if (typeof data.player.inventory[0] === 'number') {
-                        const migrated = [];
-                        data.player.inventory.forEach(itemId => {
-                            const existing = migrated.find(s => s.id === itemId);
-                            if (existing) {
-                                existing.quantity++;
-                            } else {
-                                migrated.push({ id: itemId, quantity: 1 });
-                            }
+                // 新形式（パーティシステム）のロード
+                if (data.party && Array.isArray(data.party)) {
+                    // パーティ配列をクリアして再構築
+                    party.length = 0;
+                    data.party.forEach(memberData => {
+                        const member = createPartyMember({
+                            id: memberData.id,
+                            name: memberData.name,
+                            job: memberData.job,
+                            sprite: memberData.sprite,
+                            hp: memberData.hp,
+                            maxHp: memberData.maxHp,
+                            mp: memberData.mp,
+                            maxMp: memberData.maxMp,
+                            baseAtk: memberData.baseAtk,
+                            baseDef: memberData.baseDef,
+                            speed: memberData.speed,
+                            level: memberData.level,
+                            exp: memberData.exp,
+                            spells: memberData.spells || [],
+                            equipment: memberData.equipment
                         });
-                        data.player.inventory = migrated;
-                    }
-                }
+                        member.isAlive = memberData.isAlive !== false;
+                        party.push(member);
+                    });
 
-                // 呪文習得レベル変更に対応：現在のレベル以下で習得すべき呪文を補完
-                if (data.player.spells && data.player.level) {
-                    for (const spellId in spells) {
-                        const spell = spells[spellId];
-                        if (spell.learnLevel <= data.player.level && !data.player.spells.includes(spellId)) {
-                            data.player.spells.push(spellId);
+                    // partyDataの復元
+                    if (data.partyData) {
+                        partyData.x = data.partyData.x;
+                        partyData.y = data.partyData.y;
+                        partyData.direction = data.partyData.direction || 'down';
+                        partyData.gold = data.partyData.gold || 0;
+                        partyData.inventory = data.partyData.inventory || [];
+                    }
+
+                    // playerの参照を更新
+                    player = party[0];
+
+                    // 各メンバーのステータス再計算
+                    party.forEach(member => {
+                        const weapon = items[member.equipment?.weapon];
+                        const armor = items[member.equipment?.armor];
+                        member.actualAtk = member.baseAtk + (weapon ? weapon.atk : 0);
+                        member.actualDef = member.baseDef + (armor ? armor.def : 0);
+                    });
+                } else {
+                    // 旧形式（単一プレイヤー）のロード
+                    // 旧セーブデータとの互換性（atk/defをbaseAtk/baseDefに変換）
+                    if (data.player.atk !== undefined && data.player.baseAtk === undefined) {
+                        data.player.baseAtk = data.player.atk;
+                        delete data.player.atk;
+                    }
+                    if (data.player.def !== undefined && data.player.baseDef === undefined) {
+                        data.player.baseDef = data.player.def;
+                        delete data.player.def;
+                    }
+
+                    // 旧装備形式からの変換（equippedWeapon/equippedArmor → equipment）
+                    if (data.player.equipment === undefined) {
+                        data.player.equipment = {
+                            weapon: data.player.equippedWeapon || 10,  // こんぼう
+                            armor: data.player.equippedArmor || 20     // たびびとのふく
+                        };
+                        delete data.player.equippedWeapon;
+                        delete data.player.equippedArmor;
+                    }
+
+                    // 旧インベントリ形式からの変換（[1, 1, 2] → [{ id: 1, quantity: 2 }, { id: 2, quantity: 1 }]）
+                    if (data.player.inventory && Array.isArray(data.player.inventory) && data.player.inventory.length > 0) {
+                        if (typeof data.player.inventory[0] === 'number') {
+                            const migrated = [];
+                            data.player.inventory.forEach(itemId => {
+                                const existing = migrated.find(s => s.id === itemId);
+                                if (existing) {
+                                    existing.quantity++;
+                                } else {
+                                    migrated.push({ id: itemId, quantity: 1 });
+                                }
+                            });
+                            data.player.inventory = migrated;
                         }
                     }
-                }
 
-                Object.assign(player, data.player);
+                    // 呪文習得レベル変更に対応：現在のレベル以下で習得すべき呪文を補完
+                    if (data.player.spells && data.player.level) {
+                        for (const spellId in spells) {
+                            const spell = spells[spellId];
+                            if (spell.learnLevel <= data.player.level && !data.player.spells.includes(spellId)) {
+                                data.player.spells.push(spellId);
+                            }
+                        }
+                    }
+
+                    // 旧データをparty[0]に変換
+                    party.length = 0;
+                    const heroData = data.player;
+                    const hero = createPartyMember({
+                        id: 'hero',
+                        name: heroData.name || 'ゆうしゃ',
+                        job: 'hero',
+                        sprite: '🧙',
+                        hp: heroData.hp,
+                        maxHp: heroData.maxHp,
+                        mp: heroData.mp,
+                        maxMp: heroData.maxMp,
+                        baseAtk: heroData.baseAtk,
+                        baseDef: heroData.baseDef,
+                        speed: heroData.speed || 6,
+                        level: heroData.level,
+                        exp: heroData.exp,
+                        spells: heroData.spells || [],
+                        equipment: heroData.equipment
+                    });
+                    hero.isAlive = heroData.hp > 0;
+                    party.push(hero);
+                    player = party[0];
+
+                    // partyDataの復元
+                    partyData.x = heroData.x;
+                    partyData.y = heroData.y;
+                    partyData.direction = heroData.direction || 'down';
+                    partyData.gold = heroData.gold || 0;
+                    partyData.inventory = heroData.inventory || [];
+
+                    // ステータス再計算
+                    const weapon = items[hero.equipment?.weapon];
+                    const armor = items[hero.equipment?.armor];
+                    hero.actualAtk = hero.baseAtk + (weapon ? weapon.atk : 0);
+                    hero.actualDef = hero.baseDef + (armor ? armor.def : 0);
+                }
                 currentMapId = data.currentMapId;
 
                 // マップパスの読み込み（新形式対応）
@@ -2444,54 +2692,92 @@
                 ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                 ctx.textAlign = 'left';
 
-                const col1X = menuX + 20;
-                const col2X = menuX + menuWidth * 0.55;
+                // 複数パーティメンバーがいる場合はメンバー選択表示
+                if (party.length > 1) {
+                    // パーティメンバー一覧（左側）
+                    const memberListX = menuX + 15;
+                    const memberListY = contentY + 5;
+                    const memberListWidth = menuWidth * 0.28;
+
+                    ctx.font = `${tileSize * 0.32}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                    party.forEach((member, idx) => {
+                        const isSelected = idx === menu.memberCursor;
+                        const isDead = !member.isAlive || member.hp <= 0;
+
+                        if (isSelected) {
+                            ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+                            ctx.fillRect(memberListX - 5, memberListY + idx * lineHeight * 0.9 - 3, memberListWidth, lineHeight * 0.85);
+                        }
+
+                        ctx.fillStyle = isSelected ? '#ffd700' : (isDead ? '#888' : '#fff');
+                        const cursor = isSelected ? '▶' : ' ';
+                        ctx.fillText(`${cursor}${member.name}`, memberListX, memberListY + idx * lineHeight * 0.9);
+                    });
+
+                    // 区切り線
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(menuX + memberListWidth + 20, contentY);
+                    ctx.lineTo(menuX + memberListWidth + 20, menuY + menuHeight - 35);
+                    ctx.stroke();
+                }
+
+                // 選択中のメンバーのステータス表示
+                const selectedMember = party[menu.memberCursor] || party[0];
+                const col1X = party.length > 1 ? menuX + menuWidth * 0.32 : menuX + 20;
+                const col2X = party.length > 1 ? menuX + menuWidth * 0.75 : menuX + menuWidth * 0.55;
                 let y = contentY + 10;
 
+                ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                 ctx.fillStyle = '#ffd700';
-                ctx.fillText('ゆうしゃ', col1X, y);
+                ctx.fillText(selectedMember.name, col1X, y);
                 ctx.fillStyle = '#fff';
-                ctx.fillText(`Lv ${player.level}`, col2X, y);
+                ctx.fillText(`Lv ${selectedMember.level}`, col2X, y);
                 y += lineHeight * 1.3;
 
                 ctx.fillText(`HP`, col1X, y);
-                ctx.fillText(`${player.hp} / ${player.maxHp}`, col2X, y);
+                const hpColor = selectedMember.hp <= selectedMember.maxHp * 0.25 ? '#f44' :
+                               selectedMember.hp <= selectedMember.maxHp * 0.5 ? '#ff4' : '#fff';
+                ctx.fillStyle = hpColor;
+                ctx.fillText(`${selectedMember.hp} / ${selectedMember.maxHp}`, col2X, y);
+                ctx.fillStyle = '#fff';
                 y += lineHeight;
 
                 ctx.fillText(`MP`, col1X, y);
-                ctx.fillText(`${player.mp} / ${player.maxMp}`, col2X, y);
+                ctx.fillText(`${selectedMember.mp} / ${selectedMember.maxMp}`, col2X, y);
                 y += lineHeight * 1.3;
 
                 ctx.fillText(`ちから`, col1X, y);
-                ctx.fillText(`${player.baseAtk}`, col2X, y);
+                ctx.fillText(`${selectedMember.baseAtk}`, col2X, y);
                 y += lineHeight;
 
                 ctx.fillText(`みのまもり`, col1X, y);
-                ctx.fillText(`${player.baseDef}`, col2X, y);
+                ctx.fillText(`${selectedMember.baseDef}`, col2X, y);
                 y += lineHeight;
 
                 ctx.fillText(`すばやさ`, col1X, y);
-                ctx.fillText(`${player.speed}`, col2X, y);
+                ctx.fillText(`${selectedMember.speed}`, col2X, y);
                 y += lineHeight;
 
                 // こうげき力・しゅび力（装備込み）
                 ctx.fillStyle = '#4f4';
                 ctx.fillText(`こうげき力`, col1X, y);
-                ctx.fillText(`${getPlayerAtk()}`, col2X, y);
+                ctx.fillText(`${selectedMember.actualAtk}`, col2X, y);
                 y += lineHeight;
 
                 ctx.fillText(`しゅび力`, col1X, y);
-                ctx.fillText(`${getPlayerDef()}`, col2X, y);
+                ctx.fillText(`${selectedMember.actualDef}`, col2X, y);
+                ctx.fillStyle = '#fff';
                 y += lineHeight * 0.8;
 
                 ctx.fillText(`けいけんち`, col1X, y);
-                ctx.fillText(`${player.exp}`, col2X, y);
+                ctx.fillText(`${selectedMember.exp}`, col2X, y);
                 y += lineHeight;
 
                 // 次のレベルまでの経験値
-                const nextLevelExp = player.level < expTable.length - 1 ? expTable[player.level + 1] : null;
+                const nextLevelExp = selectedMember.level < expTable.length - 1 ? expTable[selectedMember.level + 1] : null;
                 if (nextLevelExp !== null) {
-                    const needed = nextLevelExp - player.exp;
+                    const needed = nextLevelExp - selectedMember.exp;
                     ctx.fillText(`つぎのLvまで`, col1X, y);
                     ctx.fillText(`あと ${needed}`, col2X, y);
                 } else {
@@ -2502,7 +2788,7 @@
                 ctx.fillStyle = '#ffd700';
                 ctx.fillText(`ゴールド`, col1X, y);
                 ctx.fillStyle = '#fff';
-                ctx.fillText(`${player.gold} G`, col2X, y);
+                ctx.fillText(`${partyData.gold} G`, col2X, y);
                 y += lineHeight * 1.5;
 
                 // 装備表示
@@ -2510,8 +2796,8 @@
                 ctx.fillText('─ そうび ─', col1X, y);
                 y += lineHeight;
 
-                const weapon = items[player.equipment.weapon];
-                const armor = items[player.equipment.armor];
+                const weapon = items[selectedMember.equipment?.weapon];
+                const armor = items[selectedMember.equipment?.armor];
                 ctx.fillStyle = '#fff';
                 ctx.fillText(`⚔️ E: ${weapon ? weapon.name : 'なし'}`, col1X, y);
                 y += lineHeight;
@@ -2522,24 +2808,56 @@
                 ctx.fillStyle = '#fff';
                 ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                 ctx.textAlign = 'left';
+
+                // 複数パーティメンバーがいる場合はメンバー選択表示
+                if (party.length > 1) {
+                    // パーティメンバー一覧（左側）
+                    const memberListX = menuX + 15;
+                    const memberListY = contentY + 5;
+                    const memberListWidth = menuWidth * 0.28;
+
+                    ctx.font = `${tileSize * 0.32}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                    party.forEach((member, idx) => {
+                        const isSelected = idx === menu.memberCursor;
+                        const isDead = !member.isAlive || member.hp <= 0;
+
+                        if (isSelected) {
+                            ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+                            ctx.fillRect(memberListX - 5, memberListY + idx * lineHeight * 0.9 - 3, memberListWidth, lineHeight * 0.85);
+                        }
+
+                        ctx.fillStyle = isSelected ? '#ffd700' : (isDead ? '#888' : '#fff');
+                        const cursor = isSelected ? '▶' : ' ';
+                        ctx.fillText(`${cursor}${member.name}`, memberListX, memberListY + idx * lineHeight * 0.9);
+                    });
+
+                    // 区切り線
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(menuX + memberListWidth + 20, contentY);
+                    ctx.lineTo(menuX + memberListWidth + 20, menuY + menuHeight - 35);
+                    ctx.stroke();
+                }
+
+                // 選択中のメンバーの呪文表示
+                const selectedMember = party[menu.memberCursor] || party[0];
+                const spellListX = party.length > 1 ? menuX + menuWidth * 0.32 : menuX + 30;
                 const spellStartY = contentY + 10;
 
-                // フィールドで使える呪文をフィルタ（回復系のみ）
-                const fieldSpells = player.spells.filter(spellId => {
-                    const spell = spells[spellId];
-                    return spell && spell.type === 'heal';
-                });
+                ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
 
-                if (player.spells.length === 0) {
+                if (selectedMember.spells.length === 0) {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    const centerX = party.length > 1 ? menuX + menuWidth * 0.65 : canvasWidth / 2;
                     ctx.textAlign = 'center';
-                    ctx.fillText('呪文を覚えていない', canvasWidth / 2, spellStartY);
+                    ctx.fillText('呪文を覚えていない', centerX, spellStartY);
                 } else {
-                    player.spells.forEach((spellId, i) => {
+                    ctx.textAlign = 'left';
+                    selectedMember.spells.forEach((spellId, i) => {
                         const spell = spells[spellId];
                         if (spell) {
                             const isSelected = (i === menu.spellCursor);
-                            const canUseInField = spell.type === 'heal';
+                            const canUseInField = spell.type === 'heal' || spell.type === 'travel';
 
                             // フィールドで使えない呪文は暗く表示
                             if (canUseInField) {
@@ -2549,13 +2867,36 @@
                             }
 
                             const cursor = isSelected ? '▶' : '・';
-                            ctx.fillText(`${cursor}${spell.name}`, menuX + 30, spellStartY + i * lineHeight);
+                            ctx.fillText(`${cursor}${spell.name}`, spellListX, spellStartY + i * lineHeight);
 
                             // MP表示
-                            ctx.fillStyle = player.mp >= spell.mp ? '#88f' : '#f44';
+                            ctx.fillStyle = selectedMember.mp >= spell.mp ? '#88f' : '#f44';
                             ctx.fillText(`${spell.mp}MP`, menuX + menuWidth - 70, spellStartY + i * lineHeight);
                         }
                     });
+
+                    // メンバー選択モード時（回復呪文の対象選択）
+                    if (menu.selectingMember) {
+                        const targetWindowWidth = menuWidth * 0.35;
+                        const targetWindowHeight = tileSize * (party.length * 0.6 + 0.5);
+                        const targetWindowX = menuX + menuWidth - targetWindowWidth - 15;
+                        const targetWindowY = menuY + menuHeight - targetWindowHeight - 40;
+
+                        drawWindow(targetWindowX, targetWindowY, targetWindowWidth, targetWindowHeight);
+
+                        ctx.font = `${tileSize * 0.32}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                        ctx.fillStyle = '#ffd700';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('だれに？', targetWindowX + targetWindowWidth / 2, targetWindowY + 12);
+
+                        ctx.textAlign = 'left';
+                        party.forEach((member, idx) => {
+                            const isTarget = idx === menu.targetMemberCursor;
+                            ctx.fillStyle = isTarget ? '#ffd700' : '#fff';
+                            const cursor = isTarget ? '▶' : ' ';
+                            ctx.fillText(`${cursor}${member.name}`, targetWindowX + 15, targetWindowY + 35 + idx * lineHeight * 0.8);
+                        });
+                    }
                 }
             } else if (menu.mode === 'items') {
                 // もちもの（アイテム画面）
@@ -2695,6 +3036,38 @@
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
             ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.fillText(`所持金: ${player.gold} G`, windowX + 20, windowY + windowHeight - tileSize * 0.6);
+        }
+
+        function drawPartyJoinConfirm() {
+            if (!partyJoinConfirm.active) return;
+
+            const windowWidth = canvasWidth * 0.7;
+            const windowHeight = tileSize * 2.5;
+            const windowX = (canvasWidth - windowWidth) / 2;
+            const windowY = (canvasHeight - windowHeight) / 2;
+
+            drawWindow(windowX, windowY, windowWidth, windowHeight);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = `${tileSize * 0.45}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+
+            ctx.fillText('仲間にしますか？', windowX + 20, windowY + 20);
+
+            // 選択肢
+            const choiceY = windowY + tileSize * 1.3;
+            const choices = ['はい', 'いいえ'];
+
+            choices.forEach((choice, i) => {
+                const choiceX = windowX + 40 + i * tileSize * 2.5;
+                if (i === partyJoinConfirm.selectedIndex) {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillText('▶', choiceX - tileSize * 0.5, choiceY);
+                }
+                ctx.fillStyle = '#fff';
+                ctx.fillText(choice, choiceX, choiceY);
+            });
         }
 
         function drawShop() {
@@ -3047,41 +3420,63 @@
                 });
             }
 
-            // ステータスウィンドウ
-            const statusW = canvasWidth * 0.5;
-            const statusH = tileSize * 2.5;
+            // パーティステータスウィンドウ
+            const aliveMembers = getAlivePartyMembers();
+            const memberCount = party.length;
+            const memberRowH = tileSize * 0.9;
+            const statusW = canvasWidth * 0.55;
+            const statusH = Math.max(tileSize * 2.5, 20 + memberRowH * memberCount);
             const statusX = 10;
             const statusY = 10;
             drawWindow(statusX, statusY, statusW, statusH);
 
-            ctx.fillStyle = '#fff';
-            ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+            ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
 
-            // プレイヤー名と状態異常バッジ
-            const playerStatusBadge = getStatusBadges(player);
-            ctx.fillText(`ゆうしゃ  Lv${player.level}`, statusX + 15, statusY + 15);
+            // 各パーティメンバーのステータス表示
+            party.forEach((member, idx) => {
+                const rowY = statusY + 12 + idx * memberRowH;
+                const isDead = !member.isAlive || member.hp <= 0;
 
-            // バッジ表示エリア
-            let badgeX = statusX + statusW - 80;
-            if (playerStatusBadge) {
-                ctx.fillStyle = '#f88';  // 状態異常は赤系で表示
-                ctx.fillText(playerStatusBadge, badgeX, statusY + 15);
-                badgeX -= 40;
-                ctx.fillStyle = '#fff';
-            }
+                // コマンド入力中のメンバーをハイライト
+                if (battle.phase === 'command' && idx === battle.currentPartyIndex) {
+                    ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+                    ctx.fillRect(statusX + 5, rowY - 2, statusW - 10, memberRowH - 2);
+                }
 
-            // バフ状態バッジ
+                // 戦闘不能は暗く表示
+                ctx.fillStyle = isDead ? '#666' : '#fff';
+
+                // 名前とレベル
+                const nameText = `${member.name} Lv${member.level}`;
+                ctx.fillText(nameText, statusX + 12, rowY);
+
+                // HP/MP
+                const hpColor = member.hp <= member.maxHp * 0.25 ? '#f44' : (member.hp <= member.maxHp * 0.5 ? '#ff0' : '#8f8');
+                const mpColor = member.mp <= member.maxMp * 0.25 ? '#f88' : '#8cf';
+
+                ctx.fillStyle = isDead ? '#444' : hpColor;
+                ctx.fillText(`HP:${member.hp}/${member.maxHp}`, statusX + 12 + tileSize * 3.2, rowY);
+
+                ctx.fillStyle = isDead ? '#444' : mpColor;
+                ctx.fillText(`MP:${member.mp}/${member.maxMp}`, statusX + 12 + tileSize * 5.5, rowY);
+
+                // 状態異常バッジ
+                const memberBadge = getStatusBadges(member);
+                if (memberBadge && !isDead) {
+                    ctx.fillStyle = '#f88';
+                    ctx.fillText(memberBadge, statusX + statusW - 50, rowY);
+                }
+            });
+
+            // バフ状態バッジ（パーティ全体）
             const buffBadges = getBuffBadges();
             if (buffBadges) {
-                ctx.fillStyle = '#8f8';  // バフは緑系で表示
-                ctx.fillText(buffBadges, badgeX, statusY + 15);
-                ctx.fillStyle = '#fff';
+                ctx.fillStyle = '#8f8';
+                ctx.font = `${tileSize * 0.3}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                ctx.fillText(buffBadges, statusX + statusW - 80, statusY + statusH - 18);
             }
-
-            ctx.fillText(`HP: ${player.hp}/${player.maxHp}`, statusX + 15, statusY + 15 + tileSize * 0.5);
-            ctx.fillText(`MP: ${player.mp}/${player.maxMp}`, statusX + 15, statusY + 15 + tileSize * 1.0);
 
             // メッセージウィンドウ
             const msgPadding = 15;
@@ -3259,6 +3654,7 @@
                 drawMenu();
                 drawInn();
                 drawShop();
+                drawPartyJoinConfirm();
                 drawRuraSelection();
             }
 
@@ -3304,6 +3700,8 @@
             battle.targetIndex = 0;
             battle.currentEnemyIndex = 0;
             battle.isSelectingTarget = false;
+            battle.isSelectingAlly = false;
+            battle.allyTargetIndex = 0;
             battle.pendingAction = null;
             battle.phase = 'start';
             battle.commandIndex = 0;
@@ -3316,8 +3714,17 @@
             battle.result = null;
             battle.flashCount = 6;
 
-            // プレイヤーの状態異常をリセット（戦闘ごとにリセット）
-            player.status = { sleep: 0, poison: 0, blind: 0 };
+            // パーティバトル用の初期化
+            battle.currentPartyIndex = 0;
+            battle.partyActions = [];
+            battle.executingActionIndex = 0;
+
+            // 全パーティメンバーの状態異常をリセット（戦闘ごとにリセット）
+            party.forEach(member => {
+                member.status = { sleep: 0, poison: 0, blind: 0 };
+                // 戦闘不能状態はリセットしない（HP > 0 で判定）
+                member.isAlive = member.hp > 0;
+            });
 
             // バフをリセット（戦闘ごとにリセット）
             battle.buffs = { attackUp: 0, defenseUp: 0 };
@@ -3372,11 +3779,14 @@
         }
 
         function executeBattleCommand() {
+            // 現在行動中のパーティメンバー
+            const caster = getCurrentPartyMember();
+
             if (battle.showSpells) {
                 // 呪文実行
-                const spellId = player.spells[battle.spellIndex];
+                const spellId = caster.spells[battle.spellIndex];
                 const spell = spells[spellId];
-                if (player.mp < spell.mp) {
+                if (caster.mp < spell.mp) {
                     showBattleMessage('MPが たりない！', () => {
                         battle.phase = 'command';
                     });
@@ -3396,19 +3806,19 @@
                             return;
                         } else {
                             // 敵が1体の場合は直接実行
-                            player.mp -= spell.mp;
+                            caster.mp -= spell.mp;
                             executeSpellOnTarget(spellId, getFirstAliveEnemyIndex());
                             return;
                         }
                     } else if (spell.target === 'all') {
                         // 全体攻撃呪文：全ての敵にダメージ
-                        player.mp -= spell.mp;
+                        caster.mp -= spell.mp;
                         executeSpellOnAll(spellId);
                         return;
                     }
                 }
 
-                player.mp -= spell.mp;
+                caster.mp -= spell.mp;
                 battle.showSpells = false;
                 battle.phase = 'playerTurn';
 
@@ -3418,11 +3828,12 @@
                     startSpellFlash(spell.flashColor, isUltimate);
                 }
 
-                showBattleMessage(`ゆうしゃ は ${spell.name} を となえた！`, () => {
+                showBattleMessage(`${caster.name} は ${spell.name} を となえた！`, () => {
                     if (spell.type === 'heal') {
+                        // 回復呪文：自分自身を回復（将来的には味方選択を追加）
                         const healAmount = spell.power;
-                        player.hp = Math.min(player.maxHp, player.hp + healAmount);
-                        showBattleMessage(`HPが ${healAmount} かいふくした！`, () => {
+                        caster.hp = Math.min(caster.maxHp, caster.hp + healAmount);
+                        showBattleMessage(`${caster.name} の HPが ${healAmount} かいふくした！`, () => {
                             processTurnEnd();
                         });
                     } else if (spell.type === 'status') {
@@ -3466,7 +3877,7 @@
                             }
                         }
                     } else if (spell.type === 'buff') {
-                        // 補助呪文（バフ）
+                        // 補助呪文（バフ）- パーティ全体に効果
                         if (spell.buffType === 'defense') {
                             // スクルト - 防御力アップ
                             if (battle.buffs.defenseUp >= MAX_BUFF_STACK) {
@@ -3475,7 +3886,7 @@
                                 });
                             } else {
                                 battle.buffs.defenseUp++;
-                                showBattleMessage('ゆうしゃ の しゅび力が あがった！', () => {
+                                showBattleMessage('なかまたち の しゅび力が あがった！', () => {
                                     processTurnEnd();
                                 });
                             }
@@ -3487,16 +3898,33 @@
                                 });
                             } else {
                                 battle.buffs.attackUp++;
-                                showBattleMessage('ゆうしゃ の こうげき力が あがった！', () => {
+                                showBattleMessage('なかまたち の こうげき力が あがった！', () => {
                                     processTurnEnd();
                                 });
                             }
                         }
                     } else if (spell.type === 'revive') {
-                        // 復活呪文（ザオラル） - 現状は仲間がいないので効果なし
-                        showBattleMessage('しかし だれも たおれていない！', () => {
-                            processTurnEnd();
-                        });
+                        // 復活呪文（ザオラル）- 戦闘不能の仲間を復活
+                        const deadMembers = party.filter(m => !m.isAlive || m.hp <= 0);
+                        if (deadMembers.length === 0) {
+                            showBattleMessage('しかし だれも たおれていない！', () => {
+                                processTurnEnd();
+                            });
+                        } else {
+                            // 最初の戦闘不能メンバーを復活（50%成功）
+                            const target = deadMembers[0];
+                            if (Math.random() < 0.5) {
+                                target.hp = Math.floor(target.maxHp / 2);
+                                target.isAlive = true;
+                                showBattleMessage(`${target.name} は いきかえった！`, () => {
+                                    processTurnEnd();
+                                });
+                            } else {
+                                showBattleMessage(`しかし ${target.name} は いきかえらなかった...`, () => {
+                                    processTurnEnd();
+                                });
+                            }
+                        }
                     } else if (spell.type === 'escape') {
                         // 戦闘中のリレミトは使用不可
                         showBattleMessage('しかし この場では つかえない！', () => {
@@ -3720,17 +4148,74 @@
             });
         }
 
+        // 現在のパーティメンバーを取得
+        function getCurrentPartyMember() {
+            return party[battle.currentPartyIndex] || party[0];
+        }
+
+        // 次の行動可能なパーティメンバーのインデックスを取得
+        function getNextAlivePartyIndex(currentIndex) {
+            for (let i = currentIndex + 1; i < party.length; i++) {
+                if (party[i].isAlive && party[i].hp > 0 && party[i].status.sleep === 0) {
+                    return i;
+                }
+            }
+            return -1; // 全員行動済み
+        }
+
         // ターン終了処理（毒ダメージなど）
         function processTurnEnd() {
-            // プレイヤーの毒ダメージ
-            const poisonResult = processPoisonDamage(player, 'ゆうしゃ', player.maxHp);
+            // 現在のメンバーの毒ダメージ
+            const currentMember = getCurrentPartyMember();
+            const poisonResult = processPoisonDamage(currentMember, currentMember.name, currentMember.maxHp);
+
+            const continueAfterPoison = () => {
+                // 次のパーティメンバーがいるかチェック
+                const nextIndex = getNextAlivePartyIndex(battle.currentPartyIndex);
+                if (nextIndex !== -1) {
+                    // 次のメンバーのコマンド入力へ
+                    battle.currentPartyIndex = nextIndex;
+                    battle.commandIndex = 0;
+                    battle.spellIndex = 0;
+                    battle.showSpells = false;
+                    battle.showItems = false;
+                    battle.phase = 'command';
+                } else {
+                    // 全員行動済み、敵ターンへ
+                    processPartyPoisonAndEnemyTurn();
+                }
+            };
+
             if (poisonResult) {
-                showBattleMessage(poisonResult.message, () => {
-                    if (player.hp <= 1) {
-                        // 毒では死なないが次の行動へ
+                showBattleMessage(poisonResult.message, continueAfterPoison);
+            } else {
+                continueAfterPoison();
+            }
+        }
+
+        // パーティ全員の毒ダメージ処理後、敵ターンへ
+        function processPartyPoisonAndEnemyTurn() {
+            // 残りのメンバーの毒ダメージ処理（現在のメンバー以外）
+            let poisonMessages = [];
+            party.forEach((member, idx) => {
+                if (idx <= battle.currentPartyIndex) return; // 既に処理済み
+                if (!member.isAlive || member.hp <= 0) return;
+                const result = processPoisonDamage(member, member.name, member.maxHp);
+                if (result) {
+                    poisonMessages.push(result.message);
+                }
+            });
+
+            if (poisonMessages.length > 0) {
+                // 毒メッセージを順次表示
+                const showNext = (index) => {
+                    if (index >= poisonMessages.length) {
+                        enemyTurn();
+                        return;
                     }
-                    enemyTurn();
-                });
+                    showBattleMessage(poisonMessages[index], () => showNext(index + 1));
+                };
+                showNext(0);
             } else {
                 enemyTurn();
             }
@@ -3738,6 +4223,9 @@
 
         function playerAttack(targetIndex = 0) {
             battle.phase = 'playerTurn';
+
+            // 現在行動中のパーティメンバーを取得
+            const attacker = getCurrentPartyMember();
 
             // ターゲットが既に倒れている場合は別のターゲットを探す
             if (!battle.enemies[targetIndex] || battle.enemies[targetIndex].currentHp <= 0) {
@@ -3751,15 +4239,15 @@
             const enemy = battle.enemies[targetIndex];
 
             // 幻惑状態なら命中率低下
-            const hitRate = getHitRate(player);
+            const hitRate = getHitRate(attacker);
             if (Math.random() > hitRate) {
-                showBattleMessage('ゆうしゃ の こうげき！ しかし こうげきは はずれた！', () => {
+                showBattleMessage(`${attacker.name} の こうげき！ しかし こうげきは はずれた！`, () => {
                     processTurnEnd();
                 });
                 return;
             }
 
-            const atk = getPlayerAtk();
+            const atk = attacker.actualAtk;
             let damage = Math.max(1, Math.floor(atk / 2 - enemy.def / 4 + Math.random() * 5));
 
             // バイキルトによるダメージ倍率適用
@@ -3773,7 +4261,7 @@
             // 敵の名前（サフィックス付き）を表示
             const enemyName = enemy.displayName || enemy.name;
 
-            showBattleMessage(`ゆうしゃ の こうげき！ ${enemyName} に ${damage} の ダメージ！`, () => {
+            showBattleMessage(`${attacker.name} の こうげき！ ${enemyName} に ${damage} の ダメージ！`, () => {
                 // この敵を倒したかチェック
                 if (enemy.currentHp <= 0) {
                     enemy.currentHp = 0;
@@ -3836,6 +4324,13 @@
             executeEnemyAttack();
         }
 
+        // ランダムな生存パーティメンバーを取得
+        function getRandomAlivePartyMember() {
+            const aliveMembers = getAlivePartyMembers();
+            if (aliveMembers.length === 0) return null;
+            return aliveMembers[Math.floor(Math.random() * aliveMembers.length)];
+        }
+
         function executeEnemyAttack() {
             const enemy = battle.enemies[battle.currentEnemyIndex];
             const enemyName = enemy.displayName || enemy.name;
@@ -3849,7 +4344,14 @@
                 return;
             }
 
-            let def = getPlayerDef();
+            // ランダムなパーティメンバーをターゲット
+            const target = getRandomAlivePartyMember();
+            if (!target) {
+                checkBattleEnd();
+                return;
+            }
+
+            let def = target.actualDef;
 
             // スクルトによる防御力アップ
             if (battle.buffs.defenseUp > 0) {
@@ -3858,12 +4360,20 @@
             }
 
             const damage = Math.max(1, Math.floor(enemy.atk / 2 - def / 4 + Math.random() * 3));
-            player.hp -= damage;
+            target.hp -= damage;
 
-            showBattleMessage(`${enemyName} の こうげき！ ${damage} の ダメージ！`, () => {
-                if (player.hp <= 0) {
-                    player.hp = 0;
-                    battleLose();
+            showBattleMessage(`${enemyName} の こうげき！ ${target.name} に ${damage} の ダメージ！`, () => {
+                if (target.hp <= 0) {
+                    target.hp = 0;
+                    target.isAlive = false;
+                    showBattleMessage(`${target.name} は たおれた！`, () => {
+                        // パーティ全滅チェック
+                        if (!isPartyAlive()) {
+                            battleLose();
+                        } else {
+                            processCurrentEnemyTurnEnd();
+                        }
+                    });
                 } else {
                     processCurrentEnemyTurnEnd();
                 }
@@ -3908,22 +4418,45 @@
 
         // プレイヤーターン開始
         function startPlayerTurn() {
-            // プレイヤーの眠りチェック
-            const wakeResult = checkWakeUp(player, 'ゆうしゃ');
+            // パーティインデックスをリセット（最初の生存メンバーから開始）
+            battle.currentPartyIndex = 0;
+            // 最初の行動可能なメンバーを探す
+            while (battle.currentPartyIndex < party.length) {
+                const member = party[battle.currentPartyIndex];
+                if (member.isAlive && member.hp > 0) {
+                    break;
+                }
+                battle.currentPartyIndex++;
+            }
+
+            if (battle.currentPartyIndex >= party.length) {
+                // 全員戦闘不能（通常はここに来ないはず）
+                battleLose();
+                return;
+            }
+
+            const currentMember = getCurrentPartyMember();
+
+            // 眠りチェック
+            const wakeResult = checkWakeUp(currentMember, currentMember.name);
             if (!wakeResult.awake) {
                 showBattleMessage(wakeResult.message, () => {
-                    // 眠っている場合は行動をスキップして敵ターンへ
+                    // 眠っている場合は行動をスキップして次のメンバーへ
                     processTurnEnd();
                 });
                 return;
             }
             if (wakeResult.message) {
                 showBattleMessage(wakeResult.message, () => {
+                    battle.commandIndex = 0;
+                    battle.spellIndex = 0;
                     battle.phase = 'command';
                 });
                 return;
             }
 
+            battle.commandIndex = 0;
+            battle.spellIndex = 0;
             battle.phase = 'command';
         }
 
@@ -3994,8 +4527,14 @@
                 }
             }
 
-            player.exp += totalExp;
-            player.gold += totalGold;
+            // 経験値を生存メンバー全員に付与
+            const aliveMembers = getAlivePartyMembers();
+            aliveMembers.forEach(member => {
+                member.exp += totalExp;
+            });
+
+            // ゴールドはパーティ共有
+            partyData.gold += totalGold;
 
             // ボス戦判定（後方互換用）
             const isBossDefeat = defeatedBoss !== null;
@@ -4141,9 +4680,10 @@
             });
         }
 
-        function checkLevelUp(callback) {
-            if (player.level < expTable.length - 1 && player.exp >= expTable[player.level + 1]) {
-                player.level++;
+        // 個別メンバーのレベルアップ処理
+        function checkMemberLevelUp(member, callback) {
+            if (member.level < expTable.length - 1 && member.exp >= expTable[member.level + 1]) {
+                member.level++;
 
                 // ステータス上昇をランダム要素込みで計算
                 const hpUp = 3 + Math.floor(Math.random() * 5); // 3-7
@@ -4152,38 +4692,30 @@
                 const defUp = 1 + Math.floor(Math.random() * 2); // 1-2
                 const spdUp = Math.floor(Math.random() * 2); // 0-1
 
-                player.maxHp += hpUp;
-                player.maxMp += mpUp;
-                player.baseAtk += atkUp;
-                player.baseDef += defUp;
-                player.speed += spdUp;
+                member.maxHp += hpUp;
+                member.maxMp += mpUp;
+                member.baseAtk += atkUp;
+                member.baseDef += defUp;
+                member.speed += spdUp;
                 // HP/MPは全回復しない（宿屋の重要性を高める）
 
                 // 基礎ステータスが上がったのでこうげき力・しゅび力を再計算
-                updateActualStats();
+                updateMemberActualStats(member);
 
                 // このレベルで習得する呪文をチェック
-                const newSpells = checkNewSpells(player.level);
+                const newSpells = checkMemberNewSpells(member, member.level);
 
                 // レベルアップメッセージを順番に表示
-                showBattleMessage(`レベルが あがった！ Lv${player.level} になった！`, () => {
+                showBattleMessage(`${member.name} は レベルが あがった！ Lv${member.level} になった！`, () => {
                     showBattleMessage(`さいだいHP が ${hpUp} あがった！`, () => {
                         showBattleMessage(`さいだいMP が ${mpUp} あがった！`, () => {
-                            showBattleMessage(`ちから が ${atkUp} あがった！`, () => {
-                                showBattleMessage(`みのまもり が ${defUp} あがった！`, () => {
-                                    const afterStats = () => {
-                                        // 呪文習得メッセージ
-                                        showSpellLearnMessages(newSpells, () => {
-                                            checkLevelUp(callback); // 複数レベルアップ対応
-                                        });
-                                    };
-                                    if (spdUp > 0) {
-                                        showBattleMessage(`すばやさ が ${spdUp} あがった！`, afterStats);
-                                    } else {
-                                        afterStats();
-                                    }
+                            const afterStats = () => {
+                                // 呪文習得メッセージ
+                                showMemberSpellLearnMessages(member, newSpells, () => {
+                                    checkMemberLevelUp(member, callback); // 複数レベルアップ対応
                                 });
-                            });
+                            };
+                            afterStats();
                         });
                     });
                 });
@@ -4192,15 +4724,65 @@
             }
         }
 
+        // メンバーの呪文習得チェック
+        function checkMemberNewSpells(member, level) {
+            const newSpells = [];
+            for (const spellId in spells) {
+                const spell = spells[spellId];
+                // ジョブに応じた呪文習得（将来的な拡張用）
+                if (spell.learnLevel === level && !member.spells.includes(spellId)) {
+                    member.spells.push(spellId);
+                    newSpells.push(spell);
+                }
+            }
+            return newSpells;
+        }
+
+        // メンバーの呪文習得メッセージ
+        function showMemberSpellLearnMessages(member, spellList, callback) {
+            if (spellList.length === 0) {
+                callback();
+                return;
+            }
+            const spell = spellList.shift();
+            showBattleMessage(`${member.name} は ${spell.name} を おぼえた！`, () => {
+                showMemberSpellLearnMessages(member, spellList, callback);
+            });
+        }
+
+        // パーティ全員のレベルアップチェック
+        function checkLevelUp(callback) {
+            const aliveMembers = getAlivePartyMembers();
+            let memberIndex = 0;
+
+            const checkNext = () => {
+                if (memberIndex >= aliveMembers.length) {
+                    callback();
+                    return;
+                }
+                const member = aliveMembers[memberIndex];
+                memberIndex++;
+                checkMemberLevelUp(member, checkNext);
+            };
+
+            checkNext();
+        }
+
         function battleLose() {
             battle.phase = 'result';
-            showBattleMessage('ゆうしゃ は しんでしまった...', () => {
-                showBattleMessage('おうさま「そなたに もう一度 チャンスを やろう」', () => {
-                    player.gold = Math.floor(player.gold / 2);
-                    player.hp = player.maxHp;
-                    player.mp = player.maxMp;
-                    player.x = 7;
-                    player.y = 11;
+            showBattleMessage('パーティは ぜんめつした...', () => {
+                showBattleMessage('おうさま「そなたたちに もう一度 チャンスを やろう」', () => {
+                    // ゴールド半減
+                    partyData.gold = Math.floor(partyData.gold / 2);
+                    // パーティ全員を復活
+                    party.forEach(member => {
+                        member.hp = member.maxHp;
+                        member.mp = member.maxMp;
+                        member.isAlive = true;
+                        member.status = { sleep: 0, poison: 0, blind: 0 };
+                    });
+                    partyData.x = 7;
+                    partyData.y = 11;
                     currentMapId = 'castle';
                     currentMap = maps[currentMapId];
                     mapNameElement.textContent = currentMap.name;
@@ -4587,7 +5169,7 @@
         }
 
         function openMenu() {
-            if (dialog.active || isTransitioning || gameMode === MODE.BATTLE || inn.active) return;
+            if (dialog.active || isTransitioning || gameMode === MODE.BATTLE || inn.active || partyJoinConfirm.active) return;
             menu.active = true;
             menu.mode = 'status'; // デフォルトでステータス画面
         }
@@ -4596,6 +5178,9 @@
             menu.active = false;
             menu.showItemAction = false;
             menu.itemActionIndex = 0;
+            menu.selectingMember = false;
+            menu.memberCursor = 0;
+            menu.targetMemberCursor = 0;
         }
 
         // アイテムアクション実行
@@ -4941,14 +5526,15 @@
 
         // フィールドで呪文を使用
         function useSpellInField() {
-            if (player.spells.length === 0) return;
+            const caster = party[menu.memberCursor] || party[0];
+            if (caster.spells.length === 0) return;
 
-            const spellId = player.spells[menu.spellCursor];
+            const spellId = caster.spells[menu.spellCursor];
             const spell = spells[spellId];
             if (!spell) return;
 
             // MP不足チェック
-            if (player.mp < spell.mp) {
+            if (caster.mp < spell.mp) {
                 closeMenu();
                 startDialog(['MPが 足りない！']);
                 return;
@@ -4956,22 +5542,28 @@
 
             // 呪文タイプ別処理
             if (spell.type === 'heal') {
-                // 回復呪文
-                if (player.hp >= player.maxHp) {
+                // 回復呪文 - パーティがいる場合は対象選択
+                if (party.length > 1) {
+                    menu.selectingMember = true;
+                    menu.targetMemberCursor = 0;
+                } else {
+                    // ソロプレイ時は自分に使う
+                    if (caster.hp >= caster.maxHp) {
+                        closeMenu();
+                        startDialog(['HPは まんたんだ！']);
+                        return;
+                    }
+
+                    caster.mp -= spell.mp;
+                    const healAmount = Math.min(spell.power, caster.maxHp - caster.hp);
+                    caster.hp += healAmount;
+
                     closeMenu();
-                    startDialog(['HPは まんたんだ！']);
-                    return;
+                    startDialog([
+                        `${caster.name}は ${spell.name}を となえた！`,
+                        `HPが ${healAmount} 回復した！`
+                    ]);
                 }
-
-                player.mp -= spell.mp;
-                const healAmount = Math.min(spell.power, player.maxHp - player.hp);
-                player.hp += healAmount;
-
-                closeMenu();
-                startDialog([
-                    `${spell.name}を となえた！`,
-                    `HPが ${healAmount} 回復した！`
-                ]);
 
             } else if (spell.type === 'warp') {
                 // ルーラ（拠点ワープ）
@@ -4987,22 +5579,70 @@
             }
         }
 
+        // フィールドで呪文を対象に使用
+        function executeFieldSpellOnTarget() {
+            const caster = party[menu.memberCursor] || party[0];
+            const target = party[menu.targetMemberCursor];
+            if (!target) {
+                menu.selectingMember = false;
+                return;
+            }
+
+            const spellId = caster.spells[menu.spellCursor];
+            const spell = spells[spellId];
+            if (!spell) {
+                menu.selectingMember = false;
+                return;
+            }
+
+            // 回復呪文の処理
+            if (spell.type === 'heal') {
+                if (target.hp >= target.maxHp) {
+                    menu.selectingMember = false;
+                    closeMenu();
+                    startDialog([`${target.name}の HPは まんたんだ！`]);
+                    return;
+                }
+
+                caster.mp -= spell.mp;
+                const healAmount = Math.min(spell.power, target.maxHp - target.hp);
+                target.hp += healAmount;
+
+                menu.selectingMember = false;
+                closeMenu();
+
+                if (caster === target) {
+                    startDialog([
+                        `${caster.name}は ${spell.name}を となえた！`,
+                        `HPが ${healAmount} 回復した！`
+                    ]);
+                } else {
+                    startDialog([
+                        `${caster.name}は ${spell.name}を となえた！`,
+                        `${target.name}の HPが ${healAmount} 回復した！`
+                    ]);
+                }
+            }
+        }
+
         // ルーラ用：拠点選択状態
         let ruraState = {
             active: false,
-            cursor: 0
+            cursor: 0,
+            casterIndex: 0 // 呪文を唱えるメンバーのインデックス
         };
 
         // ルーラを使用（拠点選択UIを表示）
         function useRura() {
+            const caster = party[menu.memberCursor] || party[0];
             const spell = spells.rura;
 
             // 天井判定：屋内では使えない
             if (currentMap.isOutdoor === false) {
-                player.mp -= spell.mp;
+                caster.mp -= spell.mp;
                 closeMenu();
                 startDialog([
-                    `${spell.name}を となえた！`,
+                    `${caster.name}は ${spell.name}を となえた！`,
                     'しかし 天井に 頭を ぶつけてしまった！'
                 ]);
                 return;
@@ -5015,9 +5655,10 @@
                 return;
             }
 
-            // 拠点選択UIを表示
+            // 拠点選択UIを表示（詠唱者を記憶）
             ruraState.active = true;
             ruraState.cursor = 0;
+            ruraState.casterIndex = menu.memberCursor;
             closeMenu();
         }
 
@@ -5027,7 +5668,8 @@
             const location = gameProgress.visitedLocations[locationIndex];
             if (!location) return;
 
-            player.mp -= spell.mp;
+            const caster = party[ruraState.casterIndex] || party[0];
+            caster.mp -= spell.mp;
             ruraState.active = false;
 
             // ルーラ演出（白フラッシュ）
@@ -5060,13 +5702,14 @@
 
         // リレミトを使用（ダンジョン脱出）
         function useRiremito() {
+            const caster = party[menu.memberCursor] || party[0];
             const spell = spells.riremito;
 
             // フィールドでは使えない
             if (currentMap.isOutdoor === true) {
                 closeMenu();
                 startDialog([
-                    `${spell.name}を となえた！`,
+                    `${caster.name}は ${spell.name}を となえた！`,
                     'しかし ここでは 意味がない！'
                 ]);
                 return;
@@ -5080,13 +5723,13 @@
                 return;
             }
 
-            player.mp -= spell.mp;
+            caster.mp -= spell.mp;
             closeMenu();
 
             // リレミト演出（白フラッシュ）
             playRiremitoAnimation().then(() => {
                 startDialogWithCallback(
-                    ['ゆうしゃは 呪文を となえて 脱出した！'],
+                    [`${caster.name}は 呪文を となえて 脱出した！`],
                     () => {
                         performWarp(entrance.mapPath, entrance.x, entrance.y);
                     }
@@ -5544,7 +6187,7 @@
         }
 
         function movePlayer(dx, dy) {
-            if (player.moving || isTransitioning || dialog.active || menu.active || inn.active || shop.active || gameMode === MODE.BATTLE) return;
+            if (player.moving || isTransitioning || dialog.active || menu.active || inn.active || shop.active || partyJoinConfirm.active || gameMode === MODE.BATTLE) return;
 
             if (dy < 0) player.direction = 'up';
             else if (dy > 0) player.direction = 'down';
@@ -5582,7 +6225,7 @@
         }
 
         function interact() {
-            if (menu.active || gameMode === MODE.BATTLE || inn.active || shop.active) return;
+            if (menu.active || gameMode === MODE.BATTLE || inn.active || shop.active || partyJoinConfirm.active) return;
             if (dialog.active) { advanceDialog(); return; }
 
             const front = getFrontPosition();
@@ -5609,6 +6252,9 @@
                 } else if (npc.type === 'quest_giver') {
                     // クエストNPC
                     handleQuestGiver(npc);
+                } else if (npc.type === 'party_join') {
+                    // パーティ加入NPC
+                    handlePartyJoinNpc(npc);
                 } else {
                     // ゲームクリア後はNPCのセリフが変わる
                     if (gameCleared && npc.clearedMessages) {
@@ -5811,6 +6457,86 @@
             } else {
                 startDialog(npc.messages);
             }
+        }
+
+        // パーティ加入確認状態
+        let partyJoinConfirm = {
+            active: false,
+            npcId: null,
+            selectedIndex: 0  // 0: はい, 1: いいえ
+        };
+
+        // パーティ加入NPC処理
+        function handlePartyJoinNpc(npc) {
+            // 既に仲間になっている場合
+            if (gameProgress.storyFlags.mageJoined && npc.id === 'oasis_mage') {
+                startDialog(npc.alreadyJoinedMessages || ['一緒に冒険できて嬉しいです！']);
+                return;
+            }
+
+            // パーティが満員の場合
+            if (party.length >= MAX_PARTY_SIZE) {
+                startDialog(['（パーティがいっぱいだ...）']);
+                return;
+            }
+
+            // 加入条件チェック
+            let conditionMet = false;
+            if (npc.joinCondition === 'waterShortageCompleted') {
+                conditionMet = isQuestCompleted('waterShortage');
+            }
+            // 他の条件も追加可能
+
+            if (!conditionMet) {
+                startDialog(npc.conditionNotMetMessages || npc.messages);
+                return;
+            }
+
+            // 加入オファーを表示して確認
+            startDialogWithCallback(npc.joinOfferMessages, () => {
+                partyJoinConfirm.active = true;
+                partyJoinConfirm.npcId = npc.id;
+                partyJoinConfirm.selectedIndex = 0;
+            });
+        }
+
+        // パーティ加入実行
+        function executePartyJoin(npcId) {
+            const npc = getNpcById(npcId);
+            if (!npc) return;
+
+            if (npcId === 'oasis_mage') {
+                // マリア（魔法使い）をパーティに追加
+                const mage = createPartyMember({
+                    id: 'mage_maria',
+                    name: 'マリア',
+                    job: 'mage',
+                    sprite: '🧙',
+                    hp: 35,
+                    maxHp: 35,
+                    mp: 50,
+                    maxMp: 50,
+                    baseAtk: 8,
+                    baseDef: 6,
+                    speed: 8,
+                    level: 5,
+                    exp: 300,
+                    spells: ['mera', 'gira', 'hoimi'],
+                    equipment: { weapon: null, armor: null }
+                });
+                party.push(mage);
+                gameProgress.storyFlags.mageJoined = true;
+
+                startDialogWithCallback(npc.joinAcceptMessages, () => {
+                    saveGame();
+                });
+            }
+        }
+
+        // NPC IDで取得するヘルパー
+        function getNpcById(npcId) {
+            if (!currentMap || !currentMap.npcs) return null;
+            return currentMap.npcs.find(n => n.id === npcId);
         }
 
         // ボス戦開始（汎用）
@@ -6229,6 +6955,41 @@
                 return;
             }
 
+            // パーティ加入確認
+            if (partyJoinConfirm.active) {
+                switch (e.key) {
+                    case 'ArrowLeft': case 'a': case 'A':
+                        partyJoinConfirm.selectedIndex = 0;
+                        break;
+                    case 'ArrowRight': case 'd': case 'D':
+                        partyJoinConfirm.selectedIndex = 1;
+                        break;
+                    case 'Enter': case ' ': case 'z':
+                        if (partyJoinConfirm.selectedIndex === 0) {
+                            // はい
+                            partyJoinConfirm.active = false;
+                            executePartyJoin(partyJoinConfirm.npcId);
+                        } else {
+                            // いいえ
+                            partyJoinConfirm.active = false;
+                            const npc = getNpcById(partyJoinConfirm.npcId);
+                            if (npc && npc.joinDeclineMessages) {
+                                startDialog(npc.joinDeclineMessages);
+                            }
+                        }
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        partyJoinConfirm.active = false;
+                        const npc = getNpcById(partyJoinConfirm.npcId);
+                        if (npc && npc.joinDeclineMessages) {
+                            startDialog(npc.joinDeclineMessages);
+                        }
+                        break;
+                }
+                e.preventDefault();
+                return;
+            }
+
             // ルーラ拠点選択
             if (ruraState.active) {
                 const locations = gameProgress.visitedLocations;
@@ -6292,28 +7053,81 @@
                             closeMenu();
                             break;
                     }
-                } else if (menu.mode === 'spells' && player.spells.length > 0) {
-                    // 呪文リスト操作
-                    switch (e.key) {
-                        case 'ArrowUp': case 'w': case 'W':
-                            menu.spellCursor = (menu.spellCursor + player.spells.length - 1) % player.spells.length;
-                            break;
-                        case 'ArrowDown': case 's': case 'S':
-                            menu.spellCursor = (menu.spellCursor + 1) % player.spells.length;
-                            break;
-                        case 'ArrowLeft': case 'a': case 'A':
-                            menu.mode = 'status';
-                            break;
-                        case 'ArrowRight': case 'd': case 'D':
-                            menu.mode = 'items';
-                            menu.itemCursor = 0;
-                            break;
-                        case 'Enter': case ' ': case 'z': case 'Z':
-                            useSpellInField();
-                            break;
-                        case 'Escape': case 'x': case 'b': case 'B':
-                            closeMenu();
-                            break;
+                } else if (menu.mode === 'spells') {
+                    const selectedMember = party[menu.memberCursor] || party[0];
+                    if (menu.selectingMember) {
+                        // 呪文対象選択モード
+                        switch (e.key) {
+                            case 'ArrowUp': case 'w': case 'W':
+                                menu.targetMemberCursor = (menu.targetMemberCursor + party.length - 1) % party.length;
+                                break;
+                            case 'ArrowDown': case 's': case 'S':
+                                menu.targetMemberCursor = (menu.targetMemberCursor + 1) % party.length;
+                                break;
+                            case 'Enter': case ' ': case 'z': case 'Z':
+                                executeFieldSpellOnTarget();
+                                break;
+                            case 'Escape': case 'x': case 'b': case 'B':
+                                menu.selectingMember = false;
+                                break;
+                        }
+                    } else if (selectedMember.spells.length > 0) {
+                        // 呪文リスト操作
+                        switch (e.key) {
+                            case 'ArrowUp': case 'w': case 'W':
+                                menu.spellCursor = (menu.spellCursor + selectedMember.spells.length - 1) % selectedMember.spells.length;
+                                break;
+                            case 'ArrowDown': case 's': case 'S':
+                                menu.spellCursor = (menu.spellCursor + 1) % selectedMember.spells.length;
+                                break;
+                            case 'ArrowLeft': case 'a': case 'A':
+                                if (party.length > 1) {
+                                    menu.memberCursor = (menu.memberCursor + party.length - 1) % party.length;
+                                    menu.spellCursor = 0;
+                                } else {
+                                    menu.mode = 'status';
+                                }
+                                break;
+                            case 'ArrowRight': case 'd': case 'D':
+                                if (party.length > 1) {
+                                    menu.memberCursor = (menu.memberCursor + 1) % party.length;
+                                    menu.spellCursor = 0;
+                                } else {
+                                    menu.mode = 'items';
+                                    menu.itemCursor = 0;
+                                }
+                                break;
+                            case 'Enter': case ' ': case 'z': case 'Z':
+                                useSpellInField();
+                                break;
+                            case 'Escape': case 'x': case 'b': case 'B':
+                                closeMenu();
+                                break;
+                        }
+                    } else {
+                        // 呪文がない場合はタブ切り替え
+                        switch (e.key) {
+                            case 'ArrowLeft': case 'a': case 'A':
+                                if (party.length > 1) {
+                                    menu.memberCursor = (menu.memberCursor + party.length - 1) % party.length;
+                                    menu.spellCursor = 0;
+                                } else {
+                                    menu.mode = 'status';
+                                }
+                                break;
+                            case 'ArrowRight': case 'd': case 'D':
+                                if (party.length > 1) {
+                                    menu.memberCursor = (menu.memberCursor + 1) % party.length;
+                                    menu.spellCursor = 0;
+                                } else {
+                                    menu.mode = 'items';
+                                    menu.itemCursor = 0;
+                                }
+                                break;
+                            case 'Escape': case 'x': case 'b': case 'B':
+                                closeMenu();
+                                break;
+                        }
                     }
                 } else if (menu.mode === 'map') {
                     // ちずタブ
@@ -6333,14 +7147,35 @@
                             closeMenu();
                             break;
                     }
+                } else if (menu.mode === 'status') {
+                    // ステータスモード（パーティメンバー選択可能）
+                    switch (e.key) {
+                        case 'ArrowUp': case 'w': case 'W':
+                            if (party.length > 1) {
+                                menu.memberCursor = (menu.memberCursor + party.length - 1) % party.length;
+                            }
+                            break;
+                        case 'ArrowDown': case 's': case 'S':
+                            if (party.length > 1) {
+                                menu.memberCursor = (menu.memberCursor + 1) % party.length;
+                            }
+                            break;
+                        case 'ArrowLeft': case 'a': case 'A':
+                            menu.mode = 'map';
+                            break;
+                        case 'ArrowRight': case 'd': case 'D':
+                            menu.mode = 'spells';
+                            menu.spellCursor = 0;
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            closeMenu();
+                            break;
+                    }
                 } else {
-                    // タブ切り替えモード（アイテム・呪文がない場合やstatusモード）
+                    // タブ切り替えモード（アイテム・呪文がない場合）
                     switch (e.key) {
                         case 'ArrowLeft': case 'a': case 'A':
-                            // status → map / spells → status / items → spells / map → items
-                            if (menu.mode === 'status') {
-                                menu.mode = 'map';
-                            } else if (menu.mode === 'spells') {
+                            if (menu.mode === 'spells') {
                                 menu.mode = 'status';
                             } else if (menu.mode === 'items') {
                                 menu.mode = 'spells';
@@ -6348,11 +7183,7 @@
                             }
                             break;
                         case 'ArrowRight': case 'd': case 'D':
-                            // status → spells / spells → items / items → map / map → status
-                            if (menu.mode === 'status') {
-                                menu.mode = 'spells';
-                                menu.spellCursor = 0;
-                            } else if (menu.mode === 'spells') {
+                            if (menu.mode === 'spells') {
                                 menu.mode = 'items';
                                 menu.itemCursor = 0;
                             } else if (menu.mode === 'items') {
@@ -7054,30 +7885,38 @@
         }
 
         async function resetGameState() {
-            // プレイヤーを初期状態にリセット
-            player.x = 4;
-            player.y = 11;
-            player.hp = 30;
-            player.maxHp = 30;
-            player.mp = 10;
-            player.maxMp = 10;
-            player.level = 1;
-            player.exp = 0;
-            player.gold = 50;
-            player.baseAttack = 5;
-            player.baseDefense = 3;
-            player.attack = 5;
-            player.defense = 3;
-            player.weapon = null;
-            player.armor = null;
-            player.shield = null;
-            player.helmet = null;
-            player.accessory = null;
-            player.spells = []; // Lv1では呪文なし
-            player.statusEffects = [];
+            // パーティをリセット（ヒーローのみ）
+            party.length = 0;
+            const hero = createPartyMember({
+                id: 'hero',
+                name: 'ゆうしゃ',
+                job: 'hero',
+                sprite: '🧙',
+                hp: 30,
+                maxHp: 30,
+                mp: 10,
+                maxMp: 10,
+                baseAtk: 12,
+                baseDef: 8,
+                speed: 6,
+                level: 1,
+                exp: 0,
+                spells: [],
+                equipment: { weapon: 10, armor: 20 }
+            });
+            party.push(hero);
+            player = party[0];
 
-            // インベントリをリセット（薬草3つ）
-            player.inventory = [{ id: 1, quantity: 3 }];
+            // partyDataをリセット
+            partyData.x = 4;
+            partyData.y = 11;
+            partyData.direction = 'down';
+            partyData.moving = false;
+            partyData.gold = 50;
+            partyData.inventory = [{ id: 1, quantity: 3 }];
+
+            // ステータス再計算
+            updateActualStats();
 
             // マップをリセット（外部JSONを優先してロード）
             currentMapId = 'field';
