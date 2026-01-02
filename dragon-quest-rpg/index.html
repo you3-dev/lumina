@@ -1714,6 +1714,30 @@
             return party.some(m => m.isAlive && m.hp > 0);
         }
 
+        // 戦闘不能のパーティメンバーを取得
+        function getDeadPartyMembers() {
+            return party.filter(m => !m.isAlive || m.hp <= 0);
+        }
+
+        // パーティ全員のHP/MPを全回復し、戦闘不能も復活させる
+        function restoreAll() {
+            party.forEach(member => {
+                member.hp = member.maxHp;
+                member.mp = member.maxMp;
+                member.isAlive = true;
+                member.status = { sleep: 0, poison: 0, blind: 0 };
+            });
+        }
+
+        // 特定のメンバーを復活させる（HP半分または全回復）
+        function reviveMember(member, fullHp = false) {
+            if (!member) return false;
+            member.hp = fullHp ? member.maxHp : Math.floor(member.maxHp / 2);
+            member.isAlive = true;
+            member.status = { sleep: 0, poison: 0, blind: 0 };
+            return true;
+        }
+
         // メンバー個別のステータス更新
         function updateMemberActualStats(member) {
             const weapon = items[member.equipment.weapon];
@@ -1878,6 +1902,15 @@
             active: false,
             cost: 0,
             selectedIndex: 0 // 0: はい, 1: いいえ
+        };
+
+        // 教会状態
+        const church = {
+            active: false,
+            menuIndex: 0,       // 0: いきかえらせる, 1: どくのちりょう, 2: おいのりをする, 3: やめる
+            phase: 'menu',      // 'menu', 'selectMember', 'confirm'
+            selectedMember: 0,  // 対象メンバーのインデックス
+            confirmIndex: 0     // 0: はい, 1: いいえ
         };
 
         // ショップ状態
@@ -3118,6 +3151,98 @@
             ctx.fillText(`所持金: ${player.gold} G`, windowX + 20, windowY + windowHeight - tileSize * 0.6);
         }
 
+        function drawChurch() {
+            if (!church.active) return;
+
+            const windowWidth = canvasWidth * 0.85;
+            const windowHeight = tileSize * 5;
+            const windowX = (canvasWidth - windowWidth) / 2;
+            const windowY = (canvasHeight - windowHeight) / 2;
+
+            drawWindow(windowX, windowY, windowWidth, windowHeight);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+
+            if (church.phase === 'menu') {
+                ctx.fillText('神のご加護がありますように。', windowX + 20, windowY + 15);
+                ctx.fillText('どのような ご用件ですか？', windowX + 20, windowY + 15 + tileSize * 0.6);
+
+                const menuItems = ['いきかえらせる', 'どくのちりょう', 'おいのりをする', 'やめる'];
+                const startY = windowY + tileSize * 1.8;
+
+                menuItems.forEach((item, i) => {
+                    const y = startY + i * tileSize * 0.7;
+                    if (i === church.menuIndex) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.fillText('▶', windowX + 25, y);
+                    }
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText(item, windowX + 50, y);
+                });
+            } else if (church.phase === 'selectMember') {
+                const actionText = church.menuIndex === 0 ? 'いきかえらせる' : 'どくをなおす';
+                ctx.fillText(`だれを ${actionText}？`, windowX + 20, windowY + 15);
+
+                const startY = windowY + tileSize * 1.2;
+                party.forEach((member, i) => {
+                    const y = startY + i * tileSize * 0.8;
+                    const isDead = !member.isAlive || member.hp <= 0;
+                    const isPoisoned = member.status && member.status.poison > 0;
+
+                    // 選択カーソル
+                    if (i === church.selectedMember) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.fillText('▶', windowX + 25, y);
+                    }
+
+                    // メンバー名と状態
+                    ctx.fillStyle = isDead ? '#888' : (isPoisoned ? '#a0f' : '#fff');
+                    let statusText = '';
+                    if (isDead) statusText = ' [しんでいる]';
+                    else if (isPoisoned) statusText = ' [どく]';
+
+                    ctx.fillText(`${member.name} Lv${member.level}${statusText}`, windowX + 50, y);
+
+                    // 費用表示
+                    if (church.menuIndex === 0 && isDead) {
+                        ctx.fillStyle = '#ff8';
+                        ctx.fillText(`${getReviveCost(member)}G`, windowX + windowWidth - 80, y);
+                    } else if (church.menuIndex === 1 && isPoisoned) {
+                        ctx.fillStyle = '#ff8';
+                        ctx.fillText(`${getCureCost()}G`, windowX + windowWidth - 80, y);
+                    }
+                });
+            } else if (church.phase === 'confirm') {
+                const member = party[church.selectedMember];
+                const cost = church.menuIndex === 0 ? getReviveCost(member) : getCureCost();
+                const actionText = church.menuIndex === 0 ? 'いきかえらせます' : 'どくをなおします';
+
+                ctx.fillText(`${member.name} を ${actionText}。`, windowX + 20, windowY + 15);
+                ctx.fillText(`${cost}ゴールド かかりますが よろしいですか？`, windowX + 20, windowY + 15 + tileSize * 0.6);
+
+                const choiceY = windowY + tileSize * 2;
+                const choices = ['はい', 'いいえ'];
+
+                choices.forEach((choice, i) => {
+                    const choiceX = windowX + 50 + i * tileSize * 2.5;
+                    if (i === church.confirmIndex) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.fillText('▶', choiceX - tileSize * 0.5, choiceY);
+                    }
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText(choice, choiceX, choiceY);
+                });
+            }
+
+            // 所持金表示
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+            ctx.fillText(`所持金: ${partyData.gold} G`, windowX + 20, windowY + windowHeight - tileSize * 0.5);
+        }
+
         function drawPartyJoinConfirm() {
             if (!partyJoinConfirm.active) return;
 
@@ -3741,6 +3866,7 @@
                 drawMessageWindow();
                 drawMenu();
                 drawInn();
+                drawChurch();
                 drawShop();
                 drawPartyJoinConfirm();
                 drawRuraSelection();
@@ -4070,6 +4196,19 @@
                             player.hp = Math.min(player.maxHp, player.hp + healAmount);
                             effectMsg = `HPが ${healAmount} かいふくした！`;
                             success = true;
+                            break;
+                        case 'revive':
+                            // 世界樹の葉：戦闘中の復活
+                            const deadMembers = getDeadPartyMembers();
+                            if (deadMembers.length === 0) {
+                                effectMsg = 'しかし だれも たおれていない！';
+                            } else {
+                                // 最初の戦闘不能メンバーを復活
+                                const reviveTarget = deadMembers[0];
+                                reviveMember(reviveTarget, true);
+                                effectMsg = `${reviveTarget.name}は いきかえった！`;
+                                success = true;
+                            }
                             break;
                         case 'cure':
                             // 毒消し草
@@ -5480,12 +5619,12 @@
                     // 暗転演出
                     fadeOverlay.classList.add('active');
                     setTimeout(() => {
-                        player.hp = player.maxHp;
-                        player.mp = player.maxMp;
+                        // パーティ全員のHP/MP全回復＋戦闘不能復活
+                        restoreAll();
                         saveGame();
                         setTimeout(() => {
                             fadeOverlay.classList.remove('active');
-                            startDialog(['ゆっくり おやすみください...', 'おはようございます！', 'HPとMPが かいふくしました！']);
+                            startDialog(['ゆっくり おやすみください...', 'おはようございます！', 'みんなの HPとMPが かいふくしました！']);
                         }, 500);
                     }, 500);
                 } else {
@@ -5497,6 +5636,137 @@
                 closeInn();
                 startDialog(['またのお越しを おまちしております。']);
             }
+        }
+
+        // ========================================
+        // 教会システム
+        // ========================================
+        function openChurch() {
+            church.active = true;
+            church.menuIndex = 0;
+            church.phase = 'menu';
+            church.selectedMember = 0;
+            church.confirmIndex = 0;
+        }
+
+        function closeChurch() {
+            church.active = false;
+            church.phase = 'menu';
+        }
+
+        // 復活の費用を計算（レベル × 10ゴールド）
+        function getReviveCost(member) {
+            return member.level * 10;
+        }
+
+        // 毒治療の費用（固定）
+        function getCureCost() {
+            return 5;
+        }
+
+        // 教会メニューの選択肢に応じた処理
+        function selectChurchMenu() {
+            switch (church.menuIndex) {
+                case 0: // いきかえらせる
+                    const deadMembers = getDeadPartyMembers();
+                    if (deadMembers.length === 0) {
+                        startDialog(['おお、みなさん ご無事のようですね。', 'いきかえらせる ひつようは ありません。']);
+                        closeChurch();
+                    } else {
+                        church.phase = 'selectMember';
+                        church.selectedMember = party.findIndex(m => !m.isAlive || m.hp <= 0);
+                    }
+                    break;
+                case 1: // どくのちりょう
+                    const poisonedMembers = party.filter(m => m.status && m.status.poison > 0);
+                    if (poisonedMembers.length === 0) {
+                        startDialog(['どくに おかされている方は いらっしゃいませんね。']);
+                        closeChurch();
+                    } else {
+                        church.phase = 'selectMember';
+                        church.selectedMember = party.findIndex(m => m.status && m.status.poison > 0);
+                    }
+                    break;
+                case 2: // おいのりをする（セーブ）
+                    saveGame();
+                    startDialog(['おいのりを ささげました。', 'ぼうけんのしょに きろくしました。']);
+                    closeChurch();
+                    break;
+                case 3: // やめる
+                    startDialog(['また いつでも おこしください。']);
+                    closeChurch();
+                    break;
+            }
+        }
+
+        // メンバー選択の決定
+        function confirmChurchMember() {
+            const member = party[church.selectedMember];
+            if (!member) {
+                closeChurch();
+                return;
+            }
+
+            if (church.menuIndex === 0) {
+                // 復活の確認
+                if (member.isAlive && member.hp > 0) {
+                    // 生きているメンバーを選んだ
+                    startDialog([`${member.name} は たおれていません。`]);
+                    church.phase = 'menu';
+                } else {
+                    const cost = getReviveCost(member);
+                    church.phase = 'confirm';
+                    // 確認メッセージは描画で表示
+                }
+            } else if (church.menuIndex === 1) {
+                // 毒治療の確認
+                if (!member.status || member.status.poison <= 0) {
+                    startDialog([`${member.name} は どくに おかされていません。`]);
+                    church.phase = 'menu';
+                } else {
+                    church.phase = 'confirm';
+                }
+            }
+        }
+
+        // 復活・治療の最終確認
+        function confirmChurchAction() {
+            const member = party[church.selectedMember];
+            if (!member) {
+                closeChurch();
+                return;
+            }
+
+            if (church.confirmIndex === 0) {
+                // はい
+                if (church.menuIndex === 0) {
+                    // 復活
+                    const cost = getReviveCost(member);
+                    if (partyData.gold >= cost) {
+                        partyData.gold -= cost;
+                        reviveMember(member, true); // 全回復で復活
+                        saveGame();
+                        startDialog([`${member.name} は いきかえった！`]);
+                    } else {
+                        startDialog(['お金が たりないようです...']);
+                    }
+                } else if (church.menuIndex === 1) {
+                    // 毒治療
+                    const cost = getCureCost();
+                    if (partyData.gold >= cost) {
+                        partyData.gold -= cost;
+                        member.status.poison = 0;
+                        saveGame();
+                        startDialog([`${member.name} の どくを なおしました！`]);
+                    } else {
+                        startDialog(['お金が たりないようです...']);
+                    }
+                }
+            } else {
+                // いいえ
+                startDialog(['そうですか...']);
+            }
+            closeChurch();
         }
 
         // ========================================
@@ -5682,13 +5952,28 @@
             switch (item.type) {
                 case 'heal':
                     // HP回復アイテム
-                    if (target.hp >= target.maxHp) {
+                    // 戦闘不能者には使用できない
+                    if (!target.isAlive || target.hp <= 0) {
+                        message = `${target.name}は たおれている！`;
+                    } else if (target.hp >= target.maxHp) {
                         message = `${target.name}の HPは まんたんだ！`;
                     } else {
                         const healAmount = Math.min(item.value, target.maxHp - target.hp);
                         target.hp += healAmount;
                         message = `${target.name}に ${item.name}を使った！\nHPが ${healAmount} 回復した！`;
                         success = true;
+                    }
+                    break;
+
+                case 'revive':
+                    // 世界樹の葉：戦闘不能から復活
+                    if (target.isAlive && target.hp > 0) {
+                        message = `${target.name}は たおれていない！`;
+                    } else {
+                        reviveMember(target, true); // HP全回復で復活
+                        message = `${target.name}に ${item.name}を使った！\n${target.name}は いきかえった！`;
+                        success = true;
+                        saveGame();
                     }
                     break;
 
@@ -5762,6 +6047,13 @@
             const caster = party[menu.memberCursor] || party[0];
             if (caster.spells.length === 0) return;
 
+            // 戦闘不能チェック
+            if (!caster.isAlive || caster.hp <= 0) {
+                closeMenu();
+                startDialog([`${caster.name}は たおれている！`]);
+                return;
+            }
+
             const spellId = caster.spells[menu.spellCursor];
             const spell = spells[spellId];
             if (!spell) return;
@@ -5806,6 +6098,23 @@
                 // リレミト（ダンジョン脱出）
                 useRiremito();
 
+            } else if (spell.type === 'revive') {
+                // ザオラル（復活呪文）- フィールドで使用
+                const deadMembers = getDeadPartyMembers();
+                if (deadMembers.length === 0) {
+                    closeMenu();
+                    startDialog(['だれも たおれていない！']);
+                    return;
+                }
+                // パーティが複数なら対象選択
+                if (party.length > 1) {
+                    menu.selectingMember = true;
+                    menu.targetMemberCursor = party.findIndex(m => !m.isAlive || m.hp <= 0);
+                } else {
+                    closeMenu();
+                    startDialog(['だれも たおれていない！']);
+                }
+
             } else {
                 closeMenu();
                 startDialog(['ここでは 使えない！']);
@@ -5830,6 +6139,13 @@
 
             // 回復呪文の処理
             if (spell.type === 'heal') {
+                // 戦闘不能者には回復呪文は効かない
+                if (!target.isAlive || target.hp <= 0) {
+                    menu.selectingMember = false;
+                    closeMenu();
+                    startDialog([`${target.name}は たおれている！`]);
+                    return;
+                }
                 if (target.hp >= target.maxHp) {
                     menu.selectingMember = false;
                     closeMenu();
@@ -5853,6 +6169,34 @@
                     startDialog([
                         `${caster.name}は ${spell.name}を となえた！`,
                         `${target.name}の HPが ${healAmount} 回復した！`
+                    ]);
+                }
+            } else if (spell.type === 'revive') {
+                // 復活呪文（ザオラル）の処理
+                if (target.isAlive && target.hp > 0) {
+                    menu.selectingMember = false;
+                    closeMenu();
+                    startDialog([`${target.name}は たおれていない！`]);
+                    return;
+                }
+
+                caster.mp -= spell.mp;
+                menu.selectingMember = false;
+                closeMenu();
+
+                // 50%の成功率
+                const successRate = spell.successRate || 0.5;
+                if (Math.random() < successRate) {
+                    reviveMember(target, false); // HP半分で復活
+                    saveGame();
+                    startDialog([
+                        `${caster.name}は ${spell.name}を となえた！`,
+                        `${target.name}は いきかえった！`
+                    ]);
+                } else {
+                    startDialog([
+                        `${caster.name}は ${spell.name}を となえた！`,
+                        `しかし ${target.name}は いきかえらなかった...`
                     ]);
                 }
             }
@@ -6467,7 +6811,7 @@
         }
 
         function interact() {
-            if (menu.active || gameMode === MODE.BATTLE || inn.active || shop.active || partyJoinConfirm.active) return;
+            if (menu.active || gameMode === MODE.BATTLE || inn.active || church.active || shop.active || partyJoinConfirm.active) return;
             if (dialog.active) { advanceDialog(); return; }
 
             const front = getFrontPosition();
@@ -6475,6 +6819,8 @@
             if (npc) {
                 if (npc.type === 'inn' || npc.type === 'innkeeper') {
                     openInn(npc.innCost || npc.price);
+                } else if (npc.type === 'church' || npc.type === 'priest') {
+                    openChurch();
                 } else if (npc.type === 'shop' || npc.type === 'shopkeeper') {
                     openShop(npc.shopId || 'default');
                 } else if (npc.type === 'maou') {
@@ -7267,6 +7613,57 @@
                 return;
             }
 
+            // 教会
+            if (church.active) {
+                switch (e.key) {
+                    case 'ArrowUp': case 'w': case 'W':
+                        if (church.phase === 'menu') {
+                            church.menuIndex = (church.menuIndex - 1 + 4) % 4;
+                        } else if (church.phase === 'selectMember') {
+                            church.selectedMember = (church.selectedMember - 1 + party.length) % party.length;
+                        }
+                        break;
+                    case 'ArrowDown': case 's': case 'S':
+                        if (church.phase === 'menu') {
+                            church.menuIndex = (church.menuIndex + 1) % 4;
+                        } else if (church.phase === 'selectMember') {
+                            church.selectedMember = (church.selectedMember + 1) % party.length;
+                        }
+                        break;
+                    case 'ArrowLeft': case 'a': case 'A':
+                        if (church.phase === 'confirm') {
+                            church.confirmIndex = 0;
+                        }
+                        break;
+                    case 'ArrowRight': case 'd': case 'D':
+                        if (church.phase === 'confirm') {
+                            church.confirmIndex = 1;
+                        }
+                        break;
+                    case 'Enter': case ' ': case 'z':
+                        if (church.phase === 'menu') {
+                            selectChurchMenu();
+                        } else if (church.phase === 'selectMember') {
+                            confirmChurchMember();
+                        } else if (church.phase === 'confirm') {
+                            confirmChurchAction();
+                        }
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        if (church.phase === 'confirm') {
+                            church.phase = 'selectMember';
+                        } else if (church.phase === 'selectMember') {
+                            church.phase = 'menu';
+                        } else {
+                            closeChurch();
+                            startDialog(['また いつでも おこしください。']);
+                        }
+                        break;
+                }
+                e.preventDefault();
+                return;
+            }
+
             // パーティ加入確認
             if (partyJoinConfirm.active) {
                 switch (e.key) {
@@ -7652,6 +8049,20 @@
                     else if (dx > 0) inn.selectedIndex = 1;
                     return;
                 }
+                // 教会
+                if (church.active) {
+                    if (church.phase === 'menu') {
+                        if (dy < 0) church.menuIndex = (church.menuIndex - 1 + 4) % 4;
+                        else if (dy > 0) church.menuIndex = (church.menuIndex + 1) % 4;
+                    } else if (church.phase === 'selectMember') {
+                        if (dy < 0) church.selectedMember = (church.selectedMember - 1 + party.length) % party.length;
+                        else if (dy > 0) church.selectedMember = (church.selectedMember + 1) % party.length;
+                    } else if (church.phase === 'confirm') {
+                        if (dx < 0) church.confirmIndex = 0;
+                        else if (dx > 0) church.confirmIndex = 1;
+                    }
+                    return;
+                }
                 // メニュー
                 if (menu.active) {
                     if (menu.selectingEquipMember || menu.selectingItemMember) {
@@ -7764,6 +8175,14 @@
                 handleShopInput('confirm');
             } else if (inn.active) {
                 confirmInn();
+            } else if (church.active) {
+                if (church.phase === 'menu') {
+                    selectChurchMenu();
+                } else if (church.phase === 'selectMember') {
+                    confirmChurchMember();
+                } else if (church.phase === 'confirm') {
+                    confirmChurchAction();
+                }
             } else if (menu.active) {
                 // メニュー内操作
                 if (menu.selectingEquipMember) {
@@ -7816,6 +8235,15 @@
             } else if (inn.active) {
                 closeInn();
                 startDialog(['またのお越しを おまちしております。']);
+            } else if (church.active) {
+                if (church.phase === 'confirm') {
+                    church.phase = 'selectMember';
+                } else if (church.phase === 'selectMember') {
+                    church.phase = 'menu';
+                } else {
+                    closeChurch();
+                    startDialog(['また いつでも おこしください。']);
+                }
             } else if (dialog.active) {
                 closeDialog();
             } else if (menu.active) {
