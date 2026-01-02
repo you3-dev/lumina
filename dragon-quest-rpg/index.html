@@ -1830,8 +1830,8 @@
             return Math.floor(10 * Math.pow(2.2, level - 2));
         }
 
-        // レベル1-30の必要経験値テーブル（累積）
-        const MAX_LEVEL = 30;
+        // レベル1-99の必要経験値テーブル（累積）
+        const MAX_LEVEL = 99;
         const expTable = [];
         let totalExp = 0;
         for (let i = 0; i <= MAX_LEVEL; i++) {
