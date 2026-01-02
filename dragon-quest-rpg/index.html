@@ -1502,6 +1502,14 @@
             }
         };
 
+        // 最後に訪れた町（キメラのつばさ用）
+        let lastTown = {
+            mapPath: 'maps/town.json',
+            x: 9,
+            y: 9,
+            name: 'アルカディアの街'
+        };
+
         // 装備込みのステータスを計算して更新
         function updateActualStats() {
             const weapon = items[player.equipment.weapon];
@@ -1745,7 +1753,9 @@
                     storyFlags: { ...gameProgress.storyFlags },
                     areas: { ...gameProgress.areas },
                     quests: JSON.parse(JSON.stringify(gameProgress.quests))
-                }
+                },
+                // キメラのつばさ用：最後に訪れた町
+                lastTown: { ...lastTown }
             };
 
             try {
@@ -1922,6 +1932,11 @@
                     gameProgress.bossDefeated.maou = gameCleared;
                     gameProgress.storyFlags.reportedMidBossDefeat = false;
                     gameProgress.storyFlags.portalRoomUnlocked = false;
+                }
+
+                // キメラのつばさ用：最後に訪れた町を復元
+                if (data.lastTown) {
+                    lastTown = { ...data.lastTown };
                 }
 
                 // ロード後にステータスを再計算
@@ -4281,6 +4296,28 @@
                     success = true;
                     break;
 
+                case 'escape':
+                    // キメラのつばさ：町に戻る
+                    if (currentMap.type === 'town' || currentMap.type === 'castle') {
+                        message = 'ここでは 使えない！';
+                    } else {
+                        // アイテム消費
+                        removeItem(itemId, 1);
+                        if (menu.itemCursor >= player.inventory.length && menu.itemCursor > 0) {
+                            menu.itemCursor--;
+                        }
+                        // メニューを閉じてダイアログ表示、完了後にワープ
+                        closeMenu();
+                        startDialogWithCallback(
+                            [`${item.name}を使った！`, `${lastTown.name}に 飛んでいく...`],
+                            () => {
+                                performMapWarp(lastTown.mapPath, lastTown.x, lastTown.y);
+                            }
+                        );
+                        return true;
+                    }
+                    break;
+
                 case 'key':
                     // 鍵：フィールドでは使えない
                     message = 'ここでは 使えない！';
@@ -4604,6 +4641,16 @@
                     stepsSinceLastBattle = 0;
                 }
 
+                // 町・城に入ったらキメラのつばさ用に記録
+                if (currentMap.type === 'town' || currentMap.type === 'castle') {
+                    lastTown = {
+                        mapPath: targetMapPath,
+                        x: targetX,
+                        y: targetY,
+                        name: currentMap.name
+                    };
+                }
+
                 // フェードイン
                 await new Promise(resolve => setTimeout(resolve, 100));
                 fadeOverlay.classList.remove('active');
@@ -4650,6 +4697,16 @@
                 // 安全なマップ（街・城など）に入ったら歩数リセット
                 if (currentMap.encounterRate <= 0) {
                     stepsSinceLastBattle = 0;
+                }
+
+                // 町・城に入ったらキメラのつばさ用に記録
+                if (currentMap.type === 'town' || currentMap.type === 'castle') {
+                    lastTown = {
+                        mapPath: currentMapPath,
+                        x: targetX,
+                        y: targetY,
+                        name: currentMap.name
+                    };
                 }
 
                 setTimeout(() => {
