@@ -2836,8 +2836,10 @@
                 const nextLevelExp = selectedMember.level < expTable.length - 1 ? expTable[selectedMember.level + 1] : null;
                 if (nextLevelExp !== null) {
                     const needed = nextLevelExp - selectedMember.exp;
-                    ctx.fillText(`つぎのLvまで`, col1X, y);
-                    ctx.fillText(`あと ${needed}`, col2X, y);
+                    ctx.fillText(`次Lv`, col1X, y);
+                    ctx.textAlign = 'right';
+                    ctx.fillText(`${needed}`, menuX + menuWidth - 20, y);
+                    ctx.textAlign = 'left';
                 } else {
                     ctx.fillText(`さいだいレベル`, col1X, y);
                 }
