@@ -3762,6 +3762,8 @@
                     clearInterval(flashInterval);
                     showBattleMessage(enemyMessage, () => {
                         battle.phase = 'command';
+                        const currentMember = getCurrentPartyMember();
+                        battle.message = `${currentMember.name} の こうどう？`;
                     });
                 }
             }, 100);
@@ -3807,6 +3809,7 @@
                 if (caster.mp < spell.mp) {
                     showBattleMessage('MPが たりない！', () => {
                         battle.phase = 'command';
+                        battle.message = `${caster.name} の こうどう？`;
                     });
                     return;
                 }
@@ -3956,6 +3959,7 @@
                     showBattleMessage('どうぐを もっていない！', () => {
                         battle.showItems = false;
                         battle.phase = 'command';
+                        battle.message = `${caster.name} の こうどう？`;
                     });
                     return;
                 }
@@ -3970,6 +3974,7 @@
                 if (item.type === 'weapon' || item.type === 'armor') {
                     showBattleMessage('それは ここでは つかえない！', () => {
                         battle.phase = 'command';
+                        battle.message = `${caster.name} の こうどう？`;
                     });
                     return;
                 }
@@ -4198,6 +4203,8 @@
                     battle.showSpells = false;
                     battle.showItems = false;
                     battle.phase = 'command';
+                    const nextMember = getCurrentPartyMember();
+                    battle.message = `${nextMember.name} の こうどう？`;
                 } else {
                     // 全員行動済み、敵ターンへ
                     processPartyPoisonAndEnemyTurn();
@@ -4469,6 +4476,7 @@
                     battle.commandIndex = 0;
                     battle.spellIndex = 0;
                     battle.phase = 'command';
+                    battle.message = `${currentMember.name} の こうどう？`;
                 });
                 return;
             }
@@ -4476,6 +4484,7 @@
             battle.commandIndex = 0;
             battle.spellIndex = 0;
             battle.phase = 'command';
+            battle.message = `${currentMember.name} の こうどう？`;
         }
 
         function tryEscape() {
@@ -6627,6 +6636,8 @@
                     clearInterval(flashInterval);
                     showBattleMessage(`${monsterData.name} が あらわれた！`, () => {
                         battle.phase = 'command';
+                        const currentMember = getCurrentPartyMember();
+                        battle.message = `${currentMember.name} の こうどう？`;
                     });
                 }
             }, 80);
@@ -6686,6 +6697,8 @@
                             screenShake.duration = 30;
                             showBattleMessage('くらえ！ この力を！', () => {
                                 battle.phase = 'command';
+                                const currentMember = getCurrentPartyMember();
+                                battle.message = `${currentMember.name} の こうどう？`;
                             });
                         });
                     });
