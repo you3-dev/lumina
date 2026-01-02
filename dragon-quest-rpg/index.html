@@ -1599,10 +1599,10 @@
         }
 
         // レベルアップに必要な経験値（指数関数的増加）
-        // 計算式: Math.floor(10 * Math.pow(2.5, level-1))
+        // 計算式: Math.floor(10 * Math.pow(2.2, level-1))
         function getExpForLevel(level) {
             if (level <= 1) return 0;
-            return Math.floor(10 * Math.pow(2.5, level - 2));
+            return Math.floor(10 * Math.pow(2.2, level - 2));
         }
 
         // レベル1-10の必要経験値テーブル（累積）
