@@ -2124,7 +2124,11 @@
             executingActionIndex: 0,  // 実行中のアクションインデックス
             // 味方選択用（回復呪文のターゲットなど）
             isSelectingAlly: false,
-            allyTargetIndex: 0
+            allyTargetIndex: 0,
+            // 素早さベース行動順システム
+            actionQueue: [],           // 行動順のキャラクター配列 [{type: 'player'/'enemy', index, speed, actor}, ...]
+            currentActionIndex: 0,     // 現在の行動者インデックス
+            turnPhase: 'command'       // 'command' (コマンド入力) / 'execute' (実行中)
         };
 
         // バフの最大重ねがけ回数
@@ -4717,22 +4721,9 @@
             const poisonResult = processPoisonDamage(currentMember, currentMember.name, currentMember.maxHp);
 
             const continueAfterPoison = () => {
-                // 次のパーティメンバーがいるかチェック
-                const nextIndex = getNextAlivePartyIndex(battle.currentPartyIndex);
-                if (nextIndex !== -1) {
-                    // 次のメンバーのコマンド入力へ
-                    battle.currentPartyIndex = nextIndex;
-                    battle.commandIndex = 0;
-                    battle.spellIndex = 0;
-                    battle.showSpells = false;
-                    battle.showItems = false;
-                    battle.phase = 'command';
-                    const nextMember = getCurrentPartyMember();
-                    battle.message = `${nextMember.name} の こうどう？`;
-                } else {
-                    // 全員行動済み、敵ターンへ
-                    processPartyPoisonAndEnemyTurn();
-                }
+                // 次の行動者へ進む
+                battle.currentActionIndex++;
+                processNextAction();
             };
 
             if (poisonResult) {
@@ -4954,12 +4945,14 @@
                 if (poisonResult) {
                     showBattleMessage(poisonResult.message, () => {
                         if (checkBattleEnd()) return;
-                        nextEnemyTurn();
+                        battle.currentActionIndex++;
+                        processNextAction();
                     });
                     return;
                 }
             }
-            nextEnemyTurn();
+            battle.currentActionIndex++;
+            processNextAction();
         }
 
         // 次の敵のターンへ進む
@@ -4979,50 +4972,116 @@
             processCurrentEnemyTurnEnd();
         }
 
+        // 行動順キューを生成（ターン開始時に呼び出し）
+        function generateActionQueue() {
+            const queue = [];
+
+            // 味方を追加
+            party.forEach((member, idx) => {
+                if (member.isAlive && member.hp > 0) {
+                    let speed = member.speed || 6;
+                    // ピオリムボーナス（1段階=+50%, 2段階=+100%）
+                    if (battle.buffs.speedUp > 0) {
+                        speed = Math.floor(speed * (1 + battle.buffs.speedUp * 0.5));
+                    }
+                    // ランダム要素（±20%）
+                    speed = Math.floor(speed * (0.8 + Math.random() * 0.4));
+                    queue.push({ type: 'player', index: idx, speed, actor: member });
+                }
+            });
+
+            // 敵を追加
+            battle.enemies.forEach((enemy, idx) => {
+                if (enemy.currentHp > 0) {
+                    let speed = enemy.speed || 5;
+                    // ランダム要素（±20%）
+                    speed = Math.floor(speed * (0.8 + Math.random() * 0.4));
+                    queue.push({ type: 'enemy', index: idx, speed, actor: enemy });
+                }
+            });
+
+            // 素早さ降順でソート
+            queue.sort((a, b) => b.speed - a.speed);
+
+            battle.actionQueue = queue;
+            battle.currentActionIndex = 0;
+        }
+
+        // 次の行動者を処理する関数
+        function processNextAction() {
+            // キューが空または全員行動済みならターン終了
+            if (battle.currentActionIndex >= battle.actionQueue.length) {
+                // 新しいターン開始
+                startNewTurn();
+                return;
+            }
+
+            const current = battle.actionQueue[battle.currentActionIndex];
+
+            // 死亡チェック
+            if (current.type === 'player') {
+                const member = party[current.index];
+                if (!member.isAlive || member.hp <= 0) {
+                    battle.currentActionIndex++;
+                    processNextAction();
+                    return;
+                }
+                // 眠りチェック
+                if (member.status.sleep > 0) {
+                    const wakeResult = checkWakeUp(member, member.name);
+                    if (!wakeResult.awake) {
+                        showBattleMessage(wakeResult.message, () => {
+                            battle.currentActionIndex++;
+                            processNextAction();
+                        });
+                        return;
+                    }
+                    // 目覚めたメッセージがあれば表示してから行動
+                    if (wakeResult.message) {
+                        showBattleMessage(wakeResult.message, () => {
+                            // コマンド入力へ
+                            battle.currentPartyIndex = current.index;
+                            battle.phase = 'command';
+                            battle.commandIndex = 0;
+                            battle.message = `${member.name} の こうどう？`;
+                        });
+                        return;
+                    }
+                }
+                // コマンド入力へ
+                battle.currentPartyIndex = current.index;
+                battle.phase = 'command';
+                battle.commandIndex = 0;
+                battle.showSpells = false;
+                battle.showItems = false;
+                battle.message = `${member.name} の こうどう？`;
+            } else {
+                // 敵の行動
+                const enemy = battle.enemies[current.index];
+                if (enemy.currentHp <= 0) {
+                    battle.currentActionIndex++;
+                    processNextAction();
+                    return;
+                }
+                battle.currentEnemyIndex = current.index;
+                battle.phase = 'enemyTurn';
+                processCurrentEnemyTurn();
+            }
+        }
+
+        // 新しいターン開始関数
+        function startNewTurn() {
+            // バフ持続ターン減少などがあればここで
+            // 次のターンを開始
+            startPlayerTurn();
+        }
+
         // プレイヤーターン開始
         function startPlayerTurn() {
-            // パーティインデックスをリセット（最初の生存メンバーから開始）
-            battle.currentPartyIndex = 0;
-            // 最初の行動可能なメンバーを探す
-            while (battle.currentPartyIndex < party.length) {
-                const member = party[battle.currentPartyIndex];
-                if (member.isAlive && member.hp > 0) {
-                    break;
-                }
-                battle.currentPartyIndex++;
-            }
-
-            if (battle.currentPartyIndex >= party.length) {
-                // 全員戦闘不能（通常はここに来ないはず）
-                battleLose();
-                return;
-            }
-
-            const currentMember = getCurrentPartyMember();
-
-            // 眠りチェック
-            const wakeResult = checkWakeUp(currentMember, currentMember.name);
-            if (!wakeResult.awake) {
-                showBattleMessage(wakeResult.message, () => {
-                    // 眠っている場合は行動をスキップして次のメンバーへ
-                    processTurnEnd();
-                });
-                return;
-            }
-            if (wakeResult.message) {
-                showBattleMessage(wakeResult.message, () => {
-                    battle.commandIndex = 0;
-                    battle.spellIndex = 0;
-                    battle.phase = 'command';
-                    battle.message = `${currentMember.name} の こうどう？`;
-                });
-                return;
-            }
-
-            battle.commandIndex = 0;
-            battle.spellIndex = 0;
-            battle.phase = 'command';
-            battle.message = `${currentMember.name} の こうどう？`;
+            // 行動順キューを生成
+            generateActionQueue();
+            // 最初の行動者から開始
+            processNextAction();
         }
 
         function tryEscape() {
