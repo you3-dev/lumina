@@ -6382,7 +6382,10 @@
             }
 
             // ボス戦前の会話→戦闘開始
-            startDialogWithCallback(npc.messages, () => {
+            const bossMessages = (npc.messages && npc.messages.length > 0)
+                ? npc.messages
+                : ['......。'];
+            startDialogWithCallback(bossMessages, () => {
                 startBossBattle(bossId);
             });
         }
