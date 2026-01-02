@@ -7843,24 +7843,33 @@
             const bossName = battle.enemy.displayName || battle.enemy.name || 'ボス';
 
             if (skillId === 'attack') {
-                // 通常攻撃
-                let def = getPlayerDef();
+                // 通常攻撃 - ランダムなパーティメンバーをターゲット
+                const target = getRandomAlivePartyMember();
+                if (!target) {
+                    checkBattleEnd();
+                    return;
+                }
+
+                let def = target.actualDef;
                 // スクルトによる防御力アップ
                 if (battle.buffs.defenseUp > 0) {
                     const defenseMultiplier = 1 + battle.buffs.defenseUp * 0.25;
                     def = Math.floor(def * defenseMultiplier);
                 }
                 const damage = Math.max(1, Math.floor(battle.enemy.atk / 2 - def / 4 + Math.random() * 10));
-                player.hp -= damage;
+                target.hp -= damage;
 
                 screenShake.active = true;
                 screenShake.intensity = 5;
                 screenShake.duration = 15;
 
-                showBattleMessage(`${bossName} の こうげき！ ${damage} の ダメージ！`, () => {
-                    if (player.hp <= 0) {
-                        player.hp = 0;
-                        battleLose();
+                showBattleMessage(`${bossName} の こうげき！ ${target.name} に ${damage} の ダメージ！`, () => {
+                    if (target.hp <= 0) {
+                        target.hp = 0;
+                        target.isAlive = false;
+                        showBattleMessage(`${target.name} は たおれた！`, () => {
+                            checkBattleEnd() || callback();
+                        });
                     } else {
                         callback();
                     }
@@ -7891,12 +7900,21 @@
                             callback();
                         });
                     } else if (skill.type === 'attack') {
+                        // ランダムなパーティメンバーをターゲット
+                        const target = getRandomAlivePartyMember();
+                        if (!target) {
+                            checkBattleEnd();
+                            return;
+                        }
                         const damage = skill.power + Math.floor(Math.random() * 15);
-                        player.hp -= damage;
-                        showBattleMessage(`ゆうしゃ に ${damage} の ダメージ！`, () => {
-                            if (player.hp <= 0) {
-                                player.hp = 0;
-                                battleLose();
+                        target.hp -= damage;
+                        showBattleMessage(`${target.name} に ${damage} の ダメージ！`, () => {
+                            if (target.hp <= 0) {
+                                target.hp = 0;
+                                target.isAlive = false;
+                                showBattleMessage(`${target.name} は たおれた！`, () => {
+                                    checkBattleEnd() || callback();
+                                });
                             } else {
                                 callback();
                             }
