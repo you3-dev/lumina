@@ -3961,6 +3961,10 @@
 
                     currentMember.spells.forEach((spellId, i) => {
                         const spell = spells[spellId];
+                        if (!spell) {
+                            console.error('Unknown spell:', spellId, 'for member:', currentMember.name, 'spells:', currentMember.spells);
+                            return;
+                        }
                         const y = spellY + 20 + i * tileSize * 0.6;
                         const canUse = currentMember.mp >= spell.mp;
 
