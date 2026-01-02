@@ -3952,16 +3952,17 @@
 
                 // 呪文サブメニュー
                 if (battle.showSpells) {
+                    const currentMember = getCurrentPartyMember();
                     const spellW = cmdW * 1.1;
-                    const spellH = Math.max(tileSize * 2.5, tileSize * 0.6 * player.spells.length + 30);
+                    const spellH = Math.max(tileSize * 2.5, tileSize * 0.6 * currentMember.spells.length + 30);
                     const spellX = cmdX - spellW - 10;
                     const spellY = cmdY;
                     drawWindow(spellX, spellY, spellW, spellH);
 
-                    player.spells.forEach((spellId, i) => {
+                    currentMember.spells.forEach((spellId, i) => {
                         const spell = spells[spellId];
                         const y = spellY + 20 + i * tileSize * 0.6;
-                        const canUse = player.mp >= spell.mp;
+                        const canUse = currentMember.mp >= spell.mp;
 
                         // 選択カーソル
                         if (i === battle.spellIndex) {
