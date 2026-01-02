@@ -1090,33 +1090,33 @@
         // 呪文データ
         // ========================================
         const spells = {
-            // 回復呪文
-            hoimi: { id: 'hoimi', name: 'ホイミ', mp: 3, type: 'heal', power: 30, learnLevel: 2, element: 'heal', flashColor: 'rgba(0, 255, 100, 0.5)' },
-            behoimi: { id: 'behoimi', name: 'ベホイミ', mp: 6, type: 'heal', power: 80, learnLevel: 12, element: 'heal', flashColor: 'rgba(0, 255, 100, 0.6)' },
-            behoma: { id: 'behoma', name: 'ベホマ', mp: 12, type: 'heal', power: 999, learnLevel: 32, element: 'heal', flashColor: 'rgba(0, 255, 100, 0.8)' },
-            behomazun: { id: 'behomazun', name: 'ベホマズン', mp: 40, type: 'heal', power: 999, learnLevel: 60, element: 'heal', flashColor: 'rgba(0, 255, 100, 1.0)' },
-            // 復活呪文
-            zaoraru: { id: 'zaoraru', name: 'ザオラル', mp: 10, type: 'revive', successRate: 0.5, learnLevel: 22, element: 'heal', flashColor: 'rgba(255, 255, 200, 0.7)' },
-            // 攻撃呪文（単体）
-            mera: { id: 'mera', name: 'メラ', mp: 2, type: 'attack', target: 'single', power: 15, learnLevel: 3, element: 'fire', flashColor: 'rgba(255, 100, 0, 0.6)' },
-            merami: { id: 'merami', name: 'メラミ', mp: 8, type: 'attack', target: 'single', power: 80, learnLevel: 28, element: 'fire', flashColor: 'rgba(255, 100, 0, 0.8)' },
-            merazoma: { id: 'merazoma', name: 'メラゾーマ', mp: 15, type: 'attack', target: 'single', power: 200, learnLevel: 45, element: 'fire', flashColor: 'rgba(255, 50, 0, 1.0)' },
-            hyado: { id: 'hyado', name: 'ヒャド', mp: 4, type: 'attack', target: 'single', power: 25, learnLevel: 6, element: 'ice', flashColor: 'rgba(100, 200, 255, 0.6)' },
-            // 攻撃呪文（全体）
-            gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', target: 'all', power: 35, learnLevel: 8, element: 'fire', flashColor: 'rgba(255, 255, 100, 0.6)' },
-            begirama: { id: 'begirama', name: 'ベギラマ', mp: 10, type: 'attack', target: 'all', power: 70, learnLevel: 18, element: 'fire', flashColor: 'rgba(255, 200, 50, 0.8)' },
-            begiragon: { id: 'begiragon', name: 'ベギラゴン', mp: 20, type: 'attack', target: 'all', power: 150, learnLevel: 40, element: 'fire', flashColor: 'rgba(255, 150, 0, 1.0)' },
-            gigadein: { id: 'gigadein', name: 'ギガデイン', mp: 30, type: 'attack', target: 'all', power: 300, learnLevel: 50, element: 'light', flashColor: 'rgba(255, 255, 100, 1.0)' },
-            minadein: { id: 'minadein', name: 'ミナデイン', mp: 50, type: 'attack', target: 'all', power: 1000, learnLevel: 99, element: 'light', flashColor: 'rgba(255, 255, 255, 1.0)' },
-            // 状態異常呪文
-            rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 5, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
-            manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 9, element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
+            // 回復呪文（勇者・僧侶系）
+            hoimi: { id: 'hoimi', name: 'ホイミ', mp: 3, type: 'heal', power: 30, learnLevel: 2, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(0, 255, 100, 0.5)' },
+            behoimi: { id: 'behoimi', name: 'ベホイミ', mp: 6, type: 'heal', power: 80, learnLevel: 12, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(0, 255, 100, 0.6)' },
+            behoma: { id: 'behoma', name: 'ベホマ', mp: 12, type: 'heal', power: 999, learnLevel: 32, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(0, 255, 100, 0.8)' },
+            behomazun: { id: 'behomazun', name: 'ベホマズン', mp: 40, type: 'heal', power: 999, learnLevel: 60, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(0, 255, 100, 1.0)' },
+            // 復活呪文（勇者）
+            zaoraru: { id: 'zaoraru', name: 'ザオラル', mp: 10, type: 'revive', successRate: 0.5, learnLevel: 22, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(255, 255, 200, 0.7)' },
+            // 攻撃呪文（単体）- 魔法使い系
+            mera: { id: 'mera', name: 'メラ', mp: 2, type: 'attack', target: 'single', power: 15, learnLevel: 3, learnableBy: ['hero', 'mage'], element: 'fire', flashColor: 'rgba(255, 100, 0, 0.6)' },
+            merami: { id: 'merami', name: 'メラミ', mp: 8, type: 'attack', target: 'single', power: 80, learnLevel: 28, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 100, 0, 0.8)' },
+            merazoma: { id: 'merazoma', name: 'メラゾーマ', mp: 15, type: 'attack', target: 'single', power: 200, learnLevel: 45, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 50, 0, 1.0)' },
+            hyado: { id: 'hyado', name: 'ヒャド', mp: 4, type: 'attack', target: 'single', power: 25, learnLevel: 6, learnableBy: ['mage'], element: 'ice', flashColor: 'rgba(100, 200, 255, 0.6)' },
+            // 攻撃呪文（全体）- 魔法使い系
+            gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', target: 'all', power: 35, learnLevel: 8, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 255, 100, 0.6)' },
+            begirama: { id: 'begirama', name: 'ベギラマ', mp: 10, type: 'attack', target: 'all', power: 70, learnLevel: 18, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 200, 50, 0.8)' },
+            begiragon: { id: 'begiragon', name: 'ベギラゴン', mp: 20, type: 'attack', target: 'all', power: 150, learnLevel: 40, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 150, 0, 1.0)' },
+            gigadein: { id: 'gigadein', name: 'ギガデイン', mp: 30, type: 'attack', target: 'all', power: 300, learnLevel: 50, learnableBy: ['hero'], element: 'light', flashColor: 'rgba(255, 255, 100, 1.0)' },
+            minadein: { id: 'minadein', name: 'ミナデイン', mp: 50, type: 'attack', target: 'all', power: 1000, learnLevel: 99, learnableBy: ['hero'], element: 'light', flashColor: 'rgba(255, 255, 255, 1.0)' },
+            // 状態異常呪文 - 魔法使い系
+            rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 5, learnableBy: ['mage'], element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
+            manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 9, learnableBy: ['mage'], element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
             // 補助呪文
-            sukuruto: { id: 'sukuruto', name: 'スクルト', mp: 4, type: 'buff', buffType: 'defense', buffRate: 1.5, learnLevel: 25, element: 'buff', flashColor: 'rgba(100, 200, 255, 0.5)' },
-            baikiruto: { id: 'baikiruto', name: 'バイキルト', mp: 6, type: 'buff', buffType: 'attack', buffRate: 2.0, learnLevel: 35, element: 'buff', flashColor: 'rgba(255, 100, 100, 0.6)' },
+            sukuruto: { id: 'sukuruto', name: 'スクルト', mp: 4, type: 'buff', buffType: 'defense', buffRate: 1.5, learnLevel: 25, learnableBy: ['hero'], element: 'buff', flashColor: 'rgba(100, 200, 255, 0.5)' },
+            baikiruto: { id: 'baikiruto', name: 'バイキルト', mp: 6, type: 'buff', buffType: 'attack', buffRate: 2.0, learnLevel: 35, learnableBy: ['mage'], element: 'buff', flashColor: 'rgba(255, 100, 100, 0.6)' },
             // 移動呪文
-            riremito: { id: 'riremito', name: 'リレミト', mp: 4, type: 'escape', learnLevel: 12, element: 'move', flashColor: 'rgba(200, 200, 255, 0.5)' },
-            rura: { id: 'rura', name: 'ルーラ', mp: 8, type: 'warp', learnLevel: 15, element: 'move', flashColor: 'rgba(100, 200, 255, 0.7)' }
+            riremito: { id: 'riremito', name: 'リレミト', mp: 4, type: 'escape', learnLevel: 12, learnableBy: ['hero', 'mage'], element: 'move', flashColor: 'rgba(200, 200, 255, 0.5)' },
+            rura: { id: 'rura', name: 'ルーラ', mp: 8, type: 'warp', learnLevel: 15, learnableBy: ['hero'], element: 'move', flashColor: 'rgba(100, 200, 255, 0.7)' }
         };
 
         // 状態異常の定義
@@ -1731,8 +1731,12 @@
         };
 
         // 装備込みのステータスを計算して更新（全パーティメンバー）
-        function updateActualStats() {
-            party.forEach(member => updateMemberActualStats(member));
+        function updateActualStats(member = null) {
+            if (member) {
+                updateMemberActualStats(member);
+            } else {
+                party.forEach(m => updateMemberActualStats(m));
+            }
         }
 
         // 装備込みのステータスを取得
@@ -1864,6 +1868,8 @@
             memberCursor: 0, // 選択中のパーティメンバー
             selectingMember: false, // メンバー選択モード（呪文/アイテム使用対象選択）
             selectingSpellCaster: false, // 呪文詠唱者選択モード
+            selectingEquipMember: false, // 装備対象メンバー選択モード
+            selectingItemMember: false, // アイテム使用対象メンバー選択モード
             targetMemberCursor: 0 // 使用対象のメンバー
         };
 
@@ -2182,8 +2188,8 @@
                     party.forEach(member => {
                         const weapon = items[member.equipment?.weapon];
                         const armor = items[member.equipment?.armor];
-                        member.actualAtk = member.baseAtk + (weapon ? weapon.atk : 0);
-                        member.actualDef = member.baseDef + (armor ? armor.def : 0);
+                        member.actualAtk = member.baseAtk + (weapon ? weapon.value : 0);
+                        member.actualDef = member.baseDef + (armor ? armor.value : 0);
                     });
                 } else {
                     // 旧形式（単一プレイヤー）のロード
@@ -2987,6 +2993,71 @@
                             });
                         }
                     }
+
+                    // 装備対象メンバー選択ウィンドウ
+                    if (menu.selectingEquipMember) {
+                        const slot = player.inventory[menu.itemCursor];
+                        const selectedItem = slot ? items[slot.id] : null;
+                        if (selectedItem) {
+                            const equipMenuWidth = tileSize * 4;
+                            const equipMenuHeight = tileSize * 0.5 * party.length + tileSize * 0.8;
+                            const equipMenuX = menuX + menuWidth - equipMenuWidth - 20;
+                            const equipMenuY = itemStartY + menu.itemCursor * lineHeight - 5;
+
+                            drawWindow(equipMenuX, equipMenuY, equipMenuWidth, equipMenuHeight);
+
+                            ctx.font = `${tileSize * 0.32}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                            ctx.textAlign = 'left';
+                            ctx.fillStyle = '#ffd700';
+                            ctx.fillText('だれに？', equipMenuX + 12, equipMenuY + 18);
+
+                            party.forEach((member, i) => {
+                                const isSelected = (i === menu.targetMemberCursor);
+                                const canEquip = selectedItem.equippable ? selectedItem.equippable.includes(member.job) : true;
+
+                                if (isSelected) {
+                                    ctx.fillStyle = canEquip ? '#ffd700' : '#888';
+                                } else {
+                                    ctx.fillStyle = canEquip ? '#fff' : '#666';
+                                }
+                                const cursor = isSelected ? '▶' : ' ';
+                                const equipMark = canEquip ? '' : '×';
+                                ctx.fillText(`${cursor}${member.name}${equipMark}`, equipMenuX + 12, equipMenuY + 18 + (i + 1) * (tileSize * 0.5));
+                            });
+                        }
+                    }
+
+                    // アイテム使用対象メンバー選択ウィンドウ
+                    if (menu.selectingItemMember) {
+                        const slot = player.inventory[menu.itemCursor];
+                        const selectedItem = slot ? items[slot.id] : null;
+                        if (selectedItem) {
+                            const itemMenuWidth = tileSize * 4;
+                            const itemMenuHeight = tileSize * 0.5 * party.length + tileSize * 0.8;
+                            const itemMenuX = menuX + menuWidth - itemMenuWidth - 20;
+                            const itemMenuY = itemStartY + menu.itemCursor * lineHeight - 5;
+
+                            drawWindow(itemMenuX, itemMenuY, itemMenuWidth, itemMenuHeight);
+
+                            ctx.font = `${tileSize * 0.32}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                            ctx.textAlign = 'left';
+                            ctx.fillStyle = '#ffd700';
+                            ctx.fillText('だれに？', itemMenuX + 12, itemMenuY + 18);
+
+                            party.forEach((member, i) => {
+                                const isSelected = (i === menu.targetMemberCursor);
+                                const isDead = !member.isAlive || member.hp <= 0;
+
+                                if (isSelected) {
+                                    ctx.fillStyle = isDead ? '#888' : '#ffd700';
+                                } else {
+                                    ctx.fillStyle = isDead ? '#666' : '#fff';
+                                }
+                                const cursor = isSelected ? '▶' : ' ';
+                                ctx.fillText(`${cursor}${member.name}`, itemMenuX + 12, itemMenuY + 18 + (i + 1) * (tileSize * 0.5));
+                            });
+                        }
+                    }
                 }
             } else if (menu.mode === 'map') {
                 // ちず（マップ画面への案内）
@@ -3463,6 +3534,15 @@
                     ctx.fillRect(statusX + 5, rowY - 2, statusW - 10, memberRowH - 2);
                 }
 
+                // 味方選択中のカーソル表示
+                if (battle.isSelectingAlly && idx === battle.allyTargetIndex) {
+                    ctx.fillStyle = 'rgba(0, 255, 100, 0.3)';
+                    ctx.fillRect(statusX + 5, rowY - 2, statusW - 10, memberRowH - 2);
+                    ctx.fillStyle = '#ffd700';
+                    ctx.font = `${tileSize * 0.4}px serif`;
+                    ctx.fillText('▶', statusX + 2, rowY);
+                }
+
                 // 戦闘不能は暗く表示
                 ctx.fillStyle = isDead ? '#666' : '#fff';
 
@@ -3839,6 +3919,14 @@
                     }
                 }
 
+                // 回復呪文の場合はパーティメンバーが複数いれば味方選択
+                if (spell.type === 'heal' && party.length > 1) {
+                    battle.showSpells = false;
+                    startAllySelection('spell', spellId);
+                    battle.message = 'だれに つかう？';
+                    return;
+                }
+
                 caster.mp -= spell.mp;
                 battle.showSpells = false;
                 battle.phase = 'playerTurn';
@@ -3851,7 +3939,7 @@
 
                 showBattleMessage(`${caster.name} は ${spell.name} を となえた！`, () => {
                     if (spell.type === 'heal') {
-                        // 回復呪文：自分自身を回復（将来的には味方選択を追加）
+                        // 回復呪文：自分自身を回復（パーティが1人の場合）
                         const healAmount = spell.power;
                         caster.hp = Math.min(caster.maxHp, caster.hp + healAmount);
                         showBattleMessage(`${caster.name} の HPが ${healAmount} かいふくした！`, () => {
@@ -4073,6 +4161,54 @@
         function cancelTargetSelection() {
             battle.isSelectingTarget = false;
             battle.pendingAction = null;
+            battle.message = '';
+        }
+
+        // 味方選択開始（回復呪文など）
+        function startAllySelection(actionType, spellId = null) {
+            battle.isSelectingAlly = true;
+            battle.allyTargetIndex = 0;
+            battle.pendingAction = { type: actionType, spellId };
+        }
+
+        // 味方選択確定
+        function confirmAllySelection() {
+            battle.isSelectingAlly = false;
+            const action = battle.pendingAction;
+            battle.pendingAction = null;
+
+            if (action.type === 'spell') {
+                const spell = spells[action.spellId];
+                const caster = getCurrentPartyMember();
+                const target = party[battle.allyTargetIndex];
+
+                caster.mp -= spell.mp;
+                battle.showSpells = false;
+                battle.phase = 'playerTurn';
+
+                // フラッシュ演出
+                if (spell.flashColor) {
+                    const isUltimate = ULTIMATE_SPELLS.includes(spell.id);
+                    startSpellFlash(spell.flashColor, isUltimate);
+                }
+
+                showBattleMessage(`${caster.name} は ${spell.name} を となえた！`, () => {
+                    if (spell.type === 'heal') {
+                        const healAmount = spell.power;
+                        target.hp = Math.min(target.maxHp, target.hp + healAmount);
+                        showBattleMessage(`${target.name} の HPが ${healAmount} かいふくした！`, () => {
+                            processTurnEnd();
+                        });
+                    }
+                });
+            }
+        }
+
+        // 味方選択キャンセル
+        function cancelAllySelection() {
+            battle.isSelectingAlly = false;
+            battle.pendingAction = null;
+            battle.showSpells = true;
             battle.message = '';
         }
 
@@ -4686,7 +4822,9 @@
             const newSpells = [];
             for (const spellId in spells) {
                 const spell = spells[spellId];
-                if (spell.learnLevel === level && !player.spells.includes(spellId)) {
+                // ジョブに応じた呪文習得チェック
+                const canLearn = spell.learnableBy && spell.learnableBy.includes(player.job);
+                if (spell.learnLevel === level && canLearn && !player.spells.includes(spellId)) {
                     newSpells.push(spellId);
                 }
             }
@@ -4756,8 +4894,9 @@
             const newSpells = [];
             for (const spellId in spells) {
                 const spell = spells[spellId];
-                // ジョブに応じた呪文習得（将来的な拡張用）
-                if (spell.learnLevel === level && !member.spells.includes(spellId)) {
+                // ジョブに応じた呪文習得チェック
+                const canLearn = spell.learnableBy && spell.learnableBy.includes(member.job);
+                if (spell.learnLevel === level && canLearn && !member.spells.includes(spellId)) {
                     member.spells.push(spellId);
                     newSpells.push(spell);
                 }
@@ -5228,6 +5367,8 @@
             menu.showItemAction = false;
             menu.itemActionIndex = 0;
             menu.selectingMember = false;
+            menu.selectingEquipMember = false;
+            menu.selectingItemMember = false;
             menu.memberCursor = 0;
             menu.targetMemberCursor = 0;
         }
@@ -5247,13 +5388,31 @@
             switch (menu.itemActionIndex) {
                 case 0: // つかう or そうびする
                     if (isEquipment) {
-                        // 装備する
-                        equipItem(selectedItemId);
-                        closeMenu();
-                        startDialog([`${selectedItem.name}を そうびした！`]);
+                        // パーティが複数いる場合は装備対象を選択
+                        if (party.length > 1) {
+                            menu.selectingEquipMember = true;
+                            menu.targetMemberCursor = 0;
+                            menu.showItemAction = false;
+                        } else {
+                            // 装備する（1人の場合は直接）
+                            const result = equipItem(selectedItemId);
+                            closeMenu();
+                            if (result) {
+                                startDialog([`${selectedItem.name}を そうびした！`]);
+                            } else {
+                                startDialog([`${player.name}は ${selectedItem.name}を そうびできない！`]);
+                            }
+                        }
                     } else {
-                        // 使う
-                        useItem(selectedItemId);
+                        // 使う - 対象選択が必要なアイテムかチェック
+                        const needsTarget = (selectedItem.type === 'heal' || selectedItem.type === 'cure');
+                        if (needsTarget && party.length > 1) {
+                            menu.selectingItemMember = true;
+                            menu.targetMemberCursor = 0;
+                            menu.showItemAction = false;
+                        } else {
+                            useItem(selectedItemId);
+                        }
                     }
                     break;
 
@@ -5274,6 +5433,39 @@
                     menu.showItemAction = false;
                     break;
             }
+        }
+
+        // 装備対象メンバー確定
+        function confirmEquipMember() {
+            const slot = player.inventory[menu.itemCursor];
+            if (!slot) return;
+            const selectedItemId = slot.id;
+            const selectedItem = items[selectedItemId];
+            if (!selectedItem) return;
+
+            const targetMember = party[menu.targetMemberCursor];
+            const result = equipItem(selectedItemId, targetMember);
+            menu.selectingEquipMember = false;
+            closeMenu();
+
+            if (result) {
+                startDialog([`${targetMember.name}は ${selectedItem.name}を そうびした！`]);
+            } else {
+                startDialog([`${targetMember.name}は ${selectedItem.name}を そうびできない！`]);
+            }
+        }
+
+        // アイテム使用対象メンバー確定
+        function confirmItemMember() {
+            const slot = player.inventory[menu.itemCursor];
+            if (!slot) return;
+            const selectedItemId = slot.id;
+            const selectedItem = items[selectedItemId];
+            if (!selectedItem) return;
+
+            const targetMember = party[menu.targetMemberCursor];
+            menu.selectingItemMember = false;
+            useItem(selectedItemId, targetMember);
         }
 
         // ========================================
@@ -5483,7 +5675,7 @@
         }
 
         // アイテム使用
-        function useItem(itemId) {
+        function useItem(itemId, targetMember = null) {
             const item = items[itemId];
             if (!item) return false;
 
@@ -5492,30 +5684,32 @@
                 return false;
             }
 
+            // ターゲットが指定されていない場合はプレイヤー
+            const target = targetMember || player;
             let message = '';
             let success = false;
 
             switch (item.type) {
                 case 'heal':
                     // HP回復アイテム
-                    if (player.hp >= player.maxHp) {
-                        message = 'HPは まんたんだ！';
+                    if (target.hp >= target.maxHp) {
+                        message = `${target.name}の HPは まんたんだ！`;
                     } else {
-                        const healAmount = Math.min(item.value, player.maxHp - player.hp);
-                        player.hp += healAmount;
-                        message = `${item.name}を使った！\nHPが ${healAmount} 回復した！`;
+                        const healAmount = Math.min(item.value, target.maxHp - target.hp);
+                        target.hp += healAmount;
+                        message = `${target.name}に ${item.name}を使った！\nHPが ${healAmount} 回復した！`;
                         success = true;
                     }
                     break;
 
                 case 'cure':
                     // 状態異常回復（毒など）
-                    if (player.status && player.status.poison > 0) {
-                        player.status.poison = 0;
-                        message = `${item.name}を使った！\n毒が 治った！`;
+                    if (target.status && target.status.poison > 0) {
+                        target.status.poison = 0;
+                        message = `${target.name}に ${item.name}を使った！\n毒が 治った！`;
                         success = true;
                     } else {
-                        message = '毒に かかっていない！';
+                        message = `${target.name}は 毒に かかっていない！`;
                     }
                     break;
 
@@ -5862,31 +6056,40 @@
             ruraState.active = false;
         }
 
-        function equipItem(itemId) {
+        function equipItem(itemId, member = null) {
             const item = items[itemId];
-            if (!item) return;
+            if (!item) return false;
+
+            // 指定されたメンバーまたはデフォルトはplayer
+            const target = member || player;
+
+            // 装備可能かチェック
+            if (item.equippable && !item.equippable.includes(target.job)) {
+                return false; // このジョブは装備できない
+            }
 
             if (item.type === 'weapon') {
                 // 現在の武器をインベントリに戻す（初期装備でない場合）
-                if (player.equipment.weapon && player.equipment.weapon !== 10) {
-                    addItem(player.equipment.weapon, 1);
+                if (target.equipment.weapon && target.equipment.weapon !== 10) {
+                    addItem(target.equipment.weapon, 1);
                 }
                 // 新しい武器を装備
-                player.equipment.weapon = itemId;
+                target.equipment.weapon = itemId;
                 // インベントリから削除
                 removeItem(itemId, 1);
             } else if (item.type === 'armor') {
                 // 現在の防具をインベントリに戻す（初期装備でない場合）
-                if (player.equipment.armor && player.equipment.armor !== 20) {
-                    addItem(player.equipment.armor, 1);
+                if (target.equipment.armor && target.equipment.armor !== 20) {
+                    addItem(target.equipment.armor, 1);
                 }
                 // 新しい防具を装備
-                player.equipment.armor = itemId;
+                target.equipment.armor = itemId;
                 // インベントリから削除
                 removeItem(itemId, 1);
             }
             // 装備変更後、ステータスを再計算
-            updateActualStats();
+            updateActualStats(target);
+            return true;
         }
 
         // ========================================
@@ -6958,6 +7161,26 @@
                     return;
                 }
 
+                // 味方選択モード（回復呪文など）
+                if (battle.isSelectingAlly) {
+                    switch (e.key) {
+                        case 'ArrowUp': case 'w': case 'W':
+                            battle.allyTargetIndex = (battle.allyTargetIndex + party.length - 1) % party.length;
+                            break;
+                        case 'ArrowDown': case 's': case 'S':
+                            battle.allyTargetIndex = (battle.allyTargetIndex + 1) % party.length;
+                            break;
+                        case 'Enter': case ' ': case 'z':
+                            confirmAllySelection();
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            cancelAllySelection();
+                            break;
+                    }
+                    e.preventDefault();
+                    return;
+                }
+
                 if (battle.phase === 'command') {
                     if (battle.showSpells) {
                         switch (e.key) {
@@ -7112,7 +7335,41 @@
 
             // フィールド
             if (menu.active) {
-                if (menu.showItemAction) {
+                if (menu.selectingEquipMember) {
+                    // 装備対象メンバー選択モード
+                    switch (e.key) {
+                        case 'ArrowUp': case 'w': case 'W':
+                            menu.targetMemberCursor = (menu.targetMemberCursor + party.length - 1) % party.length;
+                            break;
+                        case 'ArrowDown': case 's': case 'S':
+                            menu.targetMemberCursor = (menu.targetMemberCursor + 1) % party.length;
+                            break;
+                        case 'Enter': case ' ': case 'z': case 'Z':
+                            confirmEquipMember();
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            menu.selectingEquipMember = false;
+                            menu.showItemAction = true;
+                            break;
+                    }
+                } else if (menu.selectingItemMember) {
+                    // アイテム使用対象メンバー選択モード
+                    switch (e.key) {
+                        case 'ArrowUp': case 'w': case 'W':
+                            menu.targetMemberCursor = (menu.targetMemberCursor + party.length - 1) % party.length;
+                            break;
+                        case 'ArrowDown': case 's': case 'S':
+                            menu.targetMemberCursor = (menu.targetMemberCursor + 1) % party.length;
+                            break;
+                        case 'Enter': case ' ': case 'z': case 'Z':
+                            confirmItemMember();
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            menu.selectingItemMember = false;
+                            menu.showItemAction = true;
+                            break;
+                    }
+                } else if (menu.showItemAction) {
                     // アイテムアクションサブメニュー操作
                     switch (e.key) {
                         case 'ArrowUp': case 'w': case 'W':
@@ -7372,6 +7629,12 @@
                     else if (dx > 0) battle.targetIndex = getNextAliveEnemyIndex(battle.targetIndex);
                     return;
                 }
+                // バトル中 - 味方選択モード
+                if (gameMode === MODE.BATTLE && battle.isSelectingAlly) {
+                    if (dy < 0) battle.allyTargetIndex = (battle.allyTargetIndex + party.length - 1) % party.length;
+                    else if (dy > 0) battle.allyTargetIndex = (battle.allyTargetIndex + 1) % party.length;
+                    return;
+                }
                 // バトル中 - コマンド選択
                 if (gameMode === MODE.BATTLE && battle.phase === 'command') {
                     if (dy < 0) {
@@ -7401,7 +7664,11 @@
                 }
                 // メニュー
                 if (menu.active) {
-                    if (menu.showItemAction) {
+                    if (menu.selectingEquipMember || menu.selectingItemMember) {
+                        // 装備/アイテム使用対象メンバー選択
+                        if (dy < 0) menu.targetMemberCursor = (menu.targetMemberCursor + party.length - 1) % party.length;
+                        else if (dy > 0) menu.targetMemberCursor = (menu.targetMemberCursor + 1) % party.length;
+                    } else if (menu.showItemAction) {
                         // アイテムアクションサブメニュー
                         if (dy < 0) menu.itemActionIndex = (menu.itemActionIndex + 2) % 3;
                         else if (dy > 0) menu.itemActionIndex = (menu.itemActionIndex + 1) % 3;
@@ -7421,6 +7688,12 @@
                         // ちずタブ
                         if (dx < 0) { menu.mode = 'items'; menu.itemCursor = 0; }
                         else if (dx > 0) menu.mode = 'status';
+                    } else if (menu.mode === 'status' && party.length > 1) {
+                        // ステータス画面 - パーティメンバー選択
+                        if (dy < 0) menu.memberCursor = (menu.memberCursor + party.length - 1) % party.length;
+                        else if (dy > 0) menu.memberCursor = (menu.memberCursor + 1) % party.length;
+                        else if (dx < 0) menu.mode = 'map';
+                        else if (dx > 0) { menu.mode = 'spells'; menu.spellCursor = 0; }
                     } else {
                         // タブ切り替え（status/呪文なし/アイテムなしの場合）
                         if (dx < 0) {
@@ -7490,6 +7763,11 @@
                 confirmTargetSelection();
                 return;
             }
+            // バトル中 - 味方選択確定
+            if (gameMode === MODE.BATTLE && battle.isSelectingAlly) {
+                confirmAllySelection();
+                return;
+            }
             if (gameMode === MODE.BATTLE && battle.phase === 'command') {
                 executeBattleCommand();
             } else if (shop.active) {
@@ -7498,7 +7776,11 @@
                 confirmInn();
             } else if (menu.active) {
                 // メニュー内操作
-                if (menu.showItemAction) {
+                if (menu.selectingEquipMember) {
+                    confirmEquipMember();
+                } else if (menu.selectingItemMember) {
+                    confirmItemMember();
+                } else if (menu.showItemAction) {
                     executeItemAction();
                 } else if (menu.mode === 'items' && player.inventory.length > 0) {
                     menu.showItemAction = true;
@@ -7530,6 +7812,11 @@
                 cancelTargetSelection();
                 return;
             }
+            // バトル中 - 味方選択キャンセル
+            if (gameMode === MODE.BATTLE && battle.isSelectingAlly) {
+                cancelAllySelection();
+                return;
+            }
             if (gameMode === MODE.BATTLE && battle.showSpells) {
                 battle.showSpells = false;
             } else if (gameMode === MODE.BATTLE && battle.showItems) {
@@ -7542,7 +7829,13 @@
             } else if (dialog.active) {
                 closeDialog();
             } else if (menu.active) {
-                if (menu.showItemAction) {
+                if (menu.selectingEquipMember) {
+                    menu.selectingEquipMember = false;
+                    menu.showItemAction = true;
+                } else if (menu.selectingItemMember) {
+                    menu.selectingItemMember = false;
+                    menu.showItemAction = true;
+                } else if (menu.showItemAction) {
                     menu.showItemAction = false;
                 } else {
                     closeMenu();
