@@ -8079,7 +8079,11 @@
                 }
                 // メニュー
                 if (menu.active) {
-                    if (menu.selectingEquipMember || menu.selectingItemMember) {
+                    if (menu.selectingMember) {
+                        // 呪文対象選択モード（回復呪文など）
+                        if (dy < 0) menu.targetMemberCursor = (menu.targetMemberCursor + party.length - 1) % party.length;
+                        else if (dy > 0) menu.targetMemberCursor = (menu.targetMemberCursor + 1) % party.length;
+                    } else if (menu.selectingEquipMember || menu.selectingItemMember) {
                         // 装備/アイテム使用対象メンバー選択
                         if (dy < 0) menu.targetMemberCursor = (menu.targetMemberCursor + party.length - 1) % party.length;
                         else if (dy > 0) menu.targetMemberCursor = (menu.targetMemberCursor + 1) % party.length;
@@ -8199,7 +8203,10 @@
                 }
             } else if (menu.active) {
                 // メニュー内操作
-                if (menu.selectingEquipMember) {
+                if (menu.selectingMember) {
+                    // 呪文対象選択モード - 対象を決定
+                    executeFieldSpellOnTarget();
+                } else if (menu.selectingEquipMember) {
                     confirmEquipMember();
                 } else if (menu.selectingItemMember) {
                     confirmItemMember();
@@ -8261,7 +8268,10 @@
             } else if (dialog.active) {
                 closeDialog();
             } else if (menu.active) {
-                if (menu.selectingEquipMember) {
+                if (menu.selectingMember) {
+                    // 呪文対象選択モード - キャンセル
+                    menu.selectingMember = false;
+                } else if (menu.selectingEquipMember) {
                     menu.selectingEquipMember = false;
                     menu.showItemAction = true;
                 } else if (menu.selectingItemMember) {
