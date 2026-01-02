@@ -7360,6 +7360,12 @@
             const btn = document.getElementById(id);
             const handlePress = (e) => {
                 e.preventDefault();
+                // パーティ加入確認
+                if (partyJoinConfirm.active) {
+                    if (dx < 0) partyJoinConfirm.selectedIndex = 0;
+                    else if (dx > 0) partyJoinConfirm.selectedIndex = 1;
+                    return;
+                }
                 // バトル中 - ターゲット選択モード
                 if (gameMode === MODE.BATTLE && battle.isSelectingTarget) {
                     if (dx < 0) battle.targetIndex = getPrevAliveEnemyIndex(battle.targetIndex);
@@ -7465,6 +7471,20 @@
 
         function onActionA() {
             if (isTransitioning) return;
+            // パーティ加入確認
+            if (partyJoinConfirm.active) {
+                if (partyJoinConfirm.selectedIndex === 0) {
+                    partyJoinConfirm.active = false;
+                    executePartyJoin(partyJoinConfirm.npcId);
+                } else {
+                    partyJoinConfirm.active = false;
+                    const npc = getNpcById(partyJoinConfirm.npcId);
+                    if (npc && npc.joinDeclineMessages) {
+                        startDialog(npc.joinDeclineMessages);
+                    }
+                }
+                return;
+            }
             // バトル中 - ターゲット選択確定
             if (gameMode === MODE.BATTLE && battle.isSelectingTarget) {
                 confirmTargetSelection();
@@ -7496,6 +7516,15 @@
         }
 
         function onActionB() {
+            // パーティ加入確認キャンセル
+            if (partyJoinConfirm.active) {
+                partyJoinConfirm.active = false;
+                const npc = getNpcById(partyJoinConfirm.npcId);
+                if (npc && npc.joinDeclineMessages) {
+                    startDialog(npc.joinDeclineMessages);
+                }
+                return;
+            }
             // バトル中 - ターゲット選択キャンセル
             if (gameMode === MODE.BATTLE && battle.isSelectingTarget) {
                 cancelTargetSelection();
