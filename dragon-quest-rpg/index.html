@@ -1254,6 +1254,7 @@
             // 状態異常呪文 - 魔法使い系
             rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 5, learnableBy: ['mage', 'seer'], element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
             manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 9, learnableBy: ['mage'], element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
+            mahoton: { id: 'mahoton', name: 'マホトーン', mp: 4, type: 'status', statusEffect: 'silence', successRate: 0.6, learnLevel: 12, learnableBy: ['mage'], element: 'status', flashColor: 'rgba(100, 100, 150, 0.5)' },
             // デバフ呪文 - 賢者系
             rukani: { id: 'rukani', name: 'ルカニ', mp: 3, type: 'debuff', debuffType: 'defense', debuffRate: 0.5, successRate: 0.75, learnLevel: 3, learnableBy: ['seer'], element: 'status', flashColor: 'rgba(100, 50, 150, 0.5)' },
             // 補助呪文
@@ -1269,7 +1270,8 @@
         const STATUS_EFFECTS = {
             sleep: { name: '眠り', icon: '💤', badge: '眠', duration: { min: 2, max: 3 } },
             poison: { name: '毒', icon: '☠️', badge: '毒', damageRate: 0.1 },
-            blind: { name: '幻惑', icon: '💫', badge: '幻', hitRateModifier: 0.5 }
+            blind: { name: '幻惑', icon: '💫', badge: '幻', hitRateModifier: 0.5 },
+            silence: { name: '沈黙', icon: '🔇', badge: '黙', duration: { min: 3, max: 5 } }
         };
 
         // 呪文フラッシュ演出用
@@ -3961,10 +3963,7 @@
 
                     currentMember.spells.forEach((spellId, i) => {
                         const spell = spells[spellId];
-                        if (!spell) {
-                            console.error('Unknown spell:', spellId, 'for member:', currentMember.name, 'spells:', currentMember.spells);
-                            return;
-                        }
+                        if (!spell) return; // 未定義の呪文はスキップ
                         const y = spellY + 20 + i * tileSize * 0.6;
                         const canUse = currentMember.mp >= spell.mp;
 
