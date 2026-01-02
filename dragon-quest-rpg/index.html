@@ -7360,7 +7360,13 @@
             const btn = document.getElementById(id);
             const handlePress = (e) => {
                 e.preventDefault();
-                // バトル中
+                // バトル中 - ターゲット選択モード
+                if (gameMode === MODE.BATTLE && battle.isSelectingTarget) {
+                    if (dx < 0) battle.targetIndex = getPrevAliveEnemyIndex(battle.targetIndex);
+                    else if (dx > 0) battle.targetIndex = getNextAliveEnemyIndex(battle.targetIndex);
+                    return;
+                }
+                // バトル中 - コマンド選択
                 if (gameMode === MODE.BATTLE && battle.phase === 'command') {
                     if (dy < 0) {
                         if (battle.showSpells) battle.spellIndex = Math.max(0, battle.spellIndex - 1);
@@ -7459,6 +7465,11 @@
 
         function onActionA() {
             if (isTransitioning) return;
+            // バトル中 - ターゲット選択確定
+            if (gameMode === MODE.BATTLE && battle.isSelectingTarget) {
+                confirmTargetSelection();
+                return;
+            }
             if (gameMode === MODE.BATTLE && battle.phase === 'command') {
                 executeBattleCommand();
             } else if (shop.active) {
@@ -7485,6 +7496,11 @@
         }
 
         function onActionB() {
+            // バトル中 - ターゲット選択キャンセル
+            if (gameMode === MODE.BATTLE && battle.isSelectingTarget) {
+                cancelTargetSelection();
+                return;
+            }
             if (gameMode === MODE.BATTLE && battle.showSpells) {
                 battle.showSpells = false;
             } else if (gameMode === MODE.BATTLE && battle.showItems) {
