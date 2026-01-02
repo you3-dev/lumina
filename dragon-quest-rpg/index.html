@@ -3106,9 +3106,15 @@
             ctx.textAlign = 'center';
             if ((menu.mode === 'items' && player.inventory.length > 0) ||
                 (menu.mode === 'spells' && player.spells.length > 0)) {
-                ctx.fillText('↑↓選択 / A決定 / B戻る', canvasWidth / 2, menuY + menuHeight - 25);
+                if (party.length > 1 && menu.mode === 'spells') {
+                    ctx.fillText('↑↓選択 / 名前タップで切替 / A決定', canvasWidth / 2, menuY + menuHeight - 25);
+                } else {
+                    ctx.fillText('↑↓選択 / A決定 / B戻る', canvasWidth / 2, menuY + menuHeight - 25);
+                }
             } else if (menu.mode === 'map') {
                 ctx.fillText('A決定 / ← → タブ切替 / Bで閉じる', canvasWidth / 2, menuY + menuHeight - 25);
+            } else if (menu.mode === 'status' && party.length > 1) {
+                ctx.fillText('名前タップで切替 / ← → タブ切替 / Bで閉じる', canvasWidth / 2, menuY + menuHeight - 25);
             } else {
                 ctx.fillText('← → タブ切替 / Bで閉じる', canvasWidth / 2, menuY + menuHeight - 25);
             }
@@ -8265,6 +8271,68 @@
 
         setupActionButton('btn-a', onActionA);
         setupActionButton('btn-b', onActionB);
+
+        // ========================================
+        // メニュー内タップ操作（スマホ向けメンバー選択）
+        // ========================================
+        function handleCanvasTap(clientX, clientY) {
+            // キャンバス上の座標に変換
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const tapX = (clientX - rect.left) * scaleX;
+            const tapY = (clientY - rect.top) * scaleY;
+
+            // メニューが開いていて、ステータスか呪文タブの場合のみ処理
+            if (!menu.active) return false;
+            if (menu.mode !== 'status' && menu.mode !== 'spells') return false;
+            if (party.length <= 1) return false;  // 仲間がいない場合は不要
+            if (menu.selectingMember) return false;  // 呪文対象選択モード中は不処理
+
+            // メニュー座標を計算（drawMenuと同じ計算）
+            const menuWidth = canvasWidth * 0.85;
+            const menuHeight = canvasHeight * 0.75;
+            const menuX = (canvasWidth - menuWidth) / 2;
+            const menuY = (canvasHeight - menuHeight) / 2;
+            const tabY = menuY + 10;
+            const contentY = tabY + tileSize * 0.7;
+            const lineHeight = tileSize * 0.5;
+
+            // メンバーリスト領域（呪文タブの左側）
+            const memberListX = menuX + 15;
+            const memberListY = contentY + 5;
+            const memberListWidth = menuWidth * 0.28;
+
+            // タップがメンバーリスト領域内かチェック
+            if (tapX >= memberListX - 5 && tapX <= memberListX + memberListWidth + 5) {
+                for (let idx = 0; idx < party.length; idx++) {
+                    const itemTop = memberListY + idx * lineHeight * 0.9 - 3;
+                    const itemBottom = itemTop + lineHeight * 0.85;
+                    if (tapY >= itemTop && tapY <= itemBottom) {
+                        menu.memberCursor = idx;
+                        if (menu.mode === 'spells') {
+                            menu.spellCursor = 0;  // 呪文カーソルもリセット
+                        }
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // キャンバスへのクリック/タップイベント
+        canvas.addEventListener('click', (e) => {
+            handleCanvasTap(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (e.changedTouches.length > 0) {
+                const touch = e.changedTouches[0];
+                if (handleCanvasTap(touch.clientX, touch.clientY)) {
+                    e.preventDefault();
+                }
+            }
+        }, { passive: false });
 
         // ========================================
         // ダブルタップ・ピンチズーム防止
