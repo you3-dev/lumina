@@ -2662,6 +2662,17 @@
                     lastTown = { ...data.lastTown };
                 }
 
+                // 既存セーブデータ救済：砂漠クエスト完了状態の整合性チェック
+                // 3つのクエストが完了しているのにdesertCastleUnlockedがfalseの場合を修復
+                if (isQuestCompleted('waterShortage') &&
+                    isQuestCompleted('passportRecovery') &&
+                    isQuestCompleted('royalCrest') &&
+                    !getStoryFlag('desertCastleUnlocked')) {
+                    setStoryFlag('desertCastleUnlocked', true);
+                    // 修復後に保存（非同期で実行して戻り値に影響を与えない）
+                    setTimeout(() => saveGame(), 0);
+                }
+
                 // ロード後にステータスを再計算
                 updateActualStats();
                 return true;
@@ -7817,6 +7828,8 @@
                     player.gold += 500;
                     player.exp += 200;
                     showMessage('500ゴールドと200EXPを獲得！');
+                    // 全クエスト完了時に太陽の城塞を開放
+                    areAllDesertQuestsCompleted();
                     saveGame();
                 });
                 return;
