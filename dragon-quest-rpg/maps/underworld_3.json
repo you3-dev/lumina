@@ -10224,7 +10224,7 @@
       "requiresFlag": "shadowGuardianDefeated"
     },
     {
-      "x": 75,
+      "x": 70,
       "y": 25,
       "targetMap": "maps/surface_3.json",
       "targetX": 70,
@@ -10233,15 +10233,15 @@
     },
     {
       "x": 25,
-      "y": 70,
+      "y": 75,
       "targetMap": "maps/surface_3.json",
       "targetX": 50,
       "targetY": 20,
       "requiresFlag": "shadowGuardianDefeated"
     },
     {
-      "x": 65,
-      "y": 85,
+      "x": 85,
+      "y": 65,
       "targetMap": "maps/surface_3.json",
       "targetX": 50,
       "targetY": 80,
