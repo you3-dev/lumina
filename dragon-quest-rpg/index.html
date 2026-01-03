@@ -668,6 +668,11 @@
             return getItemCount(itemId) >= quantity;
         }
 
+        // インベントリをアイテムID順に整理
+        function organizeInventory() {
+            player.inventory.sort((a, b) => a.id - b.id);
+        }
+
         // ========================================
         // モンスターデータ
         // ========================================
@@ -3350,9 +3355,9 @@
                             // アクション選択肢
                             let actions = [];
                             if (selectedItem.type === 'weapon' || selectedItem.type === 'armor') {
-                                actions = ['そうびする', 'すてる', 'やめる'];
+                                actions = ['そうびする', 'すてる', 'せいとん', 'やめる'];
                             } else {
-                                actions = ['つかう', 'すてる', 'やめる'];
+                                actions = ['つかう', 'すてる', 'せいとん', 'やめる'];
                             }
 
                             actions.forEach((action, i) => {
@@ -6122,7 +6127,13 @@
                     }
                     break;
 
-                case 2: // やめる
+                case 2: // せいとん
+                    organizeInventory();
+                    menu.itemCursor = 0;
+                    menu.showItemAction = false;
+                    break;
+
+                case 3: // やめる
                     menu.showItemAction = false;
                     break;
             }
