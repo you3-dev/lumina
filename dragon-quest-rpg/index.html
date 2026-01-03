@@ -728,7 +728,7 @@
                 speed: 5,
                 exp: 10,
                 gold: 8,
-                resistances: { sleep: 0.3, blind: 1.0, poison: 0 }
+                resistances: { sleep: 0.3, blind: 1.0, poison: 0, light: 1.5, fire: 1.5 }  // 光・炎弱点
             },
             scorpion: {
                 name: 'おおさそり',
@@ -753,7 +753,7 @@
                 speed: 4,
                 exp: 25,
                 gold: 20,
-                resistances: { sleep: 0, blind: 0.8, poison: 0 }
+                resistances: { sleep: 0, blind: 0.8, poison: 0, fire: 1.5, light: 1.5 }  // 炎・光弱点
             },
             armoredKnight: {
                 name: 'さまようよろい',
@@ -765,7 +765,7 @@
                 speed: 3,
                 exp: 35,
                 gold: 30,
-                resistances: { sleep: 0.2, blind: 0.5, poison: 0 }
+                resistances: { sleep: 0.2, blind: 0.5, poison: 0, lightning: 1.5, fire: 0.5 }  // 雷弱点、炎耐性
             },
             deathKnight: {
                 name: 'しりょうのきし',
@@ -778,7 +778,7 @@
                 speed: 5,
                 exp: 50,
                 gold: 45,
-                resistances: { sleep: 0, blind: 0.3, poison: 0 }
+                resistances: { sleep: 0, blind: 0.3, poison: 0, light: 1.5, fire: 1.5 }  // 光・炎弱点
             },
             // ===== 中ボス級 =====
             midBoss: {
@@ -834,7 +834,7 @@
                 speed: 4,
                 exp: 35,
                 gold: 30,
-                resistances: { sleep: 0.8, blind: 0.6, poison: 0 }
+                resistances: { sleep: 0.8, blind: 0.6, poison: 0, fire: 1.5, ice: 0.5 }  // 炎弱点、氷耐性
             },
             desertVulture: {
                 name: 'デザートバルチャー',
@@ -859,8 +859,7 @@
                 speed: 4,
                 exp: 55,
                 gold: 50,
-                weakToFire: true,
-                resistances: { sleep: 0.2, blind: 0.8, poison: 0 }
+                resistances: { sleep: 0.2, blind: 0.8, poison: 0, fire: 2.0, ice: 0.5 }  // 炎大弱点、氷耐性
             },
             sandDevil: {
                 name: 'すなじごく',
@@ -886,7 +885,7 @@
                 speed: 5,
                 exp: 75,
                 gold: 70,
-                resistances: { sleep: 0, blind: 0.5, poison: 0 }
+                resistances: { sleep: 0, blind: 0.5, poison: 0, lightning: 1.5, fire: 0.5 }  // 雷弱点、炎耐性
             },
             cursedPharaoh: {
                 name: 'のろいのファラオ',
@@ -899,7 +898,7 @@
                 speed: 7,
                 exp: 70,
                 gold: 65,
-                resistances: { sleep: 0, blind: 0.3, poison: 0 }
+                resistances: { sleep: 0, blind: 0.3, poison: 0, fire: 1.5, light: 1.5 }  // 炎・光弱点
             },
             // ===== ダンジョン深部（Lv16~19）=====
             desertGolem: {
@@ -912,7 +911,7 @@
                 speed: 3,
                 exp: 90,
                 gold: 85,
-                resistances: { sleep: 0, blind: 0, poison: 0 }
+                resistances: { sleep: 0, blind: 0, poison: 0, lightning: 1.5, fire: 0.5, ice: 0.5 }  // 雷弱点、炎氷耐性
             },
             sandWorm: {
                 name: 'サンドワーム',
@@ -925,7 +924,7 @@
                 speed: 6,
                 exp: 100,
                 gold: 95,
-                resistances: { sleep: 0.4, blind: 0.6, poison: 0.3 }
+                resistances: { sleep: 0.4, blind: 0.6, poison: 0.3, ice: 1.5, fire: 0.5 }  // 氷弱点、炎耐性
             },
             banditLeader: {
                 name: 'とうぞくのかしら',
@@ -1061,7 +1060,7 @@
                 speed: 12,
                 exp: 100,
                 gold: 70,
-                resistances: { sleep: 0.3, poison: 0.5 }
+                resistances: { sleep: 0.3, poison: 0.5, light: 1.5 }  // 光弱点
             },
             darkBat: {
                 name: 'ダークバット',
@@ -1072,7 +1071,8 @@
                 def: 15,
                 speed: 25,
                 exp: 90,
-                gold: 55
+                gold: 55,
+                resistances: { light: 1.5, wind: 1.5 }  // 光・風弱点
             },
             cursedTree: {
                 name: 'じゅかい',
@@ -1083,7 +1083,8 @@
                 def: 30,
                 speed: 5,
                 exp: 130,
-                gold: 85
+                gold: 85,
+                resistances: { fire: 2.0, ice: 0.5, lightning: 0.5 }  // 炎大弱点、氷雷耐性
             },
             ancientGolem: {
                 name: 'いにしえゴーレム',
@@ -1095,7 +1096,7 @@
                 speed: 3,
                 exp: 200,
                 gold: 120,
-                resistances: { sleep: 0, blind: 0 }
+                resistances: { sleep: 0, blind: 0, lightning: 1.5, fire: 0.5, ice: 0.5 }  // 雷弱点、炎氷耐性
             },
             darkKnight: {
                 name: 'ダークナイト',
@@ -1106,7 +1107,8 @@
                 def: 35,
                 speed: 15,
                 exp: 150,
-                gold: 100
+                gold: 100,
+                resistances: { light: 1.5, fire: 0.5 }  // 光弱点、炎耐性
             },
             // ===== エリア3地底用（Lv22~28）=====
             underworldBat: {
@@ -1118,7 +1120,8 @@
                 def: 18,
                 speed: 28,
                 exp: 110,
-                gold: 65
+                gold: 65,
+                resistances: { light: 1.5, wind: 1.5 }  // 光・風弱点
             },
             shadowDragon: {
                 name: 'シャドードラゴン',
@@ -1129,7 +1132,8 @@
                 def: 40,
                 speed: 18,
                 exp: 300,
-                gold: 200
+                gold: 200,
+                resistances: { light: 1.5, ice: 1.5, fire: 0.5 }  // 光・氷弱点、炎耐性
             },
             deathWraith: {
                 name: 'デスレイス',
@@ -1141,7 +1145,7 @@
                 speed: 22,
                 exp: 180,
                 gold: 130,
-                resistances: { sleep: 0, poison: 0 }
+                resistances: { sleep: 0, poison: 0, light: 2.0, fire: 1.5 }  // 光大弱点、炎弱点
             },
             stoneGuardian: {
                 name: 'いわのまもりて',
@@ -1152,7 +1156,8 @@
                 def: 50,
                 speed: 5,
                 exp: 160,
-                gold: 90
+                gold: 90,
+                resistances: { lightning: 1.5, fire: 0.5, ice: 0.5 }  // 雷弱点、炎氷耐性
             },
             wedgeGuardian: {
                 name: 'くさびのしゅごしゃ',
@@ -1476,6 +1481,63 @@
             blind: { name: '幻惑', icon: '💫', badge: '幻', hitRateModifier: 0.5 },
             silence: { name: '沈黙', icon: '🔇', badge: '黙', duration: { min: 3, max: 5 } }
         };
+
+        // ========================================
+        // 属性ダメージシステム
+        // ========================================
+        // 攻撃属性の定義
+        const ELEMENTS = ['fire', 'ice', 'lightning', 'wind', 'light'];
+
+        // 属性ダメージ倍率を計算
+        function getElementMultiplier(spell, enemy) {
+            // 攻撃呪文以外は等倍
+            if (!spell || spell.type !== 'attack' || !spell.element) {
+                return { multiplier: 1.0, effectiveness: 'normal' };
+            }
+
+            const element = spell.element;
+            // 攻撃属性以外（heal, buff等）は等倍
+            if (!ELEMENTS.includes(element)) {
+                return { multiplier: 1.0, effectiveness: 'normal' };
+            }
+
+            const resistances = enemy.resistances || {};
+            const multiplier = resistances[element] !== undefined ? resistances[element] : 1.0;
+
+            // 効果判定
+            let effectiveness = 'normal';
+            if (multiplier === 0) {
+                effectiveness = 'immune';      // 無効
+            } else if (multiplier >= 2.0) {
+                effectiveness = 'weak';        // 弱点（2倍以上）
+            } else if (multiplier >= 1.5) {
+                effectiveness = 'effective';   // 効果的（1.5倍以上）
+            } else if (multiplier <= 0.25) {
+                effectiveness = 'resistant';   // 強耐性（0.25倍以下）
+            } else if (multiplier <= 0.5) {
+                effectiveness = 'resisted';    // 耐性（0.5倍以下）
+            }
+
+            return { multiplier, effectiveness };
+        }
+
+        // 属性効果メッセージを取得
+        function getElementEffectivenessMessage(effectiveness, enemyName) {
+            switch (effectiveness) {
+                case 'immune':
+                    return `${enemyName} には まったく きかなかった！`;
+                case 'weak':
+                    return 'こうかは ばつぐんだ！';
+                case 'effective':
+                    return 'こうかが あるようだ！';
+                case 'resistant':
+                    return 'あまり きいていないようだ...';
+                case 'resisted':
+                    return 'こうかは いまひとつのようだ...';
+                default:
+                    return null;
+            }
+        }
 
         // 呪文フラッシュ演出用
         let spellFlash = { active: false, color: '', alpha: 0 };
@@ -5475,19 +5537,44 @@
 
             battle.phase = 'playerTurn';
             showBattleMessage(`ゆうしゃ は ${spell.name} を となえた！`, () => {
-                const damage = spell.power + Math.floor(Math.random() * 5);
+                // 属性倍率を計算
+                const { multiplier, effectiveness } = getElementMultiplier(spell, target);
+                const baseDamage = spell.power + Math.floor(Math.random() * 5);
+                const damage = Math.floor(baseDamage * multiplier);
                 target.currentHp -= damage;
 
-                showBattleMessage(`${targetName} に ${damage} の ダメージ！`, () => {
-                    if (target.currentHp <= 0) {
-                        target.currentHp = 0;
-                        showBattleMessage(`${targetName} を たおした！`, () => {
-                            checkBattleEnd() || processTurnEnd();
-                        });
-                    } else {
+                // 属性効果メッセージを取得
+                const effectMsg = getElementEffectivenessMessage(effectiveness, targetName);
+
+                // 無効の場合は特別なメッセージ
+                if (effectiveness === 'immune') {
+                    showBattleMessage(effectMsg, () => {
                         checkBattleEnd() || processTurnEnd();
-                    }
-                });
+                    });
+                } else {
+                    // ダメージメッセージを表示
+                    showBattleMessage(`${targetName} に ${damage} の ダメージ！`, () => {
+                        // 属性効果メッセージがあれば表示
+                        const showEffectMessage = (callback) => {
+                            if (effectMsg) {
+                                showBattleMessage(effectMsg, callback);
+                            } else {
+                                callback();
+                            }
+                        };
+
+                        showEffectMessage(() => {
+                            if (target.currentHp <= 0) {
+                                target.currentHp = 0;
+                                showBattleMessage(`${targetName} を たおした！`, () => {
+                                    checkBattleEnd() || processTurnEnd();
+                                });
+                            } else {
+                                checkBattleEnd() || processTurnEnd();
+                            }
+                        });
+                    });
+                }
             });
         }
 
@@ -5529,12 +5616,32 @@
 
             const enemy = battle.enemies[enemyIndex];
             const enemyName = enemy.displayName || enemy.name;
-            const damage = spell.power + Math.floor(Math.random() * 5);
+
+            // 属性倍率を計算
+            const { multiplier, effectiveness } = getElementMultiplier(spell, enemy);
+            const baseDamage = spell.power + Math.floor(Math.random() * 5);
+            const damage = Math.floor(baseDamage * multiplier);
             enemy.currentHp -= damage;
 
-            const message = enemy.currentHp <= 0
-                ? `${enemyName} に ${damage} の ダメージ！ ${enemyName} を たおした！`
-                : `${enemyName} に ${damage} の ダメージ！`;
+            // メッセージ構築
+            let message;
+            if (effectiveness === 'immune') {
+                message = `${enemyName} には まったく きかなかった！`;
+            } else {
+                // 属性効果の簡易表示（弱点/耐性）
+                let effectSuffix = '';
+                if (effectiveness === 'weak') {
+                    effectSuffix = ' こうかばつぐん！';
+                } else if (effectiveness === 'resistant' || effectiveness === 'resisted') {
+                    effectSuffix = ' いまひとつ...';
+                }
+
+                if (enemy.currentHp <= 0) {
+                    message = `${enemyName} に ${damage} の ダメージ！${effectSuffix} ${enemyName} を たおした！`;
+                } else {
+                    message = `${enemyName} に ${damage} の ダメージ！${effectSuffix}`;
+                }
+            }
 
             if (enemy.currentHp <= 0) {
                 enemy.currentHp = 0;
