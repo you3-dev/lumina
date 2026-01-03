@@ -3885,8 +3885,9 @@
                         ctx.fillText('👆', x, y - spriteSize / 2 - tileSize * 0.3);
                     }
 
-                    // モンスター名（各敵のスプライトの下に個別表示）
-                    const nameY = y + spriteSize / 2 + tileSize * 0.4;
+                    // モンスター名（各敵のスプライトの下に個別表示、奇数・偶数でY座標をずらす）
+                    const nameYOffset = idx % 2 === 0 ? 0 : tileSize * 0.5;
+                    const nameY = y + spriteSize / 2 + tileSize * 0.4 + nameYOffset;
                     ctx.fillStyle = isDead ? '#888' : '#fff';
                     ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                     ctx.fillText(enemy.displayName, x, nameY);
