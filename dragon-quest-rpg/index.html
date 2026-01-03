@@ -2057,12 +2057,12 @@
         }
 
         // レベルアップに必要な経験値（段階的成長）
-        // 序盤(~Lv20): 緩やか、中盤(~Lv50): 普通、終盤(Lv51~): 急成長
+        // 序盤(~Lv20): 緩やか、中盤(~Lv50): しっかり、終盤(Lv51~): やりこみ
         function getExpForLevel(level) {
             if (level <= 1) return 0;
-            if (level <= 20) return Math.floor(level * level * 3);
-            if (level <= 50) return Math.floor(level * level * 5);
-            return Math.floor(level * level * 8);
+            if (level <= 20) return Math.floor(level * level * 8);
+            if (level <= 50) return Math.floor(level * level * 15);
+            return Math.floor(level * level * 25);
         }
 
         // レベル1-99の必要経験値テーブル（累積）
