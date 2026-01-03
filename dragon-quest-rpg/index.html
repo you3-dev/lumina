@@ -3268,7 +3268,9 @@
 
                 // 有効なアイテムのみフィルタリング（隙間防止）
                 const validItems = player.inventory.filter(slot => items[slot.id]);
-                const maxVisibleItems = 8; // 最大表示件数
+                // メニュー高さから利用可能な行数を計算（矢印用の余白を考慮）
+                const availableHeight = (menuY + menuHeight) - itemStartY - lineHeight;
+                const maxVisibleItems = Math.max(6, Math.floor(availableHeight / lineHeight));
 
                 if (validItems.length === 0) {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
@@ -3410,13 +3412,15 @@
 
                     // アイテム使用対象メンバー選択ウィンドウ
                     if (menu.selectingItemMember) {
-                        const slot = player.inventory[menu.itemCursor];
+                        const slot = validItems[menu.itemCursor];
                         const selectedItem = slot ? items[slot.id] : null;
                         if (selectedItem) {
                             const itemMenuWidth = tileSize * 4;
                             const itemMenuHeight = tileSize * 0.5 * party.length + tileSize * 0.8;
                             const itemMenuX = menuX + menuWidth - itemMenuWidth - 20;
-                            const itemMenuY = itemStartY + menu.itemCursor * lineHeight - 5;
+                            // スクロール位置を考慮した画面上のY座標
+                            const visibleCursorPos = menu.itemCursor - itemScrollOffset;
+                            const itemMenuY = itemStartY + visibleCursorPos * lineHeight - 5;
 
                             drawWindow(itemMenuX, itemMenuY, itemMenuWidth, itemMenuHeight);
 
@@ -6076,7 +6080,11 @@
         function executeItemAction() {
             if (player.inventory.length === 0) return;
 
-            const slot = player.inventory[menu.itemCursor];
+            // validItemsからアイテムを取得（表示と同じフィルタリング）
+            const validItems = player.inventory.filter(slot => items[slot.id]);
+            if (validItems.length === 0) return;
+
+            const slot = validItems[menu.itemCursor];
             if (!slot) return;
             const selectedItemId = slot.id;
             const selectedItem = items[selectedItemId];
@@ -6145,7 +6153,9 @@
 
         // 装備対象メンバー確定
         function confirmEquipMember() {
-            const slot = player.inventory[menu.itemCursor];
+            // validItemsからアイテムを取得（表示と同じフィルタリング）
+            const validItems = player.inventory.filter(slot => items[slot.id]);
+            const slot = validItems[menu.itemCursor];
             if (!slot) return;
             const selectedItemId = slot.id;
             const selectedItem = items[selectedItemId];
@@ -6165,7 +6175,9 @@
 
         // アイテム使用対象メンバー確定
         function confirmItemMember() {
-            const slot = player.inventory[menu.itemCursor];
+            // validItemsからアイテムを取得（表示と同じフィルタリング）
+            const validItems = player.inventory.filter(slot => items[slot.id]);
+            const slot = validItems[menu.itemCursor];
             if (!slot) return;
             const selectedItemId = slot.id;
             const selectedItem = items[selectedItemId];
