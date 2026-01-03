@@ -8427,15 +8427,11 @@
                 setTimeout(() => {
                     spellFlash.active = false;
 
-                    // パーティ全員のHP/MPを全回復
-                    party.forEach(member => {
-                        if (member.isAlive !== false && member.hp > 0) {
-                            member.hp = member.actualMaxHp || member.maxHp;
-                            member.mp = member.actualMaxMp || member.maxMp;
-                        }
-                    });
+                    // パーティ全員のHP/MPを全回復（宿屋と同じ処理）
+                    restoreAll();
 
                     // 回復メッセージを表示
+                    SE.inn(); // 回復SE
                     const healMessages = npc.healMessages || ['聖なる光よ...'];
                     const resultMessages = [...healMessages, 'パーティ全員のHP/MPが 回復した！'];
                     startDialog(resultMessages);
