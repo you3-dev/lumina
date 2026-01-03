@@ -10,7 +10,7 @@
   "linkedSurface": "maps/surface_3.json",
   "isUnderworld": true,
   "darknessLevel": 0.6,
-  "isOutdoor": false,
+  "isOutdoor": true,
   "area": "area3",
   "data": [
     [
