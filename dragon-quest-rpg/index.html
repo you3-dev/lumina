@@ -570,6 +570,16 @@
             50: { id: 50, name: 'まどうしのローブ', type: 'armor', value: 18, price: 1000, equippable: ['mage'] },
             51: { id: 51, name: 'ほしふるローブ', type: 'armor', value: 32, price: 2500, equippable: ['mage'] },
             52: { id: 52, name: 'だいまどうローブ', type: 'armor', value: 45, price: 5000, equippable: ['mage'] },
+            // エリア3 武器・防具（勇者用）
+            18: { id: 18, name: 'やみのつるぎ', type: 'weapon', value: 75, price: 5000, equippable: ['hero'] },
+            19: { id: 19, name: 'ほしくずのつるぎ', type: 'weapon', value: 90, price: 8000, equippable: ['hero'] },
+            27: { id: 27, name: 'やみのよろい', type: 'armor', value: 60, price: 6000, equippable: ['hero'] },
+            28: { id: 28, name: 'ほしくずのよろい', type: 'armor', value: 75, price: 10000, equippable: ['hero'] },
+            // エリア3 武器・防具（魔法使い用）
+            44: { id: 44, name: 'やみの杖', type: 'weapon', value: 50, price: 4500, equippable: ['mage'] },
+            45: { id: 45, name: 'ほしくずの杖', type: 'weapon', value: 70, price: 7500, equippable: ['mage'] },
+            53: { id: 53, name: 'やみのローブ', type: 'armor', value: 55, price: 5500, equippable: ['mage'] },
+            54: { id: 54, name: 'ほしくずのローブ', type: 'armor', value: 70, price: 9000, equippable: ['mage'] },
             // クエストアイテム（エリア2）
             30: { id: 30, name: '清らかな水', description: 'オアシスの村を救う聖なる水', type: 'quest', price: 0 },
             31: { id: 31, name: '王家の紋章', description: '太陽の城塞への入城許可証', type: 'quest', price: 0 },
@@ -590,7 +600,7 @@
             bazaar_shop: [1, 2, 4, 5, 9, 13, 15, 23, 25, 41, 51], // バザールの町：中級装備 + 魔法使い中級装備
             hidden_shop: [4, 5, 15, 16, 25, 26, 42, 52], // 隠れ里：高級装備 + 魔法使い高級装備
             // エリア3のショップ
-            underworld_shop: [1, 4, 5, 9, 16, 26, 42, 52] // 地底の村：回復アイテム + 最高級装備
+            underworld_shop: [1, 4, 5, 9, 18, 19, 27, 28, 44, 45, 53, 54] // 地底の村：回復アイテム + エリア3装備
         };
         let currentShopId = 'default';
         const shopItems = shopItemsByArea.default; // 互換性のため維持
