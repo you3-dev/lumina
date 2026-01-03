@@ -10250,9 +10250,9 @@
     {
       "x": 50,
       "y": 10,
-      "targetMap": "maps/area3_castle.json",
-      "targetX": 10,
-      "targetY": 18,
+      "targetMap": "maps/area3_castle_b2.json",
+      "targetX": 14,
+      "targetY": 27,
       "requiresFlag": "ancientCastleUnlocked"
     },
     {
@@ -10261,6 +10261,34 @@
       "targetMap": "maps/underworld_village.json",
       "targetX": 7,
       "targetY": 13
+    },
+    {
+      "x": 50,
+      "y": 25,
+      "targetMap": "maps/wedge_dungeon_north_b1.json",
+      "targetX": 12,
+      "targetY": 23
+    },
+    {
+      "x": 75,
+      "y": 50,
+      "targetMap": "maps/wedge_dungeon_east_b1.json",
+      "targetX": 12,
+      "targetY": 23
+    },
+    {
+      "x": 50,
+      "y": 75,
+      "targetMap": "maps/wedge_dungeon_south_b1.json",
+      "targetX": 12,
+      "targetY": 23
+    },
+    {
+      "x": 25,
+      "y": 50,
+      "targetMap": "maps/wedge_dungeon_west_b1.json",
+      "targetX": 12,
+      "targetY": 23
     }
   ],
   "npcs": [

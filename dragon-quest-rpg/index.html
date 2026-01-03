@@ -1171,15 +1171,153 @@
                 name: 'やみのしゅごしゃ',
                 sprite: '👁️',
                 level: 35,
-                hp: 600,
-                atk: 100,
-                def: 60,
+                hp: 1000,
+                atk: 110,
+                def: 65,
                 speed: 25,
-                exp: 2000,
-                gold: 1000,
+                exp: 2500,
+                gold: 1200,
                 isBoss: true,
-                spells: ['giragura', 'mahoton'],
+                spells: ['giragura', 'mahoton', 'hyados'],
                 resistances: { sleep: 0, blind: 0.5, poison: 0 }
+            },
+            // 楔の守護者（4属性）
+            wedgeGuardian_north: {
+                name: 'こおりのしゅごしゃ',
+                sprite: '❄️',
+                level: 28,
+                hp: 650,
+                atk: 85,
+                def: 55,
+                speed: 18,
+                exp: 900,
+                gold: 600,
+                isBoss: true,
+                spells: ['hyado', 'hyados'],
+                resistances: { ice: 0, fire: 2.0 }
+            },
+            wedgeGuardian_east: {
+                name: 'ほのおのしゅごしゃ',
+                sprite: '🔥',
+                level: 29,
+                hp: 600,
+                atk: 95,
+                def: 45,
+                speed: 22,
+                exp: 950,
+                gold: 620,
+                isBoss: true,
+                spells: ['gira', 'giragura'],
+                resistances: { fire: 0, ice: 2.0 }
+            },
+            wedgeGuardian_south: {
+                name: 'かぜのしゅごしゃ',
+                sprite: '🌀',
+                level: 28,
+                hp: 550,
+                atk: 75,
+                def: 50,
+                speed: 35,
+                exp: 880,
+                gold: 580,
+                isBoss: true,
+                spells: ['bagima', 'piorimu'],
+                resistances: { death: 0 }
+            },
+            wedgeGuardian_west: {
+                name: 'いかずちのしゅごしゃ',
+                sprite: '⚡',
+                level: 30,
+                hp: 700,
+                atk: 90,
+                def: 60,
+                speed: 20,
+                exp: 1000,
+                gold: 650,
+                isBoss: true,
+                spells: ['dein', 'raiden'],
+                resistances: { lightning: 0, paralysis: 0 }
+            },
+            // 図書室の守護者（古城中ボス）
+            libraryGuardian: {
+                name: 'としょしつのばんにん',
+                sprite: '📚',
+                level: 32,
+                hp: 350,
+                atk: 70,
+                def: 55,
+                speed: 15,
+                exp: 1200,
+                gold: 700,
+                isBoss: true,
+                spells: ['mahoton', 'rariho']
+            },
+            // ===== 楔ダンジョン用雑魚敵 =====
+            boneWarrior: {
+                name: 'ほねせんし',
+                sprite: '💀',
+                level: 25,
+                hp: 80,
+                atk: 45,
+                def: 30,
+                speed: 12,
+                exp: 140,
+                gold: 90,
+                resistances: { sleep: 0, poison: 0 }
+            },
+            cursedMage: {
+                name: 'のろいのまじゅつし',
+                sprite: '🧙',
+                hueRotate: 270,
+                level: 27,
+                hp: 70,
+                atk: 30,
+                def: 25,
+                speed: 18,
+                exp: 160,
+                gold: 100,
+                spells: ['gira', 'rariho'],
+                resistances: { sleep: 0.3 }
+            },
+            // ===== 古城用雑魚敵 =====
+            darkArmor: {
+                name: 'ダークアーマー',
+                sprite: '🛡️',
+                hueRotate: 180,
+                level: 28,
+                hp: 130,
+                atk: 60,
+                def: 50,
+                speed: 8,
+                exp: 200,
+                gold: 130,
+                resistances: { sleep: 0.1, poison: 0 }
+            },
+            deathMagician: {
+                name: 'デスマジシャン',
+                sprite: '🧙',
+                hueRotate: 320,
+                level: 29,
+                hp: 90,
+                atk: 40,
+                def: 30,
+                speed: 20,
+                exp: 180,
+                gold: 110,
+                spells: ['giragura', 'mahoton'],
+                resistances: { sleep: 0.2 }
+            },
+            cursedKnight: {
+                name: 'のろわれたきし',
+                sprite: '⚔️',
+                level: 30,
+                hp: 160,
+                atk: 70,
+                def: 55,
+                speed: 14,
+                exp: 250,
+                gold: 150,
+                resistances: { sleep: 0, poison: 0, blind: 0.3 }
             },
             // ===== ボス級 =====
             dragon: {
@@ -1254,7 +1392,17 @@
             // エリア3地底（Lv22~28）
             area3_underworld: ['underworldBat', 'shadowDragon', 'deathWraith', 'stoneGuardian'],
             // エリア3ボス戦
-            area3_boss: ['wedgeGuardian']
+            area3_boss: ['wedgeGuardian'],
+            // 楔ダンジョン（Lv25~29）
+            wedge_dungeon_b1: ['shadowSlime', 'darkBat', 'boneWarrior', 'boneWarrior'],
+            wedge_dungeon_b2: ['darkKnight', 'cursedMage', 'shadowDragon', 'boneWarrior'],
+            wedge_dungeon_b3: [], // ボスエリアのみ（エンカウントなし）
+            // 古城セレスティア（Lv28~35）
+            castle_b2: ['ghost', 'ghost', 'skeleton', 'deathWraith'],
+            castle_b1: ['skeleton', 'skeleton', 'darkArmor', 'deathWraith'],
+            castle_1f: ['darkArmor', 'skeleton', 'deathMagician', 'cursedKnight'],
+            castle_2f: ['darkArmor', 'deathMagician', 'deathMagician', 'cursedKnight'],
+            castle_3f: ['cursedKnight', 'cursedKnight', 'deathMagician'] // ボスフロア（低エンカウント）
         };
 
         // 旧type名との互換用フォールバック
@@ -1280,12 +1428,20 @@
             merami: { id: 'merami', name: 'メラミ', mp: 8, type: 'attack', target: 'single', power: 80, learnLevel: 28, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 100, 0, 0.8)' },
             merazoma: { id: 'merazoma', name: 'メラゾーマ', mp: 15, type: 'attack', target: 'single', power: 200, learnLevel: 45, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 50, 0, 1.0)' },
             hyado: { id: 'hyado', name: 'ヒャド', mp: 4, type: 'attack', target: 'single', power: 25, learnLevel: 6, learnableBy: ['mage'], element: 'ice', flashColor: 'rgba(100, 200, 255, 0.6)' },
+            hyados: { id: 'hyados', name: 'ヒャダルコ', mp: 8, type: 'attack', target: 'all', power: 50, learnLevel: 20, learnableBy: ['mage'], element: 'ice', flashColor: 'rgba(100, 200, 255, 0.8)' },
             // 攻撃呪文（全体）- 魔法使い系
             gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', target: 'all', power: 35, learnLevel: 8, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 255, 100, 0.6)' },
+            giragura: { id: 'giragura', name: 'ギラグレイド', mp: 15, type: 'attack', target: 'all', power: 120, learnLevel: 35, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 200, 50, 0.9)' },
             begirama: { id: 'begirama', name: 'ベギラマ', mp: 10, type: 'attack', target: 'all', power: 70, learnLevel: 18, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 200, 50, 0.8)' },
             begiragon: { id: 'begiragon', name: 'ベギラゴン', mp: 20, type: 'attack', target: 'all', power: 150, learnLevel: 40, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 150, 0, 1.0)' },
             gigadein: { id: 'gigadein', name: 'ギガデイン', mp: 30, type: 'attack', target: 'all', power: 300, learnLevel: 50, learnableBy: ['hero'], element: 'light', flashColor: 'rgba(255, 255, 100, 1.0)' },
             minadein: { id: 'minadein', name: 'ミナデイン', mp: 50, type: 'attack', target: 'all', power: 1000, learnLevel: 99, learnableBy: ['hero'], element: 'light', flashColor: 'rgba(255, 255, 255, 1.0)' },
+            // 風属性呪文
+            bagi: { id: 'bagi', name: 'バギ', mp: 4, type: 'attack', target: 'all', power: 20, learnLevel: 10, learnableBy: ['seer'], element: 'wind', flashColor: 'rgba(150, 255, 150, 0.6)' },
+            bagima: { id: 'bagima', name: 'バギマ', mp: 8, type: 'attack', target: 'all', power: 60, learnLevel: 22, learnableBy: ['seer'], element: 'wind', flashColor: 'rgba(150, 255, 150, 0.8)' },
+            // 雷属性呪文
+            dein: { id: 'dein', name: 'デイン', mp: 6, type: 'attack', target: 'single', power: 40, learnLevel: 15, learnableBy: ['hero'], element: 'lightning', flashColor: 'rgba(255, 255, 0, 0.7)' },
+            raiden: { id: 'raiden', name: 'ライデイン', mp: 12, type: 'attack', target: 'all', power: 100, learnLevel: 30, learnableBy: ['hero'], element: 'lightning', flashColor: 'rgba(255, 255, 0, 0.9)' },
             // 状態異常呪文 - 魔法使い系
             rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 5, learnableBy: ['mage', 'seer'], element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
             manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 9, learnableBy: ['mage'], element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
@@ -1331,7 +1487,12 @@
                 pyramidGuardian: false,  // ピラミッドの守護者
                 desertGuardian: false,   // 砂漠の守護者（城の中ボス）
                 // エリア3ボス
-                shadowGuardian: false    // 闇の守護者（古城の最終ボス）
+                shadowGuardian: false,   // 闇の守護者（古城の最終ボス）
+                wedgeGuardian_north: false, // 北の楔守護者
+                wedgeGuardian_east: false,  // 東の楔守護者
+                wedgeGuardian_south: false, // 南の楔守護者
+                wedgeGuardian_west: false,  // 西の楔守護者
+                libraryGuardian: false      // 図書室の守護者
             },
             // ストーリー進行フラグ
             storyFlags: {
@@ -1429,6 +1590,12 @@
             gameProgress.bossDefeated.banditKing = false;
             gameProgress.bossDefeated.pyramidGuardian = false;
             gameProgress.bossDefeated.desertGuardian = false;
+            gameProgress.bossDefeated.shadowGuardian = false;
+            gameProgress.bossDefeated.wedgeGuardian_north = false;
+            gameProgress.bossDefeated.wedgeGuardian_east = false;
+            gameProgress.bossDefeated.wedgeGuardian_south = false;
+            gameProgress.bossDefeated.wedgeGuardian_west = false;
+            gameProgress.bossDefeated.libraryGuardian = false;
             gameProgress.storyFlags.reportedMidBossDefeat = false;
             gameProgress.storyFlags.portalRoomUnlocked = false;
             gameProgress.storyFlags.mageJoined = false;
@@ -5499,6 +5666,21 @@
                                     setStoryFlag('shadowGuardianDefeated', true);
                                     setStoryFlag('area3Completed', true);
                                     questMessage = '闇の守護者が 光を取り戻した...';
+                                } else if (bossId === 'wedgeGuardian_north') {
+                                    collectWedge('wedge_north', true);
+                                    questMessage = '北の楔 を手に入れた！';
+                                } else if (bossId === 'wedgeGuardian_east') {
+                                    collectWedge('wedge_east', true);
+                                    questMessage = '東の楔 を手に入れた！';
+                                } else if (bossId === 'wedgeGuardian_south') {
+                                    collectWedge('wedge_south', true);
+                                    questMessage = '南の楔 を手に入れた！';
+                                } else if (bossId === 'wedgeGuardian_west') {
+                                    collectWedge('wedge_west', true);
+                                    questMessage = '西の楔 を手に入れた！';
+                                } else if (bossId === 'libraryGuardian') {
+                                    setBossDefeated('libraryGuardian', true);
+                                    questMessage = '図書室の封印が解かれた...';
                                 }
 
                                 if (questMessage) {
@@ -7594,10 +7776,20 @@
         function handleWedgeAltar(x, y) {
             // 座標から楔の種類を判定
             let wedgeId = null;
-            if (y < 50 && Math.abs(x - 50) < 10) wedgeId = 'wedge_north';
-            else if (y > 50 && Math.abs(x - 50) < 10) wedgeId = 'wedge_south';
-            else if (x < 50 && Math.abs(y - 50) < 10) wedgeId = 'wedge_west';
-            else if (x > 50 && Math.abs(y - 50) < 10) wedgeId = 'wedge_east';
+            let dungeonMap = null;
+            if (y < 50 && Math.abs(x - 50) < 10) {
+                wedgeId = 'wedge_north';
+                dungeonMap = 'maps/wedge_dungeon_north_b1.json';
+            } else if (y > 50 && Math.abs(x - 50) < 10) {
+                wedgeId = 'wedge_south';
+                dungeonMap = 'maps/wedge_dungeon_south_b1.json';
+            } else if (x < 50 && Math.abs(y - 50) < 10) {
+                wedgeId = 'wedge_west';
+                dungeonMap = 'maps/wedge_dungeon_west_b1.json';
+            } else if (x > 50 && Math.abs(y - 50) < 10) {
+                wedgeId = 'wedge_east';
+                dungeonMap = 'maps/wedge_dungeon_east_b1.json';
+            }
 
             if (!wedgeId) {
                 startDialog(['古代の祭壇だ...']);
@@ -7605,18 +7797,29 @@
             }
 
             if (gameProgress.quests.wedges[wedgeId]) {
-                startDialog(['ここには既に楔がない...']);
+                startDialog(['ここには既に楔がない...', '守護者を倒した跡が残っている。']);
             } else {
-                collectWedge(wedgeId);
+                // ダンジョンへのワープ確認
+                startDialogWithCallback([
+                    '古代の祭壇だ...',
+                    '地下へ続く階段がある。',
+                    '降りますか？'
+                ], () => {
+                    // はい/いいえ選択のダイアログへ
+                    // ワープ処理は既存のwarpsで行われるため、ダイアログのみ
+                    loadMap(dungeonMap, 12, 23);
+                });
             }
         }
 
         // 楔を収集する
-        function collectWedge(wedgeId) {
+        // skipDialog: trueの場合はダイアログをスキップ（ボス戦後の呼び出し用）
+        function collectWedge(wedgeId, skipDialog = false) {
             // wedgeId: 'wedge_north', 'wedge_east', 'wedge_south', 'wedge_west'
             if (gameProgress.quests.wedges[wedgeId]) return; // 既に取得済み
 
             gameProgress.quests.wedges[wedgeId] = true;
+            setBossDefeated('wedgeGuardian_' + wedgeId.replace('wedge_', ''), true);
 
             const wedgeNames = {
                 wedge_north: '北の楔',
@@ -7667,19 +7870,25 @@
                 ]
             };
 
+            // セレンの加入条件を更新（楔1つ取得でstage3達成）
+            const collectedCount = Object.values(gameProgress.quests.wedges)
+                .filter((v, i) => i < 4 && v).length;
+            if (collectedCount >= 1 && !gameProgress.quests.serenJoin.stage3_completed) {
+                gameProgress.quests.serenJoin.stage3_completed = true;
+            }
+
+            // ボス戦後の呼び出しの場合はダイアログをスキップ
+            if (skipDialog) {
+                checkAllWedgesCollected();
+                saveGame();
+                return;
+            }
+
             startDialogWithCallback(wedgeMemories[wedgeId] || [
                 `${wedgeNames[wedgeId]}を手に入れた！`,
                 '古代の力を感じる...'
             ], () => {
                 checkAllWedgesCollected();
-
-                // セレンの加入条件を更新（楔1つ取得でstage3達成）
-                const collectedCount = Object.values(gameProgress.quests.wedges)
-                    .filter((v, i) => i < 4 && v).length;
-                if (collectedCount >= 1 && !gameProgress.quests.serenJoin.stage3_completed) {
-                    gameProgress.quests.serenJoin.stage3_completed = true;
-                }
-
                 saveGame();
             });
         }
