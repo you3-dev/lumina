@@ -35,7 +35,7 @@
     [7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7]
   ],
   "warps": [
-    { "x": 10, "y": 18, "targetMap": "maps/surface_3.json", "targetX": 50, "targetY": 11 }
+    { "x": 10, "y": 18, "targetMap": "maps/underworld_3.json", "targetX": 50, "targetY": 10 }
   ],
   "npcs": [
     {

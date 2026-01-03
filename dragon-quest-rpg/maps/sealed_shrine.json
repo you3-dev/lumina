@@ -23,7 +23,7 @@
     [7,7,7,7,7,7,7,7,7]
   ],
   "warps": [
-    { "x": 4, "y": 6, "targetMap": "maps/surface_3.json", "targetX": 50, "targetY": 35 }
+    { "x": 4, "y": 6, "targetMap": "maps/underworld_3.json", "targetX": 50, "targetY": 50 }
   ],
   "portals": [],
   "npcs": [
@@ -34,9 +34,10 @@
       "sprite": "🧙",
       "type": "villager",
       "messages": [
-        "ようこそ、古の大地へ。",
+        "ようこそ...そして、さらばだ。",
         "この祠の扉は今、永遠に封じられた。",
-        "外へ出れば、広大な大地が広がっておる。"
+        "外へ出れば、地底の世界が広がっておる。",
+        "かつてこの地上を覆った闇から逃れた者たちが暮らしておる。"
       ]
     },
     {
