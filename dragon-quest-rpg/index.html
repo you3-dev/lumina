@@ -476,7 +476,8 @@
             HOLE: 16,             // 穴（地底へ落下）
             UNDERWORLD_FLOOR: 17, // 地底床
             UNDERWORLD_WALL: 18,  // 地底壁
-            WEDGE_ALTAR: 19       // 楔の祭壇
+            WEDGE_ALTAR: 19,      // 楔の祭壇
+            UNDERWORLD_TOWN: 20   // 地底の街（暗い背景）
         };
 
         // マップタイプ別のタイル色
@@ -529,10 +530,11 @@
             [TILE.HOLE]: '#1a0a1a',
             [TILE.UNDERWORLD_FLOOR]: '#2a1a2a',
             [TILE.UNDERWORLD_WALL]: '#0a0a0a',
-            [TILE.WEDGE_ALTAR]: '#8a6a3a'
+            [TILE.WEDGE_ALTAR]: '#8a6a3a',
+            [TILE.UNDERWORLD_TOWN]: '#2a1a2a'  // 地底床と同じ暗い背景
         };
 
-        const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR, TILE.PORTAL, TILE.STAIRS_UP, TILE.STAIRS_DOWN, TILE.SAND, TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND, TILE.UNDERWORLD_FLOOR, TILE.WEDGE_ALTAR];
+        const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR, TILE.PORTAL, TILE.STAIRS_UP, TILE.STAIRS_DOWN, TILE.SAND, TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND, TILE.UNDERWORLD_FLOOR, TILE.WEDGE_ALTAR, TILE.UNDERWORLD_TOWN];
         const ENCOUNTER_TILES = [TILE.GRASS, TILE.FLOOR, TILE.SAND, TILE.UNDERWORLD_FLOOR]; // エンカウントが発生するタイル（草原、ダンジョン床、砂漠、地底床）
 
         // ========================================
@@ -2818,6 +2820,8 @@
             } else if (tile === TILE.CASTLE) {
                 ctx.fillText('🏰', x + tileSize / 2, y + tileSize / 2);
             } else if (tile === TILE.TOWN) {
+                ctx.fillText('🏘️', x + tileSize / 2, y + tileSize / 2);
+            } else if (tile === TILE.UNDERWORLD_TOWN) {
                 ctx.fillText('🏘️', x + tileSize / 2, y + tileSize / 2);
             } else if (tile === TILE.STAIRS) {
                 ctx.fillText('🪜', x + tileSize / 2, y + tileSize / 2);
@@ -9461,7 +9465,8 @@
             14: '#b89050', // 流砂
             // 地底タイル
             17: '#2a1a3a', // 地底床 - 暗い紫
-            18: '#0a0a1a'  // 地底壁 - ほぼ黒
+            18: '#0a0a1a', // 地底壁 - ほぼ黒
+            20: '#ffffff'  // 地底の街 - 白（ワールドマップで目立つ）
         };
 
         // 地図表示の状態
