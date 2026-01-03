@@ -1324,7 +1324,9 @@
                 serenJoined: false,            // 星読みセレンが仲間になった
                 ancientCastleUnlocked: false,  // 古城最上階が開放された
                 area3Entered: false,           // エリア3に入った（ルーラ制限判定用）
-                area3SealActivated: false      // 封印が発動した
+                area3SealActivated: false,     // 封印が発動した
+                shadowGuardianDefeated: false, // 闇の守護者を撃破した
+                area3Completed: false          // エリア3をクリアした
             },
             // クエストフラグ（エリア2）
             quests: {
@@ -1412,6 +1414,8 @@
             gameProgress.storyFlags.ancientCastleUnlocked = false;
             gameProgress.storyFlags.area3Entered = false;
             gameProgress.storyFlags.area3SealActivated = false;
+            gameProgress.storyFlags.shadowGuardianDefeated = false;
+            gameProgress.storyFlags.area3Completed = false;
             // クエストリセット
             Object.keys(gameProgress.quests).forEach(questName => {
                 Object.keys(gameProgress.quests[questName]).forEach(flag => {
