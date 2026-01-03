@@ -3341,7 +3341,7 @@
                         const selectedItem = selectedItemId ? items[selectedItemId] : null;
                         if (selectedItem) {
                             const subMenuWidth = tileSize * 3.5;
-                            const subMenuHeight = tileSize * 2;
+                            const subMenuHeight = tileSize * 2.5;
                             const subMenuX = menuX + menuWidth - subMenuWidth - 20;
                             // スクロール位置を考慮した画面上のY座標
                             const visibleCursorPos = menu.itemCursor - itemScrollOffset;
@@ -8778,10 +8778,10 @@
                     // アイテムアクションサブメニュー操作
                     switch (e.key) {
                         case 'ArrowUp': case 'w': case 'W':
-                            menu.itemActionIndex = (menu.itemActionIndex + 2) % 3;
+                            menu.itemActionIndex = (menu.itemActionIndex + 3) % 4;
                             break;
                         case 'ArrowDown': case 's': case 'S':
-                            menu.itemActionIndex = (menu.itemActionIndex + 1) % 3;
+                            menu.itemActionIndex = (menu.itemActionIndex + 1) % 4;
                             break;
                         case 'Enter': case ' ': case 'z': case 'Z':
                             executeItemAction();
@@ -9106,8 +9106,8 @@
                         else if (dy > 0) menu.targetMemberCursor = (menu.targetMemberCursor + 1) % party.length;
                     } else if (menu.showItemAction) {
                         // アイテムアクションサブメニュー
-                        if (dy < 0) menu.itemActionIndex = (menu.itemActionIndex + 2) % 3;
-                        else if (dy > 0) menu.itemActionIndex = (menu.itemActionIndex + 1) % 3;
+                        if (dy < 0) menu.itemActionIndex = (menu.itemActionIndex + 3) % 4;
+                        else if (dy > 0) menu.itemActionIndex = (menu.itemActionIndex + 1) % 4;
                     } else if (menu.mode === 'items' && player.inventory.length > 0) {
                         // アイテムリスト（有効なアイテムのみカウント）
                         const validItems = player.inventory.filter(slot => items[slot.id]);
