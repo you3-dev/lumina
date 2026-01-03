@@ -9962,6 +9962,7 @@
             const btn = document.getElementById(id);
             const handlePress = (e) => {
                 e.preventDefault();
+                initAudio(); // ユーザー操作でAudioContextを初期化
                 // パーティ加入確認
                 if (partyJoinConfirm.active) {
                     if (dx < 0) partyJoinConfirm.selectedIndex = 0;
@@ -10110,7 +10111,7 @@
 
         function setupActionButton(id, callback) {
             const btn = document.getElementById(id);
-            const handlePress = (e) => { e.preventDefault(); btn.classList.add('pressed'); callback(); };
+            const handlePress = (e) => { e.preventDefault(); initAudio(); btn.classList.add('pressed'); callback(); };
             const handleRelease = () => { btn.classList.remove('pressed'); };
             btn.addEventListener('touchstart', handlePress, { passive: false });
             btn.addEventListener('touchend', handleRelease);
