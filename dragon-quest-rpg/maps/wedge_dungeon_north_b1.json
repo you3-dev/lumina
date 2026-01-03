@@ -39,7 +39,7 @@
   ],
   "warps": [
     { "x": 12, "y": 23, "targetMap": "maps/underworld_3.json", "targetX": 50, "targetY": 25 },
-    { "x": 12, "y": 12, "targetMap": "maps/wedge_dungeon_north_b2.json", "targetX": 15, "targetY": 28 }
+    { "x": 11, "y": 12, "targetMap": "maps/wedge_dungeon_north_b2.json", "targetX": 15, "targetY": 28 }
   ],
   "npcs": [],
   "chests": [
