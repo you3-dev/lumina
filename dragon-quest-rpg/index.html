@@ -1170,87 +1170,89 @@
             shadowGuardian: {
                 name: 'やみのしゅごしゃ',
                 sprite: '👁️',
-                level: 35,
-                hp: 1000,
-                atk: 110,
-                def: 65,
-                speed: 25,
-                exp: 2500,
-                gold: 1200,
+                level: 38,
+                hp: 2000,
+                atk: 145,
+                def: 75,
+                speed: 28,
+                exp: 3500,
+                gold: 1800,
                 isBoss: true,
-                spells: ['giragura', 'mahoton', 'hyados'],
-                resistances: { sleep: 0, blind: 0.5, poison: 0 }
+                actions: 2,  // 2回行動
+                skills: ['attack', 'attack', 'giragura', 'hyados', 'strongAttack', 'behoma'],
+                resistances: { sleep: 0, blind: 0.3, poison: 0 }
             },
-            // 楔の守護者（4属性）
+            // 楔の守護者（4属性）- ステータス強化＆skills追加
             wedgeGuardian_north: {
                 name: 'こおりのしゅごしゃ',
                 sprite: '❄️',
-                level: 28,
-                hp: 650,
-                atk: 85,
-                def: 55,
-                speed: 18,
-                exp: 900,
-                gold: 600,
+                level: 32,
+                hp: 950,
+                atk: 105,
+                def: 60,
+                speed: 20,
+                exp: 1200,
+                gold: 750,
                 isBoss: true,
-                spells: ['hyado', 'hyados'],
-                resistances: { ice: 0, fire: 2.0 }
+                skills: ['attack', 'attack', 'hyados', 'strongAttack'],
+                resistances: { ice: 0, fire: 2.0, sleep: 0.3 }
             },
             wedgeGuardian_east: {
                 name: 'ほのおのしゅごしゃ',
                 sprite: '🔥',
-                level: 29,
-                hp: 600,
-                atk: 95,
-                def: 45,
-                speed: 22,
-                exp: 950,
-                gold: 620,
+                level: 32,
+                hp: 900,
+                atk: 115,
+                def: 50,
+                speed: 24,
+                exp: 1250,
+                gold: 780,
                 isBoss: true,
-                spells: ['gira', 'giragura'],
-                resistances: { fire: 0, ice: 2.0 }
+                skills: ['attack', 'attack', 'giragura', 'strongAttack'],
+                resistances: { fire: 0, ice: 2.0, sleep: 0.3 }
             },
             wedgeGuardian_south: {
                 name: 'かぜのしゅごしゃ',
                 sprite: '🌀',
-                level: 28,
-                hp: 550,
-                atk: 75,
-                def: 50,
-                speed: 35,
-                exp: 880,
-                gold: 580,
+                level: 32,
+                hp: 850,
+                atk: 95,
+                def: 55,
+                speed: 38,
+                exp: 1150,
+                gold: 720,
                 isBoss: true,
-                spells: ['bagima', 'piorimu'],
-                resistances: { death: 0 }
+                skills: ['attack', 'attack', 'bagigross', 'strongAttack'],
+                resistances: { death: 0, sleep: 0.3 }
             },
             wedgeGuardian_west: {
                 name: 'いかずちのしゅごしゃ',
                 sprite: '⚡',
-                level: 30,
-                hp: 700,
-                atk: 90,
-                def: 60,
-                speed: 20,
-                exp: 1000,
-                gold: 650,
+                level: 33,
+                hp: 1000,
+                atk: 110,
+                def: 65,
+                speed: 22,
+                exp: 1300,
+                gold: 800,
                 isBoss: true,
-                spells: ['dein', 'raiden'],
-                resistances: { lightning: 0, paralysis: 0 }
+                skills: ['attack', 'attack', 'raiden', 'strongAttack'],
+                resistances: { lightning: 0, paralysis: 0, sleep: 0.3 }
             },
             // 図書室の守護者（古城中ボス）
             libraryGuardian: {
                 name: 'としょしつのばんにん',
                 sprite: '📚',
-                level: 32,
-                hp: 350,
-                atk: 70,
-                def: 55,
-                speed: 15,
-                exp: 1200,
-                gold: 700,
+                level: 34,
+                hp: 700,
+                atk: 95,
+                def: 60,
+                speed: 18,
+                exp: 1500,
+                gold: 900,
                 isBoss: true,
-                spells: ['mahoton', 'rariho']
+                skills: ['attack', 'attack', 'strongAttack', 'mahoton'],
+                resistances: { sleep: 0.5 }
             },
             // ===== 楔ダンジョン用雑魚敵 =====
             boneWarrior: {
@@ -1350,11 +1352,21 @@
             }
         };
 
-        // 魔王専用スキル
+        // ボス専用スキル
         const bossSkills = {
-            hageshiiHonoo: { name: 'はげしいほのお', type: 'attack', power: 40, flashColor: 'rgba(255, 50, 0, 0.7)' },
+            // 全体攻撃スキル
+            hageshiiHonoo: { name: 'はげしいほのお', type: 'attack', target: 'all', power: 45, flashColor: 'rgba(255, 50, 0, 0.7)' },
+            ionazun: { name: 'イオナズン', type: 'attack', target: 'all', power: 55, flashColor: 'rgba(255, 255, 0, 0.7)' },
+            hyados: { name: 'ヒャダルコ', type: 'attack', target: 'all', power: 40, flashColor: 'rgba(100, 200, 255, 0.7)' },
+            giragura: { name: 'ギラグレイド', type: 'attack', target: 'all', power: 50, flashColor: 'rgba(255, 200, 50, 0.9)' },
+            bagigross: { name: 'バギクロス', type: 'attack', target: 'all', power: 45, flashColor: 'rgba(200, 255, 200, 0.7)' },
+            raiden: { name: 'ライデイン', type: 'attack', target: 'all', power: 48, flashColor: 'rgba(255, 255, 100, 0.8)' },
+            // 単体攻撃スキル
+            strongAttack: { name: 'つよいこうげき', type: 'attack', target: 'single', power: 60, flashColor: 'rgba(255, 100, 100, 0.5)' },
+            // 回復スキル
             behoma: { name: 'ベホマ', type: 'heal', power: 9999, flashColor: 'rgba(0, 255, 100, 0.5)' },
-            ionazun: { name: 'イオナズン', type: 'attack', power: 55, flashColor: 'rgba(255, 255, 0, 0.7)' }
+            // 補助スキル
+            mahoton: { name: 'マホトーン', type: 'debuff', effect: 'silence', flashColor: 'rgba(128, 0, 128, 0.5)' }
         };
 
         // エリア別エンカウントテーブル（mapIdベース）
@@ -8489,6 +8501,9 @@
         }
 
         // 魔王のAI行動選択
+        // 全体攻撃スキルのリスト
+        const aoeSkills = ['hageshiiHonoo', 'ionazun', 'hyados', 'giragura', 'bagigross', 'raiden'];
+
         function selectMaouAction() {
             const hpRatio = battle.enemy.currentHp / battle.enemy.hp;
             const skills = battle.enemy.skills;
@@ -8498,25 +8513,41 @@
                 return 'attack';
             }
 
+            // 2回行動の2回目は全体攻撃を選ばない
+            const isSecondAction = battle.enemy.actionCount > 0;
+            const lastActionWasAoe = battle.enemy.lastActionWasAoe || false;
+
             // HP50%以下でベホマを使う確率が上がる
-            if (hpRatio < 0.5 && battle.enemy.currentMp >= 50 && skills.includes('behoma') && Math.random() < 0.4) {
+            if (hpRatio < 0.5 && skills.includes('behoma') && Math.random() < 0.35) {
+                battle.enemy.lastActionWasAoe = false;
                 return 'behoma';
             }
 
-            // HP30%以下で強力な攻撃を多用
-            if (hpRatio < 0.3) {
-                const aggressiveSkills = skills.filter(s => s === 'ionazun' || s === 'hageshiiHonoo');
-                if (aggressiveSkills.length > 0) {
+            // HP30%以下で強力な攻撃を多用（ただし2回目は単体攻撃）
+            if (hpRatio < 0.3 && !isSecondAction) {
+                const aggressiveSkills = skills.filter(s => aoeSkills.includes(s));
+                if (aggressiveSkills.length > 0 && Math.random() < 0.6) {
+                    battle.enemy.lastActionWasAoe = true;
                     return aggressiveSkills[Math.floor(Math.random() * aggressiveSkills.length)];
                 }
             }
 
             // 通常時はランダムに行動（ベホマ以外）
-            const normalSkills = skills.filter(s => s !== 'behoma');
-            if (normalSkills.length === 0) {
+            let availableSkills = skills.filter(s => s !== 'behoma');
+
+            // 2回目の行動では全体攻撃を除外
+            if (isSecondAction || lastActionWasAoe) {
+                availableSkills = availableSkills.filter(s => !aoeSkills.includes(s));
+            }
+
+            if (availableSkills.length === 0) {
+                battle.enemy.lastActionWasAoe = false;
                 return 'attack';
             }
-            return normalSkills[Math.floor(Math.random() * normalSkills.length)];
+
+            const selectedSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+            battle.enemy.lastActionWasAoe = aoeSkills.includes(selectedSkill);
+            return selectedSkill;
         }
 
         // ボスのスキル実行
@@ -8581,24 +8612,60 @@
                             callback();
                         });
                     } else if (skill.type === 'attack') {
-                        // ランダムなパーティメンバーをターゲット
-                        const target = getRandomAlivePartyMember();
-                        if (!target) {
-                            checkBattleEnd();
-                            return;
-                        }
-                        const damage = skill.power + Math.floor(Math.random() * 15);
-                        target.hp -= damage;
-                        showBattleMessage(`${target.name} に ${damage} の ダメージ！`, () => {
-                            if (target.hp <= 0) {
-                                target.hp = 0;
-                                target.isAlive = false;
-                                showBattleMessage(`${target.name} は たおれた！`, () => {
-                                    checkBattleEnd() || callback();
-                                });
-                            } else {
-                                callback();
+                        // 全体攻撃か単体攻撃か判定
+                        if (skill.target === 'all') {
+                            // 全体攻撃：生存している全パーティメンバーにダメージ
+                            const aliveMembers = getAlivePartyMembers();
+                            if (aliveMembers.length === 0) {
+                                checkBattleEnd();
+                                return;
                             }
+                            let totalDamageMsg = '';
+                            let defeatedMembers = [];
+                            aliveMembers.forEach(member => {
+                                const damage = Math.max(1, skill.power + Math.floor(Math.random() * 15) - Math.floor(member.actualDef / 8));
+                                member.hp -= damage;
+                                totalDamageMsg += `${member.name}に ${damage}  `;
+                                if (member.hp <= 0) {
+                                    member.hp = 0;
+                                    member.isAlive = false;
+                                    defeatedMembers.push(member.name);
+                                }
+                            });
+                            showBattleMessage(totalDamageMsg + 'のダメージ！', () => {
+                                if (defeatedMembers.length > 0) {
+                                    showBattleMessage(`${defeatedMembers.join('と ')} は たおれた！`, () => {
+                                        checkBattleEnd() || callback();
+                                    });
+                                } else {
+                                    callback();
+                                }
+                            });
+                        } else {
+                            // 単体攻撃：ランダムなパーティメンバーをターゲット
+                            const target = getRandomAlivePartyMember();
+                            if (!target) {
+                                checkBattleEnd();
+                                return;
+                            }
+                            const damage = skill.power + Math.floor(Math.random() * 15);
+                            target.hp -= damage;
+                            showBattleMessage(`${target.name} に ${damage} の ダメージ！`, () => {
+                                if (target.hp <= 0) {
+                                    target.hp = 0;
+                                    target.isAlive = false;
+                                    showBattleMessage(`${target.name} は たおれた！`, () => {
+                                        checkBattleEnd() || callback();
+                                    });
+                                } else {
+                                    callback();
+                                }
+                            });
+                        }
+                    } else if (skill.type === 'debuff') {
+                        // デバフスキル（マホトーンなど）
+                        showBattleMessage('しかし なにも おこらなかった...', () => {
+                            callback();
                         });
                     } else {
                         callback();
