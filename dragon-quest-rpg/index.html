@@ -8772,7 +8772,7 @@
                 } else if (menu.mode === 'items' && player.inventory.length > 0) {
                     // アイテムリスト操作（有効なアイテムのみカウント）
                     const validItems = player.inventory.filter(slot => items[slot.id]);
-                    if (validItems.length === 0) break;
+                    if (validItems.length === 0) return;
                     switch (e.key) {
                         case 'ArrowUp': case 'w': case 'W':
                             menu.itemCursor = (menu.itemCursor + validItems.length - 1) % validItems.length;
