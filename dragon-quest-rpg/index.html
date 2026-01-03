@@ -2549,6 +2549,7 @@
                         name: mapData.name,
                         type: mapData.type,
                         encounterRate: mapData.encounterRate,
+                        encounterTable: mapData.encounterTable,
                         mapId: mapData.mapId,
                         _isExternal: true
                     };
@@ -2566,9 +2567,11 @@
                             npcs: JSON.parse(JSON.stringify(sourceMap.npcs || [])),
                             chests: JSON.parse(JSON.stringify(sourceMap.chests || [])),
                             warps: sourceMap.warps ? [...sourceMap.warps] : [],
+                            portals: sourceMap.portals ? [...sourceMap.portals] : [],
                             name: sourceMap.name,
                             type: sourceMap.type,
-                            encounterRate: sourceMap.encounterRate
+                            encounterRate: sourceMap.encounterRate,
+                            encounterTable: sourceMap.encounterTable
                         };
                     } else {
                         const fieldMap = maps['field'];
@@ -2579,9 +2582,11 @@
                             npcs: JSON.parse(JSON.stringify(fieldMap.npcs || [])),
                             chests: JSON.parse(JSON.stringify(fieldMap.chests || [])),
                             warps: fieldMap.warps ? [...fieldMap.warps] : [],
+                            portals: fieldMap.portals ? [...fieldMap.portals] : [],
                             name: fieldMap.name,
                             type: fieldMap.type,
-                            encounterRate: fieldMap.encounterRate
+                            encounterRate: fieldMap.encounterRate,
+                            encounterTable: fieldMap.encounterTable
                         };
                         currentMapId = 'field';
                     }
