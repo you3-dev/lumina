@@ -1255,6 +1255,7 @@
             behomazun: { id: 'behomazun', name: 'ベホマズン', mp: 40, type: 'heal', power: 999, learnLevel: 60, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(0, 255, 100, 1.0)' },
             // 復活呪文（勇者）
             zaoraru: { id: 'zaoraru', name: 'ザオラル', mp: 10, type: 'revive', successRate: 0.5, learnLevel: 22, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(255, 255, 200, 0.7)' },
+            zaoriku: { id: 'zaoriku', name: 'ザオリク', mp: 20, type: 'revive', successRate: 1.0, learnLevel: 99, learnableBy: [], element: 'heal', flashColor: 'rgba(255, 255, 255, 1.0)' },
             // 攻撃呪文（単体）- 魔法使い系
             mera: { id: 'mera', name: 'メラ', mp: 2, type: 'attack', target: 'single', power: 15, learnLevel: 3, learnableBy: ['hero', 'mage'], element: 'fire', flashColor: 'rgba(255, 100, 0, 0.6)' },
             merami: { id: 'merami', name: 'メラミ', mp: 8, type: 'attack', target: 'single', power: 80, learnLevel: 28, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 100, 0, 0.8)' },
@@ -1325,8 +1326,9 @@
                 ancientCastleUnlocked: false,  // 古城最上階が開放された
                 area3Entered: false,           // エリア3に入った（ルーラ制限判定用）
                 area3SealActivated: false,     // 封印が発動した
-                shadowGuardianDefeated: false, // 闇の守護者を撃破した
-                area3Completed: false          // エリア3をクリアした
+                shadowGuardianDefeated: false, // 闘の守護者を撃破した
+                area3Completed: false,         // エリア3をクリアした
+                ancientSpellReceived: false    // 古代呪文ザオリクを授かった
             },
             // クエストフラグ（エリア2）
             quests: {
@@ -1416,6 +1418,7 @@
             gameProgress.storyFlags.area3SealActivated = false;
             gameProgress.storyFlags.shadowGuardianDefeated = false;
             gameProgress.storyFlags.area3Completed = false;
+            gameProgress.storyFlags.ancientSpellReceived = false;
             // クエストリセット
             Object.keys(gameProgress.quests).forEach(questName => {
                 Object.keys(gameProgress.quests[questName]).forEach(flag => {
@@ -7408,6 +7411,9 @@
                 } else if (npc.type === 'healer') {
                     // ヒーラーNPC - HP/MP全回復
                     handleHealerNpc(npc);
+                } else if (npc.type === 'quest_ancient_spell') {
+                    // 古代呪文クエストNPC
+                    handleAncientSpellQuest(npc);
                 } else {
                     // ゲームクリア後はNPCのセリフが変わる
                     if (gameCleared && npc.clearedMessages) {
@@ -7616,6 +7622,48 @@
 
                     saveGame();
                 }, 400);
+            });
+        }
+
+        // 古代呪文クエストNPC処理
+        function handleAncientSpellQuest(npc) {
+            // 既に呪文を授かった
+            if (getStoryFlag('ancientSpellReceived')) {
+                startDialog(npc.alreadyRewarded || ['もう呪文は授けたはずじゃ。']);
+                return;
+            }
+
+            // 闇の守護者を撃破していない
+            if (!getStoryFlag('shadowGuardianDefeated')) {
+                startDialog(npc.questNotComplete || npc.messages);
+                return;
+            }
+
+            // 条件達成 - 呪文を授ける
+            startDialogWithCallback(npc.questComplete || ['古代呪文を授けよう。'], () => {
+                // 呪文習得演出
+                spellFlash.active = true;
+                spellFlash.color = 'rgba(255, 255, 255, 1.0)';
+                spellFlash.alpha = 1.0;
+
+                setTimeout(() => {
+                    spellFlash.active = false;
+
+                    // ザオリクを習得
+                    if (!player.spells.includes('zaoriku')) {
+                        player.spells.push('zaoriku');
+                    }
+
+                    // フラグを立てる
+                    setStoryFlag('ancientSpellReceived', true);
+
+                    startDialog([
+                        `${player.name}は ザオリクを 覚えた！`,
+                        '（確実に 仲間を蘇生させる 究極の復活呪文）'
+                    ]);
+
+                    saveGame();
+                }, 600);
             });
         }
 
