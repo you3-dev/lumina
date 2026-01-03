@@ -3885,16 +3885,17 @@
                         ctx.fillText('👆', x, y - spriteSize / 2 - tileSize * 0.3);
                     }
 
-                    // モンスター名
+                    // モンスター名（各敵のスプライトの下に個別表示）
+                    const nameY = y + spriteSize / 2 + tileSize * 0.4;
                     ctx.fillStyle = isDead ? '#888' : '#fff';
-                    ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
-                    ctx.fillText(enemy.displayName, x, canvasHeight * 0.55);
+                    ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                    ctx.fillText(enemy.displayName, x, nameY);
 
                     // 倒した表示（HPは非表示で緊張感を演出）
                     if (isDead && (battle.phase === 'command' || battle.phase === 'target')) {
                         ctx.fillStyle = '#888';
-                        ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
-                        ctx.fillText('倒した', x, canvasHeight * 0.55 + tileSize * 0.45);
+                        ctx.font = `${tileSize * 0.3}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                        ctx.fillText('倒した', x, nameY + tileSize * 0.4);
                     }
 
                     // 状態異常バッジを名前の下に表示
@@ -3902,8 +3903,8 @@
                         const enemyStatusBadge = getStatusBadges(enemy);
                         if (enemyStatusBadge) {
                             ctx.fillStyle = '#f88';
-                            ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
-                            ctx.fillText(enemyStatusBadge, x, canvasHeight * 0.55 + tileSize * 0.85);
+                            ctx.font = `${tileSize * 0.3}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                            ctx.fillText(enemyStatusBadge, x, nameY + tileSize * 0.4);
                         }
                     }
 
