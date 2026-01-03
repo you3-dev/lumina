@@ -552,36 +552,36 @@
             12: { id: 12, name: 'てつのつるぎ', type: 'weapon', value: 20, price: 300, equippable: ['hero'] },
             13: { id: 13, name: 'はがねのつるぎ', type: 'weapon', value: 35, price: 700, equippable: ['hero'] },
             14: { id: 14, name: 'ほのおのつるぎ', type: 'weapon', value: 40, price: 0, equippable: ['hero'] },
-            // 防具
+            // 防具（resistances: 1.0=等倍, 0.5=半減, 0=無効, 2.0=弱点）
             20: { id: 20, name: 'たびびとのふく', type: 'armor', value: 1, price: 10, equippable: ['hero', 'mage'] },
             21: { id: 21, name: 'かわのよろい', type: 'armor', value: 5, price: 80, equippable: ['hero', 'mage'] },
-            22: { id: 22, name: 'くさりかたびら', type: 'armor', value: 12, price: 250, equippable: ['hero'] },
-            23: { id: 23, name: 'てつのよろい', type: 'armor', value: 22, price: 600, equippable: ['hero'] },
-            24: { id: 24, name: 'まほうのよろい', type: 'armor', value: 35, price: 1200, equippable: ['hero', 'mage'] },
+            22: { id: 22, name: 'くさりかたびら', type: 'armor', value: 12, price: 250, equippable: ['hero'], resistances: { lightning: 0.8 } },
+            23: { id: 23, name: 'てつのよろい', type: 'armor', value: 22, price: 600, equippable: ['hero'], resistances: { fire: 0.9, lightning: 1.2 } },
+            24: { id: 24, name: 'まほうのよろい', type: 'armor', value: 35, price: 1200, equippable: ['hero', 'mage'], resistances: { fire: 0.7, ice: 0.7 } },
             // エリア2 武器・防具（勇者用）
             15: { id: 15, name: 'さばくのつるぎ', type: 'weapon', value: 45, price: 1500, equippable: ['hero'] },
             16: { id: 16, name: 'ファラオのつるぎ', type: 'weapon', value: 55, price: 3000, equippable: ['hero'] },
             17: { id: 17, name: 'おうごんのつめ', type: 'weapon', value: 65, price: 0, equippable: ['hero'] }, // 隠し通路の宝箱
-            25: { id: 25, name: 'さばくのよろい', type: 'armor', value: 40, price: 1800, equippable: ['hero'] },
-            26: { id: 26, name: 'ファラオのよろい', type: 'armor', value: 50, price: 3500, equippable: ['hero'] },
+            25: { id: 25, name: 'さばくのよろい', type: 'armor', value: 40, price: 1800, equippable: ['hero'], resistances: { fire: 0.6, ice: 1.2 } },
+            26: { id: 26, name: 'ファラオのよろい', type: 'armor', value: 50, price: 3500, equippable: ['hero'], resistances: { fire: 0.5, light: 0.8 } },
             // エリア2 武器・防具（魔法使い用）
             40: { id: 40, name: 'まどうしの杖', type: 'weapon', value: 15, price: 800, equippable: ['mage'] },
             41: { id: 41, name: 'ほのおの杖', type: 'weapon', value: 28, price: 2000, equippable: ['mage'] },
             42: { id: 42, name: 'いかずちの杖', type: 'weapon', value: 40, price: 4000, equippable: ['mage'] },
             43: { id: 43, name: 'けんじゃの杖', type: 'weapon', value: 55, price: 0, equippable: ['mage'] }, // 宝箱限定
-            50: { id: 50, name: 'まどうしのローブ', type: 'armor', value: 18, price: 1000, equippable: ['mage'] },
-            51: { id: 51, name: 'ほしふるローブ', type: 'armor', value: 32, price: 2500, equippable: ['mage'] },
-            52: { id: 52, name: 'だいまどうローブ', type: 'armor', value: 45, price: 5000, equippable: ['mage'] },
+            50: { id: 50, name: 'まどうしのローブ', type: 'armor', value: 18, price: 1000, equippable: ['mage'], resistances: { fire: 0.8, ice: 0.8 } },
+            51: { id: 51, name: 'ほしふるローブ', type: 'armor', value: 32, price: 2500, equippable: ['mage'], resistances: { light: 0.6, fire: 0.8, ice: 0.8 } },
+            52: { id: 52, name: 'だいまどうローブ', type: 'armor', value: 45, price: 5000, equippable: ['mage'], resistances: { fire: 0.6, ice: 0.6, lightning: 0.8 } },
             // エリア3 武器・防具（勇者用）
             18: { id: 18, name: 'やみのつるぎ', type: 'weapon', value: 75, price: 5000, equippable: ['hero'] },
             19: { id: 19, name: 'ほしくずのつるぎ', type: 'weapon', value: 90, price: 8000, equippable: ['hero'] },
-            27: { id: 27, name: 'やみのよろい', type: 'armor', value: 60, price: 6000, equippable: ['hero'] },
-            28: { id: 28, name: 'ほしくずのよろい', type: 'armor', value: 75, price: 10000, equippable: ['hero'] },
+            27: { id: 27, name: 'やみのよろい', type: 'armor', value: 60, price: 6000, equippable: ['hero'], resistances: { fire: 0.6, ice: 0.6, light: 1.3 } },
+            28: { id: 28, name: 'ほしくずのよろい', type: 'armor', value: 75, price: 10000, equippable: ['hero'], resistances: { fire: 0.5, ice: 0.5, lightning: 0.5, wind: 0.7, light: 0.7 } },
             // エリア3 武器・防具（魔法使い用）
             44: { id: 44, name: 'やみの杖', type: 'weapon', value: 50, price: 4500, equippable: ['mage'] },
             45: { id: 45, name: 'ほしくずの杖', type: 'weapon', value: 70, price: 7500, equippable: ['mage'] },
-            53: { id: 53, name: 'やみのローブ', type: 'armor', value: 55, price: 5500, equippable: ['mage'] },
-            54: { id: 54, name: 'ほしくずのローブ', type: 'armor', value: 70, price: 9000, equippable: ['mage'] },
+            53: { id: 53, name: 'やみのローブ', type: 'armor', value: 55, price: 5500, equippable: ['mage'], resistances: { fire: 0.5, ice: 0.5, light: 1.3 } },
+            54: { id: 54, name: 'ほしくずのローブ', type: 'armor', value: 70, price: 9000, equippable: ['mage'], resistances: { fire: 0.5, ice: 0.5, lightning: 0.5, wind: 0.6, light: 0.6 } },
             // クエストアイテム（エリア2）
             30: { id: 30, name: '清らかな水', description: 'オアシスの村を救う聖なる水', type: 'quest', price: 0 },
             31: { id: 31, name: '王家の紋章', description: '太陽の城塞への入城許可証', type: 'quest', price: 0 },
@@ -1359,14 +1359,14 @@
 
         // ボス専用スキル
         const bossSkills = {
-            // 全体攻撃スキル
-            hageshiiHonoo: { name: 'はげしいほのお', type: 'attack', target: 'all', power: 45, flashColor: 'rgba(255, 50, 0, 0.7)' },
-            ionazun: { name: 'イオナズン', type: 'attack', target: 'all', power: 55, flashColor: 'rgba(255, 255, 0, 0.7)' },
-            hyados: { name: 'ヒャダルコ', type: 'attack', target: 'all', power: 40, flashColor: 'rgba(100, 200, 255, 0.7)' },
-            giragura: { name: 'ギラグレイド', type: 'attack', target: 'all', power: 50, flashColor: 'rgba(255, 200, 50, 0.9)' },
-            bagigross: { name: 'バギクロス', type: 'attack', target: 'all', power: 45, flashColor: 'rgba(200, 255, 200, 0.7)' },
-            raiden: { name: 'ライデイン', type: 'attack', target: 'all', power: 48, flashColor: 'rgba(255, 255, 100, 0.8)' },
-            // 単体攻撃スキル
+            // 全体攻撃スキル（element: 属性）
+            hageshiiHonoo: { name: 'はげしいほのお', type: 'attack', target: 'all', power: 45, element: 'fire', flashColor: 'rgba(255, 50, 0, 0.7)' },
+            ionazun: { name: 'イオナズン', type: 'attack', target: 'all', power: 55, element: 'lightning', flashColor: 'rgba(255, 255, 0, 0.7)' },
+            hyados: { name: 'ヒャダルコ', type: 'attack', target: 'all', power: 40, element: 'ice', flashColor: 'rgba(100, 200, 255, 0.7)' },
+            giragura: { name: 'ギラグレイド', type: 'attack', target: 'all', power: 50, element: 'fire', flashColor: 'rgba(255, 200, 50, 0.9)' },
+            bagigross: { name: 'バギクロス', type: 'attack', target: 'all', power: 45, element: 'wind', flashColor: 'rgba(200, 255, 200, 0.7)' },
+            raiden: { name: 'ライデイン', type: 'attack', target: 'all', power: 48, element: 'lightning', flashColor: 'rgba(255, 255, 100, 0.8)' },
+            // 単体攻撃スキル（物理なので属性なし）
             strongAttack: { name: 'つよいこうげき', type: 'attack', target: 'single', power: 60, flashColor: 'rgba(255, 100, 100, 0.5)' },
             // 回復スキル
             behoma: { name: 'ベホマ', type: 'heal', power: 9999, flashColor: 'rgba(0, 255, 100, 0.5)' },
@@ -1534,6 +1534,70 @@
                     return 'あまり きいていないようだ...';
                 case 'resisted':
                     return 'こうかは いまひとつのようだ...';
+                default:
+                    return null;
+            }
+        }
+
+        // プレイヤーの装備から属性耐性を取得
+        function getPlayerElementResistance(member, element) {
+            if (!element || !ELEMENTS.includes(element)) {
+                return 1.0;  // 属性なしは等倍
+            }
+
+            let totalResistance = 1.0;
+
+            // 装備している防具の耐性を確認
+            if (member.equipment && member.equipment.armor) {
+                const armor = items[member.equipment.armor];
+                if (armor && armor.resistances && armor.resistances[element] !== undefined) {
+                    totalResistance *= armor.resistances[element];
+                }
+            }
+
+            return totalResistance;
+        }
+
+        // 敵スキル→プレイヤーの属性ダメージ倍率を計算
+        function getPlayerElementMultiplier(skill, member) {
+            // スキルに属性がない場合は等倍
+            if (!skill || !skill.element) {
+                return { multiplier: 1.0, effectiveness: 'normal' };
+            }
+
+            const element = skill.element;
+            const resistance = getPlayerElementResistance(member, element);
+
+            // 効果判定
+            let effectiveness = 'normal';
+            if (resistance === 0) {
+                effectiveness = 'immune';      // 無効
+            } else if (resistance <= 0.25) {
+                effectiveness = 'resistant';   // 強耐性
+            } else if (resistance <= 0.5) {
+                effectiveness = 'resisted';    // 耐性
+            } else if (resistance >= 2.0) {
+                effectiveness = 'weak';        // 弱点
+            } else if (resistance >= 1.5) {
+                effectiveness = 'effective';   // 効果的
+            }
+
+            return { multiplier: resistance, effectiveness };
+        }
+
+        // プレイヤーが受けるダメージの属性効果メッセージ
+        function getPlayerElementEffectivenessMessage(effectiveness, memberName) {
+            switch (effectiveness) {
+                case 'immune':
+                    return `${memberName} は ダメージを うけなかった！`;
+                case 'resistant':
+                    return `${memberName} は ほとんど ダメージを うけなかった！`;
+                case 'resisted':
+                    return `${memberName} への ダメージは すくなかった！`;
+                case 'weak':
+                    return `${memberName} の よわてんを ついた！`;
+                case 'effective':
+                    return `${memberName} に こうかてきだ！`;
                 default:
                     return null;
             }
@@ -9173,17 +9237,33 @@
                             }
                             let totalDamageMsg = '';
                             let defeatedMembers = [];
+                            let elementEffects = [];
                             aliveMembers.forEach(member => {
-                                const damage = Math.max(1, skill.power + Math.floor(Math.random() * 15) - Math.floor(member.actualDef / 8));
+                                // 属性倍率を計算
+                                const { multiplier, effectiveness } = getPlayerElementMultiplier(skill, member);
+                                const baseDamage = skill.power + Math.floor(Math.random() * 15) - Math.floor(member.actualDef / 8);
+                                const damage = Math.max(1, Math.floor(baseDamage * multiplier));
                                 member.hp -= damage;
                                 totalDamageMsg += `${member.name}に ${damage}  `;
+                                // 属性効果を記録
+                                if (effectiveness !== 'normal') {
+                                    elementEffects.push({ name: member.name, effectiveness });
+                                }
                                 if (member.hp <= 0) {
                                     member.hp = 0;
                                     member.isAlive = false;
                                     defeatedMembers.push(member.name);
                                 }
                             });
-                            showBattleMessage(totalDamageMsg + 'のダメージ！', () => {
+                            // 属性効果メッセージを追加
+                            let effectMsg = '';
+                            if (elementEffects.length > 0) {
+                                const resistedMembers = elementEffects.filter(e => e.effectiveness === 'resisted' || e.effectiveness === 'resistant');
+                                const weakMembers = elementEffects.filter(e => e.effectiveness === 'weak' || e.effectiveness === 'effective');
+                                if (resistedMembers.length > 0) effectMsg += ' (耐性あり)';
+                                if (weakMembers.length > 0) effectMsg += ' (弱点!)';
+                            }
+                            showBattleMessage(totalDamageMsg + 'のダメージ！' + effectMsg, () => {
                                 if (defeatedMembers.length > 0) {
                                     showBattleMessage(`${defeatedMembers.join('と ')} は たおれた！`, () => {
                                         checkBattleEnd() || callback();
@@ -9199,18 +9279,32 @@
                                 checkBattleEnd();
                                 return;
                             }
-                            const damage = skill.power + Math.floor(Math.random() * 15);
+                            // 属性倍率を計算
+                            const { multiplier, effectiveness } = getPlayerElementMultiplier(skill, target);
+                            const baseDamage = skill.power + Math.floor(Math.random() * 15);
+                            const damage = Math.max(1, Math.floor(baseDamage * multiplier));
                             target.hp -= damage;
+                            // 属性効果メッセージ
+                            const effectMsg = getPlayerElementEffectivenessMessage(effectiveness, target.name);
                             showBattleMessage(`${target.name} に ${damage} の ダメージ！`, () => {
-                                if (target.hp <= 0) {
-                                    target.hp = 0;
-                                    target.isAlive = false;
-                                    showBattleMessage(`${target.name} は たおれた！`, () => {
-                                        checkBattleEnd() || callback();
-                                    });
-                                } else {
-                                    callback();
-                                }
+                                const showEffectAndContinue = (nextCallback) => {
+                                    if (effectMsg) {
+                                        showBattleMessage(effectMsg, nextCallback);
+                                    } else {
+                                        nextCallback();
+                                    }
+                                };
+                                showEffectAndContinue(() => {
+                                    if (target.hp <= 0) {
+                                        target.hp = 0;
+                                        target.isAlive = false;
+                                        showBattleMessage(`${target.name} は たおれた！`, () => {
+                                            checkBattleEnd() || callback();
+                                        });
+                                    } else {
+                                        callback();
+                                    }
+                                });
                             });
                         }
                     } else if (skill.type === 'debuff') {
