@@ -8596,6 +8596,12 @@
             if (ruraState.active) {
                 // エリア制限対応：利用可能な拠点のみ
                 const locations = getAvailableRuraLocations();
+                // 拠点がない場合は選択をキャンセル（NaN防止）
+                if (locations.length === 0) {
+                    cancelRuraSelection();
+                    e.preventDefault();
+                    return;
+                }
                 switch (e.key) {
                     case 'ArrowUp': case 'w': case 'W':
                         ruraState.cursor = (ruraState.cursor + locations.length - 1) % locations.length;
