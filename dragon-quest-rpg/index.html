@@ -3239,53 +3239,96 @@
                     }
                 }
             } else if (menu.mode === 'items') {
-                // もちもの（アイテム画面）
+                // もちもの（アイテム画面）- スクロール対応
                 ctx.fillStyle = '#fff';
                 ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                 ctx.textAlign = 'left';
                 const itemStartY = contentY + 10;
 
-                if (player.inventory.length === 0) {
+                // 有効なアイテムのみフィルタリング（隙間防止）
+                const validItems = player.inventory.filter(slot => items[slot.id]);
+                const maxVisibleItems = 8; // 最大表示件数
+
+                if (validItems.length === 0) {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
                     ctx.textAlign = 'center';
                     ctx.fillText('アイテムを持っていない', canvasWidth / 2, itemStartY);
                 } else {
-                    player.inventory.forEach((slot, i) => {
-                        const item = items[slot.id];
-                        if (item) {
-                            // 選択中のアイテムはハイライト
-                            const isSelected = (i === menu.itemCursor);
-                            ctx.fillStyle = isSelected ? '#ffd700' : '#fff';
-                            const cursor = isSelected ? '▶' : '・';
+                    // カーソルが有効範囲を超えないよう調整
+                    if (menu.itemCursor >= validItems.length) {
+                        menu.itemCursor = Math.max(0, validItems.length - 1);
+                    }
 
-                            // 個数表示（2個以上の場合）
-                            let displayName = item.name;
-                            if (slot.quantity > 1) {
-                                displayName += ` x ${slot.quantity}`;
-                            }
-                            ctx.fillText(`${cursor}${displayName}`, menuX + 30, itemStartY + i * lineHeight);
-
-                            // 装備品にはタイプ表示
-                            if (item.type === 'weapon') {
-                                ctx.fillStyle = '#88f';
-                                ctx.fillText('⚔️', menuX + menuWidth - 50, itemStartY + i * lineHeight);
-                            } else if (item.type === 'armor') {
-                                ctx.fillStyle = '#8f8';
-                                ctx.fillText('🛡️', menuX + menuWidth - 50, itemStartY + i * lineHeight);
-                            }
+                    // スクロールオフセット計算
+                    let itemScrollOffset = 0;
+                    if (validItems.length > maxVisibleItems) {
+                        if (menu.itemCursor >= maxVisibleItems) {
+                            itemScrollOffset = Math.min(
+                                menu.itemCursor - maxVisibleItems + 1,
+                                validItems.length - maxVisibleItems
+                            );
                         }
-                    });
+                    }
+
+                    // 上矢印（スクロール可能な場合）
+                    if (itemScrollOffset > 0) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('▲', menuX + menuWidth / 2, itemStartY - 5);
+                        ctx.textAlign = 'left';
+                    }
+
+                    const visibleCount = Math.min(validItems.length, maxVisibleItems);
+                    for (let i = 0; i < visibleCount; i++) {
+                        const itemIdx = i + itemScrollOffset;
+                        if (itemIdx >= validItems.length) break;
+
+                        const slot = validItems[itemIdx];
+                        const item = items[slot.id];
+                        const y = itemStartY + i * lineHeight;
+
+                        // 選択中のアイテムはハイライト
+                        const isSelected = (itemIdx === menu.itemCursor);
+                        ctx.fillStyle = isSelected ? '#ffd700' : '#fff';
+                        const cursor = isSelected ? '▶' : '・';
+
+                        // 個数表示（2個以上の場合）
+                        let displayName = item.name;
+                        if (slot.quantity > 1) {
+                            displayName += ` x ${slot.quantity}`;
+                        }
+                        ctx.fillText(`${cursor}${displayName}`, menuX + 30, y);
+
+                        // 装備品にはタイプ表示
+                        if (item.type === 'weapon') {
+                            ctx.fillStyle = '#88f';
+                            ctx.fillText('⚔️', menuX + menuWidth - 50, y);
+                        } else if (item.type === 'armor') {
+                            ctx.fillStyle = '#8f8';
+                            ctx.fillText('🛡️', menuX + menuWidth - 50, y);
+                        }
+                    }
+
+                    // 下矢印（スクロール可能な場合）
+                    if (itemScrollOffset + maxVisibleItems < validItems.length) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('▼', menuX + menuWidth / 2, itemStartY + visibleCount * lineHeight + 5);
+                        ctx.textAlign = 'left';
+                    }
 
                     // アイテムアクションサブメニュー
-                    if (menu.showItemAction && player.inventory.length > 0) {
-                        const slot = player.inventory[menu.itemCursor];
+                    if (menu.showItemAction && validItems.length > 0) {
+                        const slot = validItems[menu.itemCursor];
                         const selectedItemId = slot ? slot.id : null;
                         const selectedItem = selectedItemId ? items[selectedItemId] : null;
                         if (selectedItem) {
                             const subMenuWidth = tileSize * 3.5;
                             const subMenuHeight = tileSize * 2;
                             const subMenuX = menuX + menuWidth - subMenuWidth - 20;
-                            const subMenuY = itemStartY + menu.itemCursor * lineHeight - 5;
+                            // スクロール位置を考慮した画面上のY座標
+                            const visibleCursorPos = menu.itemCursor - itemScrollOffset;
+                            const subMenuY = itemStartY + visibleCursorPos * lineHeight - 5;
 
                             drawWindow(subMenuX, subMenuY, subMenuWidth, subMenuHeight);
 
@@ -3311,13 +3354,15 @@
 
                     // 装備対象メンバー選択ウィンドウ
                     if (menu.selectingEquipMember) {
-                        const slot = player.inventory[menu.itemCursor];
+                        const slot = validItems[menu.itemCursor];
                         const selectedItem = slot ? items[slot.id] : null;
                         if (selectedItem) {
                             const equipMenuWidth = tileSize * 4;
                             const equipMenuHeight = tileSize * 0.5 * party.length + tileSize * 0.8;
                             const equipMenuX = menuX + menuWidth - equipMenuWidth - 20;
-                            const equipMenuY = itemStartY + menu.itemCursor * lineHeight - 5;
+                            // スクロール位置を考慮した画面上のY座標
+                            const visibleCursorPos = menu.itemCursor - itemScrollOffset;
+                            const equipMenuY = itemStartY + visibleCursorPos * lineHeight - 5;
 
                             drawWindow(equipMenuX, equipMenuY, equipMenuWidth, equipMenuHeight);
 
@@ -4110,27 +4155,59 @@
                     ctx.fillText('B:もどる', spellX + 10, spellY + spellH - 8);
                 }
 
-                // アイテムサブメニュー
+                // アイテムサブメニュー（スクロール対応）
                 if (battle.showItems) {
+                    // 有効なアイテムのみフィルタリング（隙間防止）
+                    const validItems = player.inventory.filter(slot => items[slot.id]);
+                    const maxVisibleItems = 5; // 最大表示件数
                     const itemW = cmdW * 1.3;
-                    const itemH = Math.max(tileSize * 2.5, tileSize * 0.6 * Math.max(1, player.inventory.length) + 30);
+                    const rowHeight = tileSize * 0.6;
+                    const visibleCount = Math.min(validItems.length, maxVisibleItems);
+                    const itemH = rowHeight * Math.max(1, visibleCount) + 40;
                     const itemX = cmdX - itemW - 10;
                     const itemY = cmdY;
                     drawWindow(itemX, itemY, itemW, itemH);
 
-                    if (player.inventory.length === 0) {
+                    if (validItems.length === 0) {
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
                         ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
                         ctx.fillText('どうぐがない', itemX + 20, itemY + 30);
                     } else {
-                        player.inventory.forEach((slot, i) => {
+                        // カーソルが有効範囲を超えないよう調整
+                        if (battle.itemCursor >= validItems.length) {
+                            battle.itemCursor = Math.max(0, validItems.length - 1);
+                        }
+
+                        // スクロールオフセット計算
+                        let itemScrollOffset = 0;
+                        if (validItems.length > maxVisibleItems) {
+                            if (battle.itemCursor >= maxVisibleItems) {
+                                itemScrollOffset = Math.min(
+                                    battle.itemCursor - maxVisibleItems + 1,
+                                    validItems.length - maxVisibleItems
+                                );
+                            }
+                        }
+
+                        // 上矢印（スクロール可能な場合）
+                        if (itemScrollOffset > 0) {
+                            ctx.fillStyle = '#ffd700';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('▲', itemX + itemW / 2, itemY + 12);
+                            ctx.textAlign = 'left';
+                        }
+
+                        for (let i = 0; i < visibleCount; i++) {
+                            const itemIdx = i + itemScrollOffset;
+                            if (itemIdx >= validItems.length) break;
+
+                            const slot = validItems[itemIdx];
                             const item = items[slot.id];
-                            if (!item) return;
-                            const y = itemY + 20 + i * tileSize * 0.6;
+                            const y = itemY + 22 + i * rowHeight;
                             const canUse = item.type !== 'weapon' && item.type !== 'armor';
 
                             // 選択カーソル
-                            if (i === battle.itemCursor) {
+                            if (itemIdx === battle.itemCursor) {
                                 ctx.fillStyle = canUse ? '#ffd700' : '#888';
                                 ctx.fillText('▶', itemX + 10, y);
                             }
@@ -4150,7 +4227,15 @@
                             } else if (item.type === 'armor') {
                                 ctx.fillText('🛡️', itemX + itemW - 40, y);
                             }
-                        });
+                        }
+
+                        // 下矢印（スクロール可能な場合）
+                        if (itemScrollOffset + maxVisibleItems < validItems.length) {
+                            ctx.fillStyle = '#ffd700';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('▼', itemX + itemW / 2, itemY + itemH - 18);
+                            ctx.textAlign = 'left';
+                        }
                     }
 
                     // 操作ガイド
@@ -4614,8 +4699,9 @@
 
                     if (success) {
                         removeItem(slot.id, 1);
-                        // カーソル調整
-                        if (battle.itemCursor >= player.inventory.length && battle.itemCursor > 0) {
+                        // カーソル調整（有効なアイテム数でチェック）
+                        const validItems = player.inventory.filter(slot => items[slot.id]);
+                        if (battle.itemCursor >= validItems.length && battle.itemCursor > 0) {
                             battle.itemCursor--;
                         }
                     }
@@ -6010,9 +6096,12 @@
 
                 case 1: // すてる
                     removeItem(selectedItemId, 1);
-                    // カーソル位置調整
-                    if (menu.itemCursor >= player.inventory.length && menu.itemCursor > 0) {
-                        menu.itemCursor--;
+                    // カーソル位置調整（有効なアイテム数でチェック）
+                    {
+                        const validItems = player.inventory.filter(slot => items[slot.id]);
+                        if (menu.itemCursor >= validItems.length && menu.itemCursor > 0) {
+                            menu.itemCursor--;
+                        }
                     }
                     menu.showItemAction = false;
                     if (player.inventory.length === 0) {
@@ -6465,8 +6554,11 @@
                     } else {
                         // アイテム消費
                         removeItem(itemId, 1);
-                        if (menu.itemCursor >= player.inventory.length && menu.itemCursor > 0) {
-                            menu.itemCursor--;
+                        {
+                            const validItems = player.inventory.filter(slot => items[slot.id]);
+                            if (menu.itemCursor >= validItems.length && menu.itemCursor > 0) {
+                                menu.itemCursor--;
+                            }
                         }
                         // メニューを閉じてダイアログ表示、完了後にワープ
                         closeMenu();
@@ -6493,8 +6585,9 @@
             // 使用成功時、インベントリから削除
             if (success) {
                 removeItem(itemId, 1);
-                // カーソル位置調整
-                if (menu.itemCursor >= player.inventory.length && menu.itemCursor > 0) {
+                // カーソル位置調整（有効なアイテム数でチェック）
+                const validItems = player.inventory.filter(slot => items[slot.id]);
+                if (menu.itemCursor >= validItems.length && menu.itemCursor > 0) {
                     menu.itemCursor--;
                 }
             }
@@ -8427,12 +8520,14 @@
                                 break;
                         }
                     } else if (battle.showItems) {
+                        // 有効なアイテムのみカウント
+                        const validItems = player.inventory.filter(slot => items[slot.id]);
                         switch (e.key) {
                             case 'ArrowUp': case 'w': case 'W':
                                 battle.itemCursor = Math.max(0, battle.itemCursor - 1);
                                 break;
                             case 'ArrowDown': case 's': case 'S':
-                                battle.itemCursor = Math.min(Math.max(0, player.inventory.length - 1), battle.itemCursor + 1);
+                                battle.itemCursor = Math.min(Math.max(0, validItems.length - 1), battle.itemCursor + 1);
                                 break;
                             case 'Enter': case ' ': case 'z':
                                 executeBattleCommand();
@@ -8673,13 +8768,15 @@
                             break;
                     }
                 } else if (menu.mode === 'items' && player.inventory.length > 0) {
-                    // アイテムリスト操作
+                    // アイテムリスト操作（有効なアイテムのみカウント）
+                    const validItems = player.inventory.filter(slot => items[slot.id]);
+                    if (validItems.length === 0) break;
                     switch (e.key) {
                         case 'ArrowUp': case 'w': case 'W':
-                            menu.itemCursor = (menu.itemCursor + player.inventory.length - 1) % player.inventory.length;
+                            menu.itemCursor = (menu.itemCursor + validItems.length - 1) % validItems.length;
                             break;
                         case 'ArrowDown': case 's': case 'S':
-                            menu.itemCursor = (menu.itemCursor + 1) % player.inventory.length;
+                            menu.itemCursor = (menu.itemCursor + 1) % validItems.length;
                             break;
                         case 'ArrowLeft': case 'a': case 'A':
                             menu.mode = 'spells';
@@ -8938,7 +9035,8 @@
                             const validSpells = currentMember.spells.filter(id => spells[id]);
                             battle.spellIndex = Math.min(validSpells.length - 1, battle.spellIndex + 1);
                         } else if (battle.showItems) {
-                            battle.itemCursor = Math.min(Math.max(0, player.inventory.length - 1), battle.itemCursor + 1);
+                            const validItems = player.inventory.filter(slot => items[slot.id]);
+                            battle.itemCursor = Math.min(Math.max(0, validItems.length - 1), battle.itemCursor + 1);
                         } else {
                             battle.commandIndex = Math.min(3, battle.commandIndex + 1);
                         }
@@ -8988,11 +9086,14 @@
                         if (dy < 0) menu.itemActionIndex = (menu.itemActionIndex + 2) % 3;
                         else if (dy > 0) menu.itemActionIndex = (menu.itemActionIndex + 1) % 3;
                     } else if (menu.mode === 'items' && player.inventory.length > 0) {
-                        // アイテムリスト
-                        if (dy < 0) menu.itemCursor = (menu.itemCursor + player.inventory.length - 1) % player.inventory.length;
-                        else if (dy > 0) menu.itemCursor = (menu.itemCursor + 1) % player.inventory.length;
-                        else if (dx < 0) { menu.mode = 'spells'; menu.spellCursor = 0; }
-                        else if (dx > 0) menu.mode = 'map';
+                        // アイテムリスト（有効なアイテムのみカウント）
+                        const validItems = player.inventory.filter(slot => items[slot.id]);
+                        if (validItems.length > 0) {
+                            if (dy < 0) menu.itemCursor = (menu.itemCursor + validItems.length - 1) % validItems.length;
+                            else if (dy > 0) menu.itemCursor = (menu.itemCursor + 1) % validItems.length;
+                            else if (dx < 0) { menu.mode = 'spells'; menu.spellCursor = 0; }
+                            else if (dx > 0) menu.mode = 'map';
+                        }
                     } else if (menu.mode === 'spells' && player.spells.length > 0) {
                         // 呪文リスト
                         if (dy < 0) menu.spellCursor = (menu.spellCursor + player.spells.length - 1) % player.spells.length;
