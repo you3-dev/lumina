@@ -1147,6 +1147,21 @@
                 gold: 500,
                 isBoss: true
             },
+            // エリア3最終ボス：光の守護者（闇に堕ちた姿）
+            shadowGuardian: {
+                name: 'やみのしゅごしゃ',
+                sprite: '👁️',
+                level: 35,
+                hp: 600,
+                atk: 100,
+                def: 60,
+                speed: 25,
+                exp: 2000,
+                gold: 1000,
+                isBoss: true,
+                spells: ['giragura', 'mahoton'],
+                resistances: { sleep: 0, blind: 0.5, poison: 0 }
+            },
             // ===== ボス級 =====
             dragon: {
                 name: 'ドラゴン',
@@ -1294,7 +1309,9 @@
                 quicksandBoss: false,    // 流砂の主
                 banditKing: false,       // 盗賊王
                 pyramidGuardian: false,  // ピラミッドの守護者
-                desertGuardian: false    // 砂漠の守護者（城の中ボス）
+                desertGuardian: false,   // 砂漠の守護者（城の中ボス）
+                // エリア3ボス
+                shadowGuardian: false    // 闇の守護者（古城の最終ボス）
             },
             // ストーリー進行フラグ
             storyFlags: {
@@ -2250,10 +2267,12 @@
         const mapNameElement = document.getElementById('mapName');
         const mapNameArea = document.getElementById('mapNameArea');
 
-        // マップ名の色を更新（地底マップは紫系）
+        // マップ名の色を更新（地底マップは紫系、荒廃した世界は灰色系）
         function updateMapNameColor() {
             if (currentMap && currentMap.isUnderworld) {
                 mapNameElement.style.color = '#9966ff';
+            } else if (currentMap && currentMap.isDesolated) {
+                mapNameElement.style.color = '#a0a0a0';
             } else {
                 mapNameElement.style.color = 'rgba(255, 255, 255, 0.8)';
             }
@@ -2702,6 +2721,29 @@
                 ctx.arc(playerScreenX, playerScreenY, lightRadius, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.globalCompositeOperation = 'source-over';
+            }
+
+            // 荒廃した世界のエフェクト（古の大地など）
+            if (currentMap.isDesolated && currentMap.desolationLevel) {
+                const level = currentMap.desolationLevel;
+
+                // 灰紫色のオーバーレイで荒廃感を表現
+                ctx.fillStyle = `rgba(60, 50, 70, ${level * 0.2})`;
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+                // ビネット効果（周辺を暗く）
+                const centerX = canvasWidth / 2;
+                const centerY = canvasHeight / 2;
+                const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+
+                const vignette = ctx.createRadialGradient(
+                    centerX, centerY, maxRadius * 0.5,
+                    centerX, centerY, maxRadius
+                );
+                vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                vignette.addColorStop(1, `rgba(30, 20, 40, ${level * 0.4})`);
+                ctx.fillStyle = vignette;
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
             }
         }
 
@@ -5316,6 +5358,10 @@
                                 } else if (bossId === 'desertGuardian') {
                                     setStoryFlag('desertPortalUnlocked', true);
                                     questMessage = '砂漠の王に報告しよう！';
+                                } else if (bossId === 'shadowGuardian') {
+                                    setStoryFlag('shadowGuardianDefeated', true);
+                                    setStoryFlag('area3Completed', true);
+                                    questMessage = '闇の守護者が 光を取り戻した...';
                                 }
 
                                 if (questMessage) {
@@ -7418,7 +7464,49 @@
                 wedge_west: '西の楔'
             };
 
-            startDialogWithCallback([
+            // 楔に刻まれた記憶（ストーリー演出）
+            const wedgeMemories = {
+                wedge_north: [
+                    `${wedgeNames[wedgeId]}を手に入れた！`,
+                    '楔に触れた瞬間、頭に映像が流れ込む...',
+                    '――100年前の記憶――',
+                    '星読みの長老：「星が...黒く染まっていく...」',
+                    '長老：「あと7日で、影が目覚める...」',
+                    '長老：「急げ！ 封印の準備を！」',
+                    '...記憶が途切れた。'
+                ],
+                wedge_east: [
+                    `${wedgeNames[wedgeId]}を手に入れた！`,
+                    '楔から別の記憶が流れ込む...',
+                    '――記憶――',
+                    '星読みの女性：「封印は完璧じゃない...」',
+                    '女性：「いつか必ず、誰かが真実に辿り着く。」',
+                    '女性：「その時、影の...本当の姿を知るでしょう。」',
+                    '...本当の姿とは？'
+                ],
+                wedge_south: [
+                    `${wedgeNames[wedgeId]}を手に入れた！`,
+                    'さらなる記憶が蘇る...',
+                    '――記憶――',
+                    '星読みの戦士：「影は...元々この世界の守護者だった。」',
+                    '戦士：「だが何かが歪み、暴走してしまった。」',
+                    '戦士：「破壊するのではなく、救う方法があるはず...」',
+                    '...守護者...？ 救う方法...？'
+                ],
+                wedge_west: [
+                    `${wedgeNames[wedgeId]}を手に入れた！`,
+                    '最後の記憶が流れ込む...',
+                    '――最後の記憶――',
+                    '星読みの大賢者：「後世の勇者よ、聞いてくれ。」',
+                    '賢者：「影の核には、純粋な光がある。」',
+                    '賢者：「その光を解放できれば、影は本来の姿に戻る。」',
+                    '賢者：「我らにはその力がなかった...」',
+                    '賢者：「だが未来の勇者なら...きっと。」',
+                    '...これが、祖先の遺志...'
+                ]
+            };
+
+            startDialogWithCallback(wedgeMemories[wedgeId] || [
                 `${wedgeNames[wedgeId]}を手に入れた！`,
                 '古代の力を感じる...'
             ], () => {
@@ -7589,6 +7677,16 @@
                 } else {
                     startDialog(['......。', '（もう戦う相手はいない）']);
                 }
+                return;
+            }
+
+            // 特定のフラグが必要なボス（楔が揃っていない場合など）
+            if (npc.requiresFlag && !getStoryFlag(npc.requiresFlag)) {
+                startDialog([
+                    '......。',
+                    '（まだ戦える状態ではないようだ）',
+                    '（必要なものを全て集めてから来るべきだ）'
+                ]);
                 return;
             }
 
