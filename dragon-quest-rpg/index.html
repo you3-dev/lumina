@@ -1486,6 +1486,430 @@
         let endingPhase = null;   // エンディング進行状態
 
         // ========================================
+        // サウンドエフェクト システム (Web Audio API)
+        // ========================================
+        let audioCtx = null;
+        let seEnabled = true;
+        let seVolume = 0.3;
+
+        // AudioContextを初期化（ユーザー操作後に呼び出す）
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 基本的な音を生成するヘルパー
+        function createOscillator(type, frequency, duration, volume = seVolume) {
+            if (!audioCtx || !seEnabled) return null;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain).connect(audioCtx.destination);
+            return { osc, gain };
+        }
+
+        // ノイズを生成するヘルパー
+        function createNoise(duration, volume = seVolume) {
+            if (!audioCtx || !seEnabled) return null;
+            const bufferSize = audioCtx.sampleRate * duration;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            noise.connect(gain).connect(audioCtx.destination);
+            return { noise, gain };
+        }
+
+        // SE定義オブジェクト
+        const SE = {
+            // 戦闘系
+            attack: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 斬撃音：ノイズ + 下降音
+                const noise = createNoise(0.1, seVolume * 0.4);
+                if (noise) {
+                    noise.noise.start(t);
+                    noise.noise.stop(t + 0.1);
+                }
+                const osc = createOscillator('sawtooth', 800, 0.08);
+                if (osc) {
+                    osc.osc.frequency.exponentialRampToValueAtTime(200, t + 0.08);
+                    osc.osc.start(t);
+                    osc.osc.stop(t + 0.08);
+                }
+            },
+
+            critical: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 会心の一撃：強い衝撃音
+                const noise = createNoise(0.15, seVolume * 0.6);
+                if (noise) {
+                    noise.noise.start(t);
+                    noise.noise.stop(t + 0.15);
+                }
+                // 2段階の下降音
+                const osc1 = createOscillator('sawtooth', 1200, 0.1, seVolume * 0.5);
+                if (osc1) {
+                    osc1.osc.frequency.exponentialRampToValueAtTime(300, t + 0.1);
+                    osc1.osc.start(t);
+                    osc1.osc.stop(t + 0.1);
+                }
+                const osc2 = createOscillator('square', 600, 0.15, seVolume * 0.3);
+                if (osc2) {
+                    osc2.osc.frequency.exponentialRampToValueAtTime(100, t + 0.15);
+                    osc2.osc.start(t + 0.05);
+                    osc2.osc.stop(t + 0.2);
+                }
+            },
+
+            damage: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // ダメージ音：低音の衝撃
+                const osc = createOscillator('square', 150, 0.12);
+                if (osc) {
+                    osc.osc.frequency.exponentialRampToValueAtTime(80, t + 0.12);
+                    osc.osc.start(t);
+                    osc.osc.stop(t + 0.12);
+                }
+                const noise = createNoise(0.08, seVolume * 0.3);
+                if (noise) {
+                    noise.noise.start(t);
+                    noise.noise.stop(t + 0.08);
+                }
+            },
+
+            miss: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // ミス音：空振り風
+                const osc = createOscillator('sine', 400, 0.15, seVolume * 0.2);
+                if (osc) {
+                    osc.osc.frequency.exponentialRampToValueAtTime(200, t + 0.15);
+                    osc.osc.start(t);
+                    osc.osc.stop(t + 0.15);
+                }
+            },
+
+            // 呪文系
+            magicAttack: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 攻撃呪文：上昇→爆発
+                const osc1 = createOscillator('sine', 300, 0.2, seVolume * 0.3);
+                if (osc1) {
+                    osc1.osc.frequency.exponentialRampToValueAtTime(1200, t + 0.1);
+                    osc1.osc.frequency.exponentialRampToValueAtTime(100, t + 0.2);
+                    osc1.osc.start(t);
+                    osc1.osc.stop(t + 0.2);
+                }
+                const noise = createNoise(0.15, seVolume * 0.4);
+                if (noise) {
+                    noise.noise.start(t + 0.08);
+                    noise.noise.stop(t + 0.23);
+                }
+            },
+
+            heal: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 回復音：優しい上昇音
+                const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+                notes.forEach((freq, i) => {
+                    const osc = createOscillator('sine', freq, 0.3, seVolume * 0.25);
+                    if (osc) {
+                        osc.osc.start(t + i * 0.08);
+                        osc.osc.stop(t + i * 0.08 + 0.3);
+                    }
+                });
+            },
+
+            buff: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // バフ音：キラキラ上昇
+                const notes = [440, 554, 659, 880];
+                notes.forEach((freq, i) => {
+                    const osc = createOscillator('triangle', freq, 0.2, seVolume * 0.3);
+                    if (osc) {
+                        osc.osc.start(t + i * 0.06);
+                        osc.osc.stop(t + i * 0.06 + 0.2);
+                    }
+                });
+            },
+
+            debuff: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // デバフ/状態異常音：下降音
+                const osc = createOscillator('triangle', 600, 0.25, seVolume * 0.3);
+                if (osc) {
+                    osc.osc.frequency.exponentialRampToValueAtTime(200, t + 0.25);
+                    osc.osc.start(t);
+                    osc.osc.stop(t + 0.25);
+                }
+            },
+
+            // 結果系
+            victory: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 勝利ファンファーレ
+                const melody = [
+                    { freq: 523, time: 0, dur: 0.15 },     // C5
+                    { freq: 659, time: 0.15, dur: 0.15 },  // E5
+                    { freq: 784, time: 0.3, dur: 0.15 },   // G5
+                    { freq: 1047, time: 0.45, dur: 0.4 },  // C6
+                    { freq: 784, time: 0.55, dur: 0.15 },  // G5
+                    { freq: 1047, time: 0.7, dur: 0.5 }    // C6
+                ];
+                melody.forEach(note => {
+                    const osc = createOscillator('square', note.freq, note.dur, seVolume * 0.25);
+                    if (osc) {
+                        osc.osc.start(t + note.time);
+                        osc.osc.stop(t + note.time + note.dur);
+                    }
+                });
+            },
+
+            defeat: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 敗北音：悲しい下降
+                const melody = [
+                    { freq: 392, time: 0, dur: 0.3 },
+                    { freq: 349, time: 0.3, dur: 0.3 },
+                    { freq: 294, time: 0.6, dur: 0.5 }
+                ];
+                melody.forEach(note => {
+                    const osc = createOscillator('triangle', note.freq, note.dur, seVolume * 0.3);
+                    if (osc) {
+                        osc.osc.start(t + note.time);
+                        osc.osc.stop(t + note.time + note.dur);
+                    }
+                });
+            },
+
+            escape: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 逃走音：素早い上昇
+                const osc = createOscillator('square', 200, 0.2, seVolume * 0.2);
+                if (osc) {
+                    osc.osc.frequency.exponentialRampToValueAtTime(800, t + 0.2);
+                    osc.osc.start(t);
+                    osc.osc.stop(t + 0.2);
+                }
+            },
+
+            // UI系
+            cursor: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // カーソル移動：短いピッ
+                const osc = createOscillator('square', 880, 0.05, seVolume * 0.15);
+                if (osc) {
+                    osc.osc.start(t);
+                    osc.osc.stop(t + 0.05);
+                }
+            },
+
+            confirm: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 決定音：ピロッ
+                const osc1 = createOscillator('square', 880, 0.08, seVolume * 0.2);
+                if (osc1) {
+                    osc1.osc.start(t);
+                    osc1.osc.stop(t + 0.08);
+                }
+                const osc2 = createOscillator('square', 1320, 0.1, seVolume * 0.2);
+                if (osc2) {
+                    osc2.osc.start(t + 0.08);
+                    osc2.osc.stop(t + 0.18);
+                }
+            },
+
+            cancel: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // キャンセル音：下降
+                const osc = createOscillator('square', 440, 0.1, seVolume * 0.2);
+                if (osc) {
+                    osc.osc.frequency.exponentialRampToValueAtTime(220, t + 0.1);
+                    osc.osc.start(t);
+                    osc.osc.stop(t + 0.1);
+                }
+            },
+
+            // フィールド系
+            chest: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 宝箱：ジャジャーン
+                const melody = [
+                    { freq: 392, time: 0, dur: 0.15 },
+                    { freq: 494, time: 0.12, dur: 0.15 },
+                    { freq: 587, time: 0.24, dur: 0.15 },
+                    { freq: 784, time: 0.36, dur: 0.4 }
+                ];
+                melody.forEach(note => {
+                    const osc = createOscillator('square', note.freq, note.dur, seVolume * 0.25);
+                    if (osc) {
+                        osc.osc.start(t + note.time);
+                        osc.osc.stop(t + note.time + note.dur);
+                    }
+                });
+            },
+
+            levelUp: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // レベルアップ：華やかなファンファーレ
+                const melody = [
+                    { freq: 523, time: 0, dur: 0.1 },
+                    { freq: 659, time: 0.1, dur: 0.1 },
+                    { freq: 784, time: 0.2, dur: 0.1 },
+                    { freq: 1047, time: 0.3, dur: 0.15 },
+                    { freq: 784, time: 0.45, dur: 0.1 },
+                    { freq: 880, time: 0.55, dur: 0.1 },
+                    { freq: 1047, time: 0.65, dur: 0.3 }
+                ];
+                melody.forEach(note => {
+                    const osc = createOscillator('square', note.freq, note.dur, seVolume * 0.25);
+                    if (osc) {
+                        osc.osc.start(t + note.time);
+                        osc.osc.stop(t + note.time + note.dur);
+                    }
+                });
+            },
+
+            stairs: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 階段：短い効果音
+                const osc = createOscillator('triangle', 440, 0.15, seVolume * 0.2);
+                if (osc) {
+                    osc.osc.frequency.exponentialRampToValueAtTime(660, t + 0.15);
+                    osc.osc.start(t);
+                    osc.osc.stop(t + 0.15);
+                }
+            },
+
+            door: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // ドア：ギギー
+                const osc = createOscillator('sawtooth', 100, 0.25, seVolume * 0.15);
+                if (osc) {
+                    osc.osc.frequency.setValueAtTime(100, t);
+                    osc.osc.frequency.linearRampToValueAtTime(150, t + 0.1);
+                    osc.osc.frequency.linearRampToValueAtTime(80, t + 0.25);
+                    osc.osc.start(t);
+                    osc.osc.stop(t + 0.25);
+                }
+            },
+
+            encounter: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // エンカウント：ジャーン！
+                const osc1 = createOscillator('sawtooth', 220, 0.3, seVolume * 0.4);
+                if (osc1) {
+                    osc1.osc.start(t);
+                    osc1.osc.stop(t + 0.3);
+                }
+                const osc2 = createOscillator('sawtooth', 277, 0.3, seVolume * 0.4);
+                if (osc2) {
+                    osc2.osc.start(t);
+                    osc2.osc.stop(t + 0.3);
+                }
+                const osc3 = createOscillator('sawtooth', 330, 0.3, seVolume * 0.4);
+                if (osc3) {
+                    osc3.osc.start(t);
+                    osc3.osc.stop(t + 0.3);
+                }
+            },
+
+            save: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // セーブ完了：安心感のある音
+                const notes = [523, 659, 784];
+                notes.forEach((freq, i) => {
+                    const osc = createOscillator('sine', freq, 0.25, seVolume * 0.2);
+                    if (osc) {
+                        osc.osc.start(t + i * 0.1);
+                        osc.osc.stop(t + i * 0.1 + 0.25);
+                    }
+                });
+            },
+
+            inn: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 宿屋回復：優しいメロディ
+                const melody = [
+                    { freq: 523, time: 0, dur: 0.3 },
+                    { freq: 659, time: 0.25, dur: 0.3 },
+                    { freq: 784, time: 0.5, dur: 0.4 }
+                ];
+                melody.forEach(note => {
+                    const osc = createOscillator('sine', note.freq, note.dur, seVolume * 0.25);
+                    if (osc) {
+                        osc.osc.start(t + note.time);
+                        osc.osc.stop(t + note.time + note.dur);
+                    }
+                });
+            },
+
+            buy: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 購入：チャリン
+                const osc1 = createOscillator('triangle', 1200, 0.08, seVolume * 0.25);
+                if (osc1) {
+                    osc1.osc.start(t);
+                    osc1.osc.stop(t + 0.08);
+                }
+                const osc2 = createOscillator('triangle', 1600, 0.1, seVolume * 0.2);
+                if (osc2) {
+                    osc2.osc.start(t + 0.05);
+                    osc2.osc.stop(t + 0.15);
+                }
+            },
+
+            revive: function() {
+                if (!audioCtx || !seEnabled) return;
+                const t = audioCtx.currentTime;
+                // 復活：神秘的な音
+                const notes = [392, 523, 659, 784, 1047];
+                notes.forEach((freq, i) => {
+                    const osc = createOscillator('sine', freq, 0.4, seVolume * 0.2);
+                    if (osc) {
+                        osc.osc.start(t + i * 0.12);
+                        osc.osc.stop(t + i * 0.12 + 0.4);
+                    }
+                });
+            }
+        };
+
+        // ========================================
         // ゲーム進行フラグ管理
         // ========================================
         const gameProgress = {
@@ -4023,7 +4447,14 @@
         // バトル描画
         // ========================================
         // 呪文フラッシュを開始
-        function startSpellFlash(color, isUltimate = false) {
+        function startSpellFlash(color, isUltimate = false, spellType = 'attack') {
+            // 呪文タイプに応じたSE
+            if (spellType === 'attack') SE.magicAttack();
+            else if (spellType === 'heal' || spellType === 'revive') SE.heal();
+            else if (spellType === 'buff') SE.buff();
+            else if (spellType === 'status' || spellType === 'debuff') SE.debuff();
+            else SE.magicAttack(); // デフォルト
+
             spellFlash.active = true;
             spellFlash.color = color;
             spellFlash.alpha = 1.0;
@@ -4537,6 +4968,7 @@
                 return;
             }
 
+            SE.encounter(); // エンカウント音
             battle.active = true;
             battle.enemies = enemies;
             battle.enemy = enemies[0]; // 後方互換用
@@ -4678,7 +5110,7 @@
                 // フラッシュ演出を開始（究極魔法は特別演出）
                 if (spell.flashColor) {
                     const isUltimate = ULTIMATE_SPELLS.includes(spell.id);
-                    startSpellFlash(spell.flashColor, isUltimate);
+                    startSpellFlash(spell.flashColor, isUltimate, spell.type);
                 }
 
                 showBattleMessage(`${caster.name} は ${spell.name} を となえた！`, () => {
@@ -4817,6 +5249,7 @@
                             if (Math.random() < 0.5) {
                                 target.hp = Math.floor(target.maxHp / 2);
                                 target.isAlive = true;
+                                SE.revive(); // 復活SE
                                 showBattleMessage(`${target.name} は いきかえった！`, () => {
                                     processTurnEnd();
                                 });
@@ -4995,7 +5428,7 @@
                 // フラッシュ演出
                 if (spell.flashColor) {
                     const isUltimate = ULTIMATE_SPELLS.includes(spell.id);
-                    startSpellFlash(spell.flashColor, isUltimate);
+                    startSpellFlash(spell.flashColor, isUltimate, spell.type);
                 }
 
                 showBattleMessage(`${caster.name} は ${spell.name} を となえた！`, () => {
@@ -5037,7 +5470,7 @@
             // フラッシュ演出を開始
             if (spell.flashColor) {
                 const isUltimate = ULTIMATE_SPELLS.includes(spell.id);
-                startSpellFlash(spell.flashColor, isUltimate);
+                startSpellFlash(spell.flashColor, isUltimate, spell.type);
             }
 
             battle.phase = 'playerTurn';
@@ -5071,7 +5504,7 @@
             // フラッシュ演出を開始
             if (spell.flashColor) {
                 const isUltimate = ULTIMATE_SPELLS.includes(spell.id);
-                startSpellFlash(spell.flashColor, isUltimate);
+                startSpellFlash(spell.flashColor, isUltimate, spell.type);
             }
 
             battle.phase = 'playerTurn';
@@ -5195,6 +5628,7 @@
             // 幻惑状態なら命中率低下
             const hitRate = getHitRate(attacker);
             if (Math.random() > hitRate) {
+                SE.miss(); // ミス音
                 showBattleMessage(`${attacker.name} の こうげき！ しかし こうげきは はずれた！`, () => {
                     processTurnEnd();
                 });
@@ -5222,6 +5656,7 @@
             // 敵の名前（サフィックス付き）を表示
             const enemyName = enemy.displayName || enemy.name;
 
+            SE.attack(); // 攻撃音
             showBattleMessage(`${attacker.name} の こうげき！ ${enemyName} に ${damage} の ダメージ！`, () => {
                 // この敵を倒したかチェック
                 if (enemy.currentHp <= 0) {
@@ -5306,6 +5741,7 @@
             }
 
             if (Math.random() > hitRate) {
+                SE.miss(); // ミス音
                 showBattleMessage(`${enemyName} の こうげき！ しかし こうげきは はずれた！`, () => {
                     processCurrentEnemyTurnEnd();
                 });
@@ -5330,6 +5766,7 @@
             const damage = Math.max(1, Math.floor(enemy.atk / 2 - def / 4 + Math.random() * 3));
             target.hp -= damage;
 
+            SE.damage(); // ダメージ音
             showBattleMessage(`${enemyName} の こうげき！ ${target.name} に ${damage} の ダメージ！`, () => {
                 if (target.hp <= 0) {
                     target.hp = 0;
@@ -5529,6 +5966,7 @@
             }
 
             if (Math.random() < escapeChance) {
+                SE.escape(); // 逃走成功音
                 showBattleMessage('うまく にげきれた！', () => {
                     endBattle('escape');
                 });
@@ -5586,6 +6024,7 @@
                 ? `${battle.enemies[0].displayName || battle.enemies[0].name} を たおした！`
                 : 'まものたちを やっつけた！';
 
+            SE.victory(); // 勝利ファンファーレ
             showBattleMessage(winMessage, () => {
                 // 魔王討伐時は特別な演出
                 if (isBossDefeat && isMaou) {
@@ -5765,6 +6204,7 @@
                 const newSpells = checkMemberNewSpells(member, member.level);
 
                 // レベルアップメッセージを順番に表示
+                SE.levelUp(); // レベルアップ音
                 showBattleMessage(`${member.name} は レベルが あがった！ Lv${member.level} になった！`, () => {
                     showBattleMessage(`さいだいHP が ${hpUp} あがった！`, () => {
                         showBattleMessage(`さいだいMP が ${mpUp} あがった！`, () => {
@@ -5830,6 +6270,7 @@
 
         function battleLose() {
             battle.phase = 'result';
+            SE.defeat(); // 敗北音
             showBattleMessage('パーティは ぜんめつした...', () => {
                 showBattleMessage('おうさま「そなたたちに もう一度 チャンスを やろう」', () => {
                     // ゴールド半減
@@ -6240,6 +6681,7 @@
             } else {
                 const item = items[chest.itemId];
                 if (item) {
+                    SE.chest(); // 宝箱SE
                     chest.isOpened = true;
                     // mapsオブジェクトの宝箱も同期（セーブデータに反映させるため）
                     if (maps[currentMapId] && maps[currentMapId].chests) {
@@ -6255,11 +6697,13 @@
 
         function openMenu() {
             if (dialog.active || isTransitioning || gameMode === MODE.BATTLE || inn.active || partyJoinConfirm.active) return;
+            SE.confirm(); // メニュー開くSE
             menu.active = true;
             menu.mode = 'status'; // デフォルトでステータス画面
         }
 
         function closeMenu() {
+            SE.cancel(); // メニュー閉じるSE
             menu.active = false;
             menu.showItemAction = false;
             menu.itemActionIndex = 0;
@@ -6409,6 +6853,7 @@
                         saveGame();
                         setTimeout(() => {
                             fadeOverlay.classList.remove('active');
+                            SE.inn(); // 宿屋回復SE
                             startDialog(['ゆっくり おやすみください...', 'おはようございます！', 'みんなの HPとMPが かいふくしました！']);
                         }, 500);
                     }, 500);
@@ -6474,6 +6919,7 @@
                     break;
                 case 2: // おいのりをする（セーブ）
                     saveGame();
+                    SE.save(); // セーブ音
                     startDialog(['おいのりを ささげました。', 'ぼうけんのしょに きろくしました。']);
                     closeChurch();
                     break;
@@ -6531,6 +6977,7 @@
                         partyData.gold -= cost;
                         reviveMember(member, true); // 全回復で復活
                         saveGame();
+                        SE.revive(); // 復活SE
                         startDialog([`${member.name} は いきかえった！`]);
                     } else {
                         startDialog(['お金が たりないようです...']);
@@ -6641,6 +7088,7 @@
                     } else if (action === 'confirm') {
                         if (shop.confirmIndex === 0) {
                             // 購入
+                            SE.buy(); // 購入SE
                             player.gold -= shop.selectedItem.price;
                             addItem(shop.selectedItem.id, 1);
                             shop.phase = 'equip';
@@ -8723,6 +9171,7 @@
         // 入力処理
         // ========================================
         document.addEventListener('keydown', (e) => {
+            initAudio(); // ユーザー操作でAudioContextを初期化
             if (isTransitioning) return;
 
             // ワールドマップ表示中
@@ -9652,10 +10101,12 @@
 
         // キャンバスへのクリック/タップイベント
         canvas.addEventListener('click', (e) => {
+            initAudio(); // ユーザー操作でAudioContextを初期化
             handleCanvasTap(e.clientX, e.clientY);
         });
 
         canvas.addEventListener('touchend', (e) => {
+            initAudio(); // ユーザー操作でAudioContextを初期化
             if (e.changedTouches.length > 0) {
                 const touch = e.changedTouches[0];
                 if (handleCanvasTap(touch.clientX, touch.clientY)) {
