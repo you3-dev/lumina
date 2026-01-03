@@ -52,8 +52,8 @@
     { "id": "desert_portal_guard", "x": 12, "y": 1, "sprite": "💂", "type": "portal_guard", "messages": ["この先は旅の扉の部屋です。", "守護者を倒さねば通れません。"], "clearedMessages": ["旅の扉の部屋へどうぞ。", "次なる大地が待っています！"] }
   ],
   "chests": [
-    { "id": "desert_castle_chest1", "x": 4, "y": 4, "itemId": 10, "isOpened": false },
-    { "id": "desert_castle_chest2", "x": 20, "y": 4, "itemId": 11, "isOpened": false },
+    { "id": "desert_castle_chest1", "x": 4, "y": 4, "itemId": 16, "isOpened": false },
+    { "id": "desert_castle_chest2", "x": 20, "y": 4, "itemId": 26, "isOpened": false },
     { "id": "desert_castle_chest3", "x": 12, "y": 10, "itemId": 33, "isOpened": false, "requiresBossDefeated": "desertGuardian" }
   ]
 }
