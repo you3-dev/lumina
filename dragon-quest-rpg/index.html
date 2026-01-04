@@ -10770,6 +10770,15 @@
                     }
                     return;
                 }
+                // ルーラ拠点選択
+                if (ruraState.active) {
+                    const locations = getAvailableRuraLocations();
+                    if (locations.length > 0) {
+                        if (dy < 0) ruraState.cursor = (ruraState.cursor + locations.length - 1) % locations.length;
+                        else if (dy > 0) ruraState.cursor = (ruraState.cursor + 1) % locations.length;
+                    }
+                    return;
+                }
                 // メニュー
                 if (menu.active) {
                     if (menu.selectingMember) {
@@ -10873,6 +10882,11 @@
                 }
                 return;
             }
+            // ルーラ拠点選択
+            if (ruraState.active) {
+                executeRura(ruraState.cursor);
+                return;
+            }
             // バトル中 - ターゲット選択確定
             if (gameMode === MODE.BATTLE && battle.isSelectingTarget) {
                 confirmTargetSelection();
@@ -10931,6 +10945,11 @@
                 if (npc && npc.joinDeclineMessages) {
                     startDialog(npc.joinDeclineMessages);
                 }
+                return;
+            }
+            // ルーラ拠点選択キャンセル
+            if (ruraState.active) {
+                cancelRuraSelection();
                 return;
             }
             // バトル中 - ターゲット選択キャンセル
