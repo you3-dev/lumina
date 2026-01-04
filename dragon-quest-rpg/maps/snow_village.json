@@ -8,6 +8,8 @@
   "encounterRate": 0,
   "isOutdoor": false,
   "isSettlement": true,
+  "arrivalX": 10,
+  "arrivalY": 18,
   "area": "area4",
   "data": [
     [
