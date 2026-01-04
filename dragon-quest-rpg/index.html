@@ -11501,8 +11501,8 @@
                     speed: 10,
                     level: 40,
                     exp: 50000,
-                    spells: ['hoimi', 'behoimi', 'gira'],
-                    equipment: { weapon: 35, armor: 43, accessory: 51 }
+                    spells: ['hoimi', 'behoimi', 'dein', 'raiden', 'ruura'],
+                    equipment: { weapon: 19, armor: 28, accessory: null }
                 });
                 party.push(hero);
 
@@ -11521,8 +11521,8 @@
                     speed: 12,
                     level: 38,
                     exp: 45000,
-                    spells: ['mera', 'gira', 'hoimi', 'merami', 'giragira', 'behoimi'],
-                    equipment: { weapon: 42, armor: 44, accessory: null }
+                    spells: ['mera', 'merami', 'gira', 'begirama', 'hoimi', 'behoimi'],
+                    equipment: { weapon: 45, armor: 54, accessory: null }
                 });
                 party.push(mage);
 
@@ -11541,8 +11541,8 @@
                     speed: 18,
                     level: 36,
                     exp: 40000,
-                    spells: ['rukani', 'rariho', 'piorimu', 'hoimi', 'behoimi'],
-                    equipment: { weapon: null, armor: 44, accessory: null }
+                    spells: ['bagi', 'bagima', 'rukani', 'rariho', 'piorimu', 'hoimi', 'behoimi'],
+                    equipment: { weapon: null, armor: null, accessory: null }
                 });
                 party.push(seren);
 
@@ -11553,7 +11553,9 @@
                 partyData.direction = 'up';
                 partyData.inventory = [
                     { id: 1, quantity: 10 },
-                    { id: 2, quantity: 5 }
+                    { id: 4, quantity: 5 },
+                    { id: 5, quantity: 3 },
+                    { id: 9, quantity: 5 }
                 ];
 
                 // フラグ設定
@@ -11582,15 +11584,23 @@
                         level: m.level,
                         exp: m.exp,
                         spells: [...m.spells],
-                        equipment: { ...m.equipment }
+                        equipment: { ...m.equipment },
+                        isAlive: true
                     })),
+                    partyData: {
+                        x: 49,
+                        y: 2,
+                        direction: 'up',
+                        gold: 50000,
+                        inventory: [
+                            { id: 1, quantity: 10 },
+                            { id: 4, quantity: 5 },
+                            { id: 5, quantity: 3 },
+                            { id: 9, quantity: 5 }
+                        ]
+                    },
                     currentMapPath: 'maps/surface_3.json',
                     currentMapId: 'surface_3',
-                    x: 49,
-                    y: 2,
-                    direction: 'up',
-                    gold: 50000,
-                    inventory: [{ id: 1, quantity: 10 }, { id: 2, quantity: 5 }],
                     chestStates: {},
                     gameProgress: {
                         bossDefeated: { ...gameProgress.bossDefeated },
