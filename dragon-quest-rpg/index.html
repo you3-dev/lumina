@@ -8879,15 +8879,15 @@
 
         // 氷ブロックを押す処理
         function pushIceBlock(blockX, blockY, dx, dy) {
-            const newX = blockX + dx;
-            const newY = blockY + dy;
+            let newX = blockX + dx;
+            let newY = blockY + dy;
 
-            // 押す先が有効か確認
+            // 最初の1マスが押せるか確認
             if (newX < 0 || newX >= currentMap.cols || newY < 0 || newY >= currentMap.rows) {
                 return false;
             }
 
-            const targetTile = currentMap.data[newY][newX];
+            let targetTile = currentMap.data[newY][newX];
 
             // 押せない場所（壁、氷の壁、穴など）
             if (!WALKABLE_TILES.includes(targetTile) || targetTile === TILE.ICE_HOLE) {
@@ -8897,6 +8897,50 @@
             // 他のブロックがあれば押せない
             if (getIceBlockAt(newX, newY)) {
                 return false;
+            }
+
+            // 壁にぶつかるまでスライド
+            let finalX = newX;
+            let finalY = newY;
+
+            while (true) {
+                const nextX = finalX + dx;
+                const nextY = finalY + dy;
+
+                // 範囲外なら停止
+                if (nextX < 0 || nextX >= currentMap.cols || nextY < 0 || nextY >= currentMap.rows) {
+                    break;
+                }
+
+                const nextTile = currentMap.data[nextY][nextX];
+
+                // 壁や穴なら停止
+                if (!WALKABLE_TILES.includes(nextTile) || nextTile === TILE.ICE_HOLE) {
+                    break;
+                }
+
+                // 他のブロックがあれば停止
+                if (getIceBlockAt(nextX, nextY)) {
+                    break;
+                }
+
+                // ICE_PATH（止まれる道）なら停止
+                if (nextTile === TILE.ICE_PATH) {
+                    finalX = nextX;
+                    finalY = nextY;
+                    break;
+                }
+
+                // ICE_SWITCH（スイッチ）なら停止
+                if (nextTile === TILE.ICE_SWITCH) {
+                    finalX = nextX;
+                    finalY = nextY;
+                    break;
+                }
+
+                // 氷床なら続行
+                finalX = nextX;
+                finalY = nextY;
             }
 
             // ブロックを移動
@@ -8912,7 +8956,7 @@
             }
 
             // 新しい位置にブロック追加
-            blocks.push({ x: newX, y: newY });
+            blocks.push({ x: finalX, y: finalY });
 
             // スイッチチェック
             checkIceSwitches();
