@@ -10761,8 +10761,10 @@
             pressStart.style.display = 'none';
             titleMenu.classList.add('active');
             updateTitleMenuSelection();
-            // タイトルBGM開始（ユーザー操作後なので再生可能）
-            BGM.play('title');
+            // タイトルBGM開始（モバイル対応：少し遅延させて確実に再生）
+            setTimeout(() => {
+                BGM.play('title');
+            }, 100);
         }
 
         async function selectTitleMenuItem() {
