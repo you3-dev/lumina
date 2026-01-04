@@ -11466,7 +11466,7 @@
         // デバッグ用：エリア3クリア状態のセーブデータ作成
         function createDebugSaveData() {
             resetGameState().then(async () => {
-                // レベルと装備を強化
+                // ヒーローを強化
                 party[0].level = 40;
                 party[0].exp = 50000;
                 party[0].maxHp = 200;
@@ -11474,17 +11474,66 @@
                 party[0].maxMp = 80;
                 party[0].mp = 80;
                 party[0].equipment = { weapon: 35, armor: 43, accessory: 51 };
+
+                // マリア（魔法使い）を追加
+                const mage = createPartyMember({
+                    id: 'mage_maria',
+                    name: 'マリア',
+                    job: 'mage',
+                    sprite: '🧙',
+                    hp: 120,
+                    maxHp: 120,
+                    mp: 150,
+                    maxMp: 150,
+                    baseAtk: 25,
+                    baseDef: 20,
+                    speed: 12,
+                    level: 38,
+                    exp: 45000,
+                    spells: ['mera', 'gira', 'hoimi', 'merami', 'giragira', 'behoimi'],
+                    equipment: { weapon: 42, armor: 44, accessory: null }
+                });
+                party.push(mage);
+
+                // セレン（星読み）を追加
+                const seren = createPartyMember({
+                    id: 'seer_seren',
+                    name: 'セレン',
+                    job: 'seer',
+                    sprite: '🔮',
+                    hp: 100,
+                    maxHp: 100,
+                    mp: 180,
+                    maxMp: 180,
+                    baseAtk: 20,
+                    baseDef: 18,
+                    speed: 18,
+                    level: 36,
+                    exp: 40000,
+                    spells: ['rukani', 'rariho', 'piorimu', 'hoimi', 'behoimi'],
+                    equipment: { weapon: null, armor: 44, accessory: null }
+                });
+                party.push(seren);
+
                 updateActualStats();
-                player.gold = 50000;
-                // エリア3ボス撃破フラグ設定
+                partyData.gold = 50000;
+
+                // フラグ設定
+                gameProgress.storyFlags.mageJoined = true;
+                gameProgress.storyFlags.serenJoined = true;
+                gameProgress.quests.serenJoin.joined = true;
                 gameProgress.bossDefeated.shadowGuardian = true;
                 gameProgress.storyFlags.shadowGuardianDefeated = true;
                 gameProgress.storyFlags.northPathOpened = true;
+                gameProgress.storyFlags.area3Completed = true;
+
                 // スポーン地点をsurface_3北側（エリア4入口付近）に設定
                 currentMapPath = 'maps/surface_3.json';
-                player.x = 49;
-                player.y = 2;
+                partyData.x = 49;
+                partyData.y = 2;
+                partyData.direction = 'up';
                 await loadMapFromPath(currentMapPath);
+
                 // セーブ
                 saveGame();
                 alert('データセット完了');
