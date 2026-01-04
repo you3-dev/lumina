@@ -5742,9 +5742,10 @@
                                 processTurnEnd();
                             });
                         } else {
-                            // 最初の戦闘不能メンバーを復活（50%成功）
+                            // 最初の戦闘不能メンバーを復活（呪文ごとの成功率で判定）
                             const target = deadMembers[0];
-                            if (Math.random() < 0.5) {
+                            const successRate = spell.successRate || 0.5;
+                            if (Math.random() < successRate) {
                                 target.hp = Math.floor(target.maxHp / 2);
                                 target.isAlive = true;
                                 SE.revive(); // 復活SE
