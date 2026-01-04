@@ -1700,12 +1700,14 @@
                 // モバイル用：全ての音声ファイルをユーザー操作コンテキストでアンロック
                 audioFilesToPreload.forEach(filename => {
                     const audio = new Audio(`se/${filename}`);
-                    audio.volume = 0.001;
+                    audio.muted = true;  // 完全ミュート
+                    audio.volume = 0;
                     const playPromise = audio.play();
                     if (playPromise) {
                         playPromise.then(() => {
                             audio.pause();
                             audio.currentTime = 0;
+                            audio.muted = false;
                             audio.volume = 1;
                             preloadedAudio[filename] = audio;
                         }).catch(e => {});
