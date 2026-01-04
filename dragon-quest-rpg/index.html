@@ -3597,6 +3597,7 @@
                         type: mapData.type,
                         encounterRate: mapData.encounterRate,
                         encounterTable: mapData.encounterTable,
+                        id: mapData.mapId,
                         mapId: mapData.mapId,
                         _isExternal: true
                     };
@@ -3620,7 +3621,9 @@
                             name: sourceMap.name,
                             type: sourceMap.type,
                             encounterRate: sourceMap.encounterRate,
-                            encounterTable: sourceMap.encounterTable
+                            encounterTable: sourceMap.encounterTable,
+                            id: currentMapId,
+                            mapId: currentMapId
                         };
                     } else {
                         const fieldMap = maps['field'];
@@ -3637,7 +3640,9 @@
                             name: fieldMap.name,
                             type: fieldMap.type,
                             encounterRate: fieldMap.encounterRate,
-                            encounterTable: fieldMap.encounterTable
+                            encounterTable: fieldMap.encounterTable,
+                            id: 'field',
+                            mapId: 'field'
                         };
                         currentMapId = 'field';
                     }
@@ -8545,6 +8550,7 @@
 
                 // 外部JSONマップであることをマーク
                 mapData._isExternal = true;
+                mapData.id = mapData.mapId;
 
                 // マップをmapsオブジェクトに追加（キャッシュ）
                 maps[mapData.mapId] = mapData;
@@ -11831,6 +11837,7 @@
                     name: mapData.name,
                     type: mapData.type,
                     encounterRate: mapData.encounterRate,
+                    id: mapData.mapId,
                     mapId: mapData.mapId,
                     _isExternal: true
                 };
@@ -11849,7 +11856,9 @@
                     iceSwitches: fieldMap.iceSwitches ? JSON.parse(JSON.stringify(fieldMap.iceSwitches)) : [],
                     name: fieldMap.name,
                     type: fieldMap.type,
-                    encounterRate: fieldMap.encounterRate
+                    encounterRate: fieldMap.encounterRate,
+                    id: 'field',
+                    mapId: 'field'
                 };
             }
 
