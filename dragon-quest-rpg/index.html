@@ -2519,7 +2519,11 @@
 
         // ルーラで移動可能な拠点を取得（エリア制限対応）
         function getAvailableRuraLocations() {
-            // エリア3にいる場合、エリア3の拠点のみ返す
+            // エリア3クリア後は全拠点移動可能
+            if (gameProgress.storyFlags.area3Completed) {
+                return gameProgress.visitedLocations;
+            }
+            // エリア3クリア前でエリア3にいる場合、エリア3の拠点のみ返す
             if (currentMap.area === 'area3') {
                 return gameProgress.visitedLocations.filter(loc => loc.area === 'area3');
             }
