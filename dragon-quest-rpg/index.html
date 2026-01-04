@@ -8921,8 +8921,29 @@
             });
 
             // 全スイッチ押下時のイベント
-            if (allPressed && currentMap.iceSwitches.length > 0 && currentMap.onAllSwitchesPressed) {
-                currentMap.onAllSwitchesPressed();
+            if (allPressed && currentMap.iceSwitches.length > 0) {
+                if (currentMap.onAllSwitchesPressed) {
+                    currentMap.onAllSwitchesPressed();
+                } else {
+                    // マップ別のパズル完了処理
+                    handlePuzzleComplete(currentMap.mapId);
+                }
+            }
+        }
+
+        // マップ別パズル完了処理
+        function handlePuzzleComplete(mapId) {
+            switch (mapId) {
+                case 'frozen_lake':
+                    if (!gameProgress.storyFlags.frozenLakeCleared) {
+                        gameProgress.storyFlags.frozenLakeCleared = true;
+                        startDialog([
+                            '全てのスイッチが押された！',
+                            '氷が砕ける音が響き渡る...',
+                            '北への道が開かれた！'
+                        ]);
+                    }
+                    break;
             }
         }
 
