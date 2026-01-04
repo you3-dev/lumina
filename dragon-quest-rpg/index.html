@@ -1647,9 +1647,10 @@
                     audio = new Audio(`se/${filename}`);
                     seAudioCache[filename] = audio;
                 }
-                audio.currentTime = 0;  // 再生位置をリセット
-                audio.volume = seVolume;
-                audio.play().catch(e => console.log('SE play failed:', e));
+                // cloneNode()で複製して再生（同時再生対応）
+                const clone = audio.cloneNode();
+                clone.volume = seVolume;
+                clone.play().catch(e => console.log('SE play failed:', e));
             } catch (e) {
                 console.log('SE error:', e);
             }
