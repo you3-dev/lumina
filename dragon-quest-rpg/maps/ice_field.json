@@ -10214,10 +10214,31 @@
   ],
   "warps": [
     {
+      "x": 48,
+      "y": 99,
+      "targetMap": "maps/surface_3.json",
+      "targetX": 48,
+      "targetY": 1
+    },
+    {
+      "x": 49,
+      "y": 99,
+      "targetMap": "maps/surface_3.json",
+      "targetX": 49,
+      "targetY": 1
+    },
+    {
       "x": 50,
       "y": 99,
       "targetMap": "maps/surface_3.json",
       "targetX": 50,
+      "targetY": 1
+    },
+    {
+      "x": 51,
+      "y": 99,
+      "targetMap": "maps/surface_3.json",
+      "targetX": 51,
       "targetY": 1
     },
     {
