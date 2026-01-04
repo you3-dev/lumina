@@ -198,6 +198,38 @@
             display: none;
         }
 
+        .sound-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 44px;
+            height: 44px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.2s ease;
+            z-index: 101;
+        }
+
+        .sound-toggle:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: scale(1.1);
+        }
+
+        .sound-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .sound-toggle.muted {
+            border-color: #666;
+            opacity: 0.7;
+        }
+
         .title-content {
             text-align: center;
             color: #fff;
@@ -370,6 +402,7 @@
 
     <!-- タイトル画面 -->
     <div id="titleScreen">
+        <div id="soundToggle" class="sound-toggle">🔊</div>
         <div class="title-content">
             <h1 class="game-title">ドラゴンクエスト</h1>
             <p class="subtitle">〜 勇者の冒険 〜</p>
@@ -1797,24 +1830,96 @@
         let endingPhase = null;   // エンディング進行状態
 
         // ========================================
-        // サウンドエフェクト システム (Web Audio API)
         // ========================================
+        // サウンドシステム (SE + BGM)
+        // ========================================
+        const SOUND_SETTING_KEY = 'dragonQuestSoundEnabled';
         let audioCtx = null;
-        let seEnabled = true;
-        let seVolume = 0.3;
+        // localStorageからサウンド設定を読み込み（デフォルトはON）
+        let soundEnabled = localStorage.getItem(SOUND_SETTING_KEY) !== 'false';
+        let seEnabled = soundEnabled;
+        let seVolume = 0.5;
+        let bgmEnabled = soundEnabled;
+        let bgmVolume = 0.3;
+        let audioInitialized = false;
 
         // AudioContextを初期化（ユーザー操作後に呼び出す）
+        let audioUnlocked = false;
+
         function initAudio() {
+            if (audioUnlocked) return;
+            audioUnlocked = true;
+
+            // AudioContext初期化
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
+
+            // Web Audio APIで無音バッファを再生してオーディオをアンロック
+            try {
+                const buffer = audioCtx.createBuffer(1, 1, 22050);
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                source.start(0);
+            } catch (e) {
+                // WebAudio unlock failed
+            }
+
+            audioInitialized = true;
         }
 
-        // 基本的な音を生成するヘルパー
-        function createOscillator(type, frequency, duration, volume = seVolume) {
+        // SE再生用ヘルパー（Web Audio API版）
+        const audioBufferCache = {};  // デコード済みバッファのキャッシュ
+
+        async function loadAudioBuffer(filename) {
+            if (audioBufferCache[filename]) {
+                return audioBufferCache[filename];
+            }
+            try {
+                const response = await fetch(`se/${filename}`);
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                audioBufferCache[filename] = audioBuffer;
+                return audioBuffer;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function playAudioBuffer(buffer, volume, loop = false) {
+            if (!buffer || !audioCtx) return null;
+            const source = audioCtx.createBufferSource();
+            const gainNode = audioCtx.createGain();
+            source.buffer = buffer;
+            source.loop = loop;
+            gainNode.gain.value = volume;
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            source.start(0);
+            return { source, gainNode };
+        }
+
+        function playSE(filename) {
+            if (!seEnabled || !audioCtx) return;
+
+            // キャッシュにあれば即再生、なければロードして再生
+            if (audioBufferCache[filename]) {
+                playAudioBuffer(audioBufferCache[filename], seVolume);
+            } else {
+                loadAudioBuffer(filename).then(buffer => {
+                    if (buffer) {
+                        playAudioBuffer(buffer, seVolume);
+                    }
+                });
+            }
+        }
+
+        // 基本的な音を生成するヘルパー（フォールバック用）
+        function createOscillator(type, frequency, duration, volume = seVolume * 0.6) {
             if (!audioCtx || !seEnabled) return null;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -1826,90 +1931,23 @@
             return { osc, gain };
         }
 
-        // ノイズを生成するヘルパー
-        function createNoise(duration, volume = seVolume) {
-            if (!audioCtx || !seEnabled) return null;
-            const bufferSize = audioCtx.sampleRate * duration;
-            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
-            }
-            const noise = audioCtx.createBufferSource();
-            noise.buffer = buffer;
-            const gain = audioCtx.createGain();
-            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            noise.connect(gain).connect(audioCtx.destination);
-            return { noise, gain };
-        }
-
-        // SE定義オブジェクト
+        // SE定義オブジェクト（mp3優先、なければオシレーター）
         const SE = {
-            // 戦闘系
+            // 戦闘系（mp3あり）
             attack: function() {
-                if (!audioCtx || !seEnabled) return;
-                const t = audioCtx.currentTime;
-                // 斬撃音：ノイズ + 下降音
-                const noise = createNoise(0.1, seVolume * 0.4);
-                if (noise) {
-                    noise.noise.start(t);
-                    noise.noise.stop(t + 0.1);
-                }
-                const osc = createOscillator('sawtooth', 800, 0.08);
-                if (osc) {
-                    osc.osc.frequency.exponentialRampToValueAtTime(200, t + 0.08);
-                    osc.osc.start(t);
-                    osc.osc.stop(t + 0.08);
-                }
+                playSE('battle-attack.mp3');
             },
-
             critical: function() {
-                if (!audioCtx || !seEnabled) return;
-                const t = audioCtx.currentTime;
-                // 会心の一撃：強い衝撃音
-                const noise = createNoise(0.15, seVolume * 0.6);
-                if (noise) {
-                    noise.noise.start(t);
-                    noise.noise.stop(t + 0.15);
-                }
-                // 2段階の下降音
-                const osc1 = createOscillator('sawtooth', 1200, 0.1, seVolume * 0.5);
-                if (osc1) {
-                    osc1.osc.frequency.exponentialRampToValueAtTime(300, t + 0.1);
-                    osc1.osc.start(t);
-                    osc1.osc.stop(t + 0.1);
-                }
-                const osc2 = createOscillator('square', 600, 0.15, seVolume * 0.3);
-                if (osc2) {
-                    osc2.osc.frequency.exponentialRampToValueAtTime(100, t + 0.15);
-                    osc2.osc.start(t + 0.05);
-                    osc2.osc.stop(t + 0.2);
-                }
+                playSE('battle-attack-critical.mp3');
             },
-
             damage: function() {
-                if (!audioCtx || !seEnabled) return;
-                const t = audioCtx.currentTime;
-                // ダメージ音：低音の衝撃
-                const osc = createOscillator('square', 150, 0.12);
-                if (osc) {
-                    osc.osc.frequency.exponentialRampToValueAtTime(80, t + 0.12);
-                    osc.osc.start(t);
-                    osc.osc.stop(t + 0.12);
-                }
-                const noise = createNoise(0.08, seVolume * 0.3);
-                if (noise) {
-                    noise.noise.start(t);
-                    noise.noise.stop(t + 0.08);
-                }
+                playSE('battle-damage.mp3');
             },
-
             miss: function() {
+                // mp3なし：オシレーター
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // ミス音：空振り風
-                const osc = createOscillator('sine', 400, 0.15, seVolume * 0.2);
+                const osc = createOscillator('sine', 400, 0.15, seVolume * 0.3);
                 if (osc) {
                     osc.osc.frequency.exponentialRampToValueAtTime(200, t + 0.15);
                     osc.osc.start(t);
@@ -1917,58 +1955,31 @@
                 }
             },
 
-            // 呪文系
+            // 呪文系（mp3あり）
             magicAttack: function() {
-                if (!audioCtx || !seEnabled) return;
-                const t = audioCtx.currentTime;
-                // 攻撃呪文：上昇→爆発
-                const osc1 = createOscillator('sine', 300, 0.2, seVolume * 0.3);
-                if (osc1) {
-                    osc1.osc.frequency.exponentialRampToValueAtTime(1200, t + 0.1);
-                    osc1.osc.frequency.exponentialRampToValueAtTime(100, t + 0.2);
-                    osc1.osc.start(t);
-                    osc1.osc.stop(t + 0.2);
-                }
-                const noise = createNoise(0.15, seVolume * 0.4);
-                if (noise) {
-                    noise.noise.start(t + 0.08);
-                    noise.noise.stop(t + 0.23);
-                }
+                playSE('battle-spell-attack.mp3');
             },
-
             heal: function() {
-                if (!audioCtx || !seEnabled) return;
-                const t = audioCtx.currentTime;
-                // 回復音：優しい上昇音
-                const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
-                notes.forEach((freq, i) => {
-                    const osc = createOscillator('sine', freq, 0.3, seVolume * 0.25);
-                    if (osc) {
-                        osc.osc.start(t + i * 0.08);
-                        osc.osc.stop(t + i * 0.08 + 0.3);
-                    }
-                });
+                playSE('battle-spell-cure.mp3');
             },
-
             buff: function() {
+                // mp3なし：オシレーター
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // バフ音：キラキラ上昇
                 const notes = [440, 554, 659, 880];
                 notes.forEach((freq, i) => {
-                    const osc = createOscillator('triangle', freq, 0.2, seVolume * 0.3);
+                    const osc = createOscillator('triangle', freq, 0.2, seVolume * 0.4);
                     if (osc) {
                         osc.osc.start(t + i * 0.06);
                         osc.osc.stop(t + i * 0.06 + 0.2);
                     }
                 });
             },
-
             debuff: function() {
+                // mp3なし：オシレーター
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // デバフ/状態異常音：下降音
-                const osc = createOscillator('triangle', 600, 0.25, seVolume * 0.3);
+                const osc = createOscillator('triangle', 600, 0.25, seVolume * 0.4);
                 if (osc) {
                     osc.osc.frequency.exponentialRampToValueAtTime(200, t + 0.25);
                     osc.osc.start(t);
@@ -1978,89 +1989,57 @@
 
             // 結果系
             victory: function() {
-                if (!audioCtx || !seEnabled) return;
-                const t = audioCtx.currentTime;
-                // 勝利ファンファーレ
-                const melody = [
-                    { freq: 523, time: 0, dur: 0.15 },     // C5
-                    { freq: 659, time: 0.15, dur: 0.15 },  // E5
-                    { freq: 784, time: 0.3, dur: 0.15 },   // G5
-                    { freq: 1047, time: 0.45, dur: 0.4 },  // C6
-                    { freq: 784, time: 0.55, dur: 0.15 },  // G5
-                    { freq: 1047, time: 0.7, dur: 0.5 }    // C6
-                ];
-                melody.forEach(note => {
-                    const osc = createOscillator('square', note.freq, note.dur, seVolume * 0.25);
-                    if (osc) {
-                        osc.osc.start(t + note.time);
-                        osc.osc.stop(t + note.time + note.dur);
-                    }
-                });
+                playSE('battle-victory-intro.mp3');
             },
-
             defeat: function() {
+                // mp3なし：オシレーター
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // 敗北音：悲しい下降
                 const melody = [
                     { freq: 392, time: 0, dur: 0.3 },
                     { freq: 349, time: 0.3, dur: 0.3 },
                     { freq: 294, time: 0.6, dur: 0.5 }
                 ];
                 melody.forEach(note => {
-                    const osc = createOscillator('triangle', note.freq, note.dur, seVolume * 0.3);
+                    const osc = createOscillator('triangle', note.freq, note.dur, seVolume * 0.4);
                     if (osc) {
                         osc.osc.start(t + note.time);
                         osc.osc.stop(t + note.time + note.dur);
                     }
                 });
             },
-
             escape: function() {
-                if (!audioCtx || !seEnabled) return;
-                const t = audioCtx.currentTime;
-                // 逃走音：素早い上昇
-                const osc = createOscillator('square', 200, 0.2, seVolume * 0.2);
-                if (osc) {
-                    osc.osc.frequency.exponentialRampToValueAtTime(800, t + 0.2);
-                    osc.osc.start(t);
-                    osc.osc.stop(t + 0.2);
-                }
+                playSE('battle-escape.mp3');
             },
 
-            // UI系
+            // UI系（mp3なし）
             cursor: function() {
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // カーソル移動：短いピッ
-                const osc = createOscillator('square', 880, 0.05, seVolume * 0.15);
+                const osc = createOscillator('square', 880, 0.05, seVolume * 0.2);
                 if (osc) {
                     osc.osc.start(t);
                     osc.osc.stop(t + 0.05);
                 }
             },
-
             confirm: function() {
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // 決定音：ピロッ
-                const osc1 = createOscillator('square', 880, 0.08, seVolume * 0.2);
+                const osc1 = createOscillator('square', 880, 0.08, seVolume * 0.3);
                 if (osc1) {
                     osc1.osc.start(t);
                     osc1.osc.stop(t + 0.08);
                 }
-                const osc2 = createOscillator('square', 1320, 0.1, seVolume * 0.2);
+                const osc2 = createOscillator('square', 1320, 0.1, seVolume * 0.3);
                 if (osc2) {
                     osc2.osc.start(t + 0.08);
                     osc2.osc.stop(t + 0.18);
                 }
             },
-
             cancel: function() {
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // キャンセル音：下降
-                const osc = createOscillator('square', 440, 0.1, seVolume * 0.2);
+                const osc = createOscillator('square', 440, 0.1, seVolume * 0.3);
                 if (osc) {
                     osc.osc.frequency.exponentialRampToValueAtTime(220, t + 0.1);
                     osc.osc.start(t);
@@ -2070,9 +2049,9 @@
 
             // フィールド系
             chest: function() {
+                // mp3なし：オシレーター
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // 宝箱：ジャジャーン
                 const melody = [
                     { freq: 392, time: 0, dur: 0.15 },
                     { freq: 494, time: 0.12, dur: 0.15 },
@@ -2080,53 +2059,30 @@
                     { freq: 784, time: 0.36, dur: 0.4 }
                 ];
                 melody.forEach(note => {
-                    const osc = createOscillator('square', note.freq, note.dur, seVolume * 0.25);
+                    const osc = createOscillator('square', note.freq, note.dur, seVolume * 0.35);
                     if (osc) {
                         osc.osc.start(t + note.time);
                         osc.osc.stop(t + note.time + note.dur);
                     }
                 });
             },
-
             levelUp: function() {
-                if (!audioCtx || !seEnabled) return;
-                const t = audioCtx.currentTime;
-                // レベルアップ：華やかなファンファーレ
-                const melody = [
-                    { freq: 523, time: 0, dur: 0.1 },
-                    { freq: 659, time: 0.1, dur: 0.1 },
-                    { freq: 784, time: 0.2, dur: 0.1 },
-                    { freq: 1047, time: 0.3, dur: 0.15 },
-                    { freq: 784, time: 0.45, dur: 0.1 },
-                    { freq: 880, time: 0.55, dur: 0.1 },
-                    { freq: 1047, time: 0.65, dur: 0.3 }
-                ];
-                melody.forEach(note => {
-                    const osc = createOscillator('square', note.freq, note.dur, seVolume * 0.25);
-                    if (osc) {
-                        osc.osc.start(t + note.time);
-                        osc.osc.stop(t + note.time + note.dur);
-                    }
-                });
+                playSE('levelup.mp3');
             },
-
             stairs: function() {
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // 階段：短い効果音
-                const osc = createOscillator('triangle', 440, 0.15, seVolume * 0.2);
+                const osc = createOscillator('triangle', 440, 0.15, seVolume * 0.3);
                 if (osc) {
                     osc.osc.frequency.exponentialRampToValueAtTime(660, t + 0.15);
                     osc.osc.start(t);
                     osc.osc.stop(t + 0.15);
                 }
             },
-
             door: function() {
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // ドア：ギギー
-                const osc = createOscillator('sawtooth', 100, 0.25, seVolume * 0.15);
+                const osc = createOscillator('sawtooth', 100, 0.25, seVolume * 0.2);
                 if (osc) {
                     osc.osc.frequency.setValueAtTime(100, t);
                     osc.osc.frequency.linearRampToValueAtTime(150, t + 0.1);
@@ -2135,90 +2091,201 @@
                     osc.osc.stop(t + 0.25);
                 }
             },
-
             encounter: function() {
-                if (!audioCtx || !seEnabled) return;
-                const t = audioCtx.currentTime;
-                // エンカウント：ジャーン！
-                const osc1 = createOscillator('sawtooth', 220, 0.3, seVolume * 0.4);
-                if (osc1) {
-                    osc1.osc.start(t);
-                    osc1.osc.stop(t + 0.3);
-                }
-                const osc2 = createOscillator('sawtooth', 277, 0.3, seVolume * 0.4);
-                if (osc2) {
-                    osc2.osc.start(t);
-                    osc2.osc.stop(t + 0.3);
-                }
-                const osc3 = createOscillator('sawtooth', 330, 0.3, seVolume * 0.4);
-                if (osc3) {
-                    osc3.osc.start(t);
-                    osc3.osc.stop(t + 0.3);
-                }
+                playSE('encounter.mp3');
             },
-
             save: function() {
+                // mp3なし：オシレーター
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // セーブ完了：安心感のある音
                 const notes = [523, 659, 784];
                 notes.forEach((freq, i) => {
-                    const osc = createOscillator('sine', freq, 0.25, seVolume * 0.2);
+                    const osc = createOscillator('sine', freq, 0.25, seVolume * 0.3);
                     if (osc) {
                         osc.osc.start(t + i * 0.1);
                         osc.osc.stop(t + i * 0.1 + 0.25);
                     }
                 });
             },
-
             inn: function() {
-                if (!audioCtx || !seEnabled) return;
-                const t = audioCtx.currentTime;
-                // 宿屋回復：優しいメロディ
-                const melody = [
-                    { freq: 523, time: 0, dur: 0.3 },
-                    { freq: 659, time: 0.25, dur: 0.3 },
-                    { freq: 784, time: 0.5, dur: 0.4 }
-                ];
-                melody.forEach(note => {
-                    const osc = createOscillator('sine', note.freq, note.dur, seVolume * 0.25);
-                    if (osc) {
-                        osc.osc.start(t + note.time);
-                        osc.osc.stop(t + note.time + note.dur);
-                    }
-                });
+                playSE('inn.mp3');
             },
-
             buy: function() {
+                // mp3なし：オシレーター
                 if (!audioCtx || !seEnabled) return;
                 const t = audioCtx.currentTime;
-                // 購入：チャリン
-                const osc1 = createOscillator('triangle', 1200, 0.08, seVolume * 0.25);
+                const osc1 = createOscillator('triangle', 1200, 0.08, seVolume * 0.35);
                 if (osc1) {
                     osc1.osc.start(t);
                     osc1.osc.stop(t + 0.08);
                 }
-                const osc2 = createOscillator('triangle', 1600, 0.1, seVolume * 0.2);
+                const osc2 = createOscillator('triangle', 1600, 0.1, seVolume * 0.3);
                 if (osc2) {
                     osc2.osc.start(t + 0.05);
                     osc2.osc.stop(t + 0.15);
                 }
             },
-
             revive: function() {
-                if (!audioCtx || !seEnabled) return;
-                const t = audioCtx.currentTime;
-                // 復活：神秘的な音
-                const notes = [392, 523, 659, 784, 1047];
-                notes.forEach((freq, i) => {
-                    const osc = createOscillator('sine', freq, 0.4, seVolume * 0.2);
-                    if (osc) {
-                        osc.osc.start(t + i * 0.12);
-                        osc.osc.stop(t + i * 0.12 + 0.4);
-                    }
-                });
+                // 回復音を流用
+                playSE('battle-spell-cure.mp3');
             }
         };
+
+        // ========================================
+        // BGMシステム
+        // ========================================
+        const BGM = {
+            current: null,
+            currentType: null,
+            fadingOut: false,
+
+            // BGMタイプとファイルのマッピング
+            files: {
+                title: 'title.mp3',
+                field: 'field.mp3',
+                town: 'town.mp3',
+                castle: 'castle.mp3',
+                dungeon: 'dungeon.mp3',
+                bossDungeon: 'boss-dungeon.mp3',
+                battle: 'battle.mp3',
+                bossBattle: 'boss-battle.mp3',
+                victory: 'battle-victory.mp3',
+                ending: 'ending.mp3'
+            },
+
+            // Web Audio API用の状態管理
+            source: null,
+            gainNode: null,
+            buffer: null,
+            startTime: 0,
+            pauseTime: 0,
+            isPlaying: false,
+
+            play: function(type) {
+                if (!bgmEnabled || !audioCtx) return;
+                if (this.currentType === type && this.isPlaying) return;
+
+                this.stop();
+
+                const file = this.files[type];
+                if (!file) return;
+
+                this.currentType = type;
+
+                // バッファをロードして再生
+                loadAudioBuffer(file).then(buffer => {
+                    if (buffer && this.currentType === type) {
+                        this.buffer = buffer;
+                        this._startPlayback(0);
+                    }
+                }).catch(e => {});
+            },
+
+            _startPlayback: function(offset) {
+                if (!this.buffer || !audioCtx) return;
+
+                this.source = audioCtx.createBufferSource();
+                this.gainNode = audioCtx.createGain();
+                this.source.buffer = this.buffer;
+                this.source.loop = true;
+                this.gainNode.gain.value = bgmVolume;
+                this.source.connect(this.gainNode);
+                this.gainNode.connect(audioCtx.destination);
+                this.source.start(0, offset);
+                this.startTime = audioCtx.currentTime - offset;
+                this.isPlaying = true;
+            },
+
+            stop: function() {
+                if (this.source) {
+                    try { this.source.stop(); } catch(e) {}
+                    this.source = null;
+                }
+                this.gainNode = null;
+                this.buffer = null;
+                this.currentType = null;
+                this.isPlaying = false;
+                this.pauseTime = 0;
+            },
+
+            pause: function() {
+                if (this.source && this.isPlaying) {
+                    this.pauseTime = (audioCtx.currentTime - this.startTime) % this.buffer.duration;
+                    try { this.source.stop(); } catch(e) {}
+                    this.source = null;
+                    this.isPlaying = false;
+                }
+            },
+
+            resume: function() {
+                if (this.buffer && !this.isPlaying && bgmEnabled) {
+                    this._startPlayback(this.pauseTime);
+                }
+            },
+
+            setVolume: function(vol) {
+                bgmVolume = vol;
+                if (this.gainNode) {
+                    this.gainNode.gain.value = vol;
+                }
+            },
+
+            // マップタイプからBGMタイプを判定
+            getBgmTypeForMap: function(mapData) {
+                if (!mapData) return 'field';
+                const mapType = mapData.type;
+
+                // ボスダンジョン判定（特定のマップID）
+                if (mapData.mapId && (
+                    mapData.mapId.includes('maou') ||
+                    mapData.mapId.includes('boss') ||
+                    mapData.mapId === 'area3_castle_b2'
+                )) {
+                    return 'bossDungeon';
+                }
+
+                switch (mapType) {
+                    case 'field': return 'field';
+                    case 'town': return 'town';
+                    case 'castle': return 'castle';
+                    case 'dungeon': return 'dungeon';
+                    default: return 'field';
+                }
+            }
+        };
+
+        // サウンドトグル機能
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            seEnabled = soundEnabled;
+            bgmEnabled = soundEnabled;
+
+            // localStorageに保存
+            localStorage.setItem(SOUND_SETTING_KEY, soundEnabled);
+
+            // アイコン更新
+            updateSoundToggleIcon();
+
+            // BGM制御
+            if (soundEnabled) {
+                // ONにした場合、タイトル画面ならタイトルBGMを再生
+                const titleScreen = document.getElementById('titleScreen');
+                if (titleScreen && !titleScreen.classList.contains('hidden')) {
+                    BGM.play('title');
+                }
+            } else {
+                // OFFにした場合、BGM停止
+                BGM.stop();
+            }
+        }
+
+        function updateSoundToggleIcon() {
+            const toggleBtn = document.getElementById('soundToggle');
+            if (toggleBtn) {
+                toggleBtn.textContent = soundEnabled ? '🔊' : '🔇';
+                toggleBtn.classList.toggle('muted', !soundEnabled);
+            }
+        }
 
         // ========================================
         // ゲーム進行フラグ管理
@@ -5398,6 +5465,7 @@
             }
 
             SE.encounter(); // エンカウント音
+            BGM.play('battle'); // 戦闘BGM
             battle.active = true;
             battle.enemies = enemies;
             battle.enemy = enemies[0]; // 後方互換用
@@ -6499,6 +6567,7 @@
                 : 'まものたちを やっつけた！';
 
             SE.victory(); // 勝利ファンファーレ
+            BGM.play('victory'); // 勝利BGM
             showBattleMessage(winMessage, () => {
                 // 魔王討伐時は特別な演出
                 if (isBossDefeat && isMaou) {
@@ -6785,6 +6854,9 @@
             setTimeout(() => {
                 gameMode = MODE.FIELD;
                 battle.active = false;
+                // フィールドBGMに戻す
+                initAudio();
+                BGM.play(BGM.getBgmTypeForMap(currentMap));
                 // マップ名を再表示
                 mapNameArea.style.display = 'flex';
                 updateCamera();
@@ -6848,6 +6920,7 @@
             endingState.phase = 'fadeout';
             endingState.fadeAlpha = 0;
             battle.active = false;
+            BGM.play('ending'); // エンディングBGM
 
             // フェードアウト開始
             const fadeInterval = setInterval(() => {
@@ -8458,6 +8531,10 @@
                 mapNameElement.textContent = currentMap.name;
                 updateMapNameColor();
 
+                // BGM切り替え
+                initAudio();
+                BGM.play(BGM.getBgmTypeForMap(currentMap));
+
                 // 発見済み隠し通路を適用
                 applyOpenedPassages(currentMap);
 
@@ -8554,6 +8631,11 @@
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
                 updateMapNameColor();
+
+                // BGM切り替え
+                initAudio();
+                BGM.play(BGM.getBgmTypeForMap(currentMap));
+
                 applyOpenedPassages(currentMap);
                 updateMapPinVisibility();
                 updateFloorDisplay();
@@ -9632,6 +9714,8 @@
                 index: 0
             };
 
+            SE.encounter(); // エンカウント音
+            BGM.play('bossBattle'); // ボス戦BGM
             battle.active = true;
             battle.enemies = [bossEnemy];
             battle.enemy = bossEnemy; // 後方互換用
@@ -9700,6 +9784,8 @@
         function startMaouBattle() {
             // 魔王専用の演出付きバトル開始
             const monsterData = monsters['maou'];
+            SE.encounter(); // エンカウント音
+            BGM.play('bossBattle'); // ボス戦BGM
             battle.active = true;
             battle.enemy = {
                 ...monsterData,
@@ -9764,9 +9850,11 @@
             const isSecondAction = battle.enemy.actionCount > 0;
             const lastActionWasAoe = battle.enemy.lastActionWasAoe || false;
 
-            // HP50%以下でベホマを使う確率が上がる
-            if (hpRatio < 0.5 && skills.includes('behoma') && Math.random() < 0.35) {
+            // HP50%以下でベホマを使う確率が上がる（戦闘中1回のみ）
+            const canUseBehoma = skills.includes('behoma') && !battle.enemy.usedBehoma;
+            if (hpRatio < 0.5 && canUseBehoma && Math.random() < 0.35) {
                 battle.enemy.lastActionWasAoe = false;
+                battle.enemy.usedBehoma = true;  // 使用済みフラグ
                 return 'behoma';
             }
 
@@ -10594,6 +10682,7 @@
             const btn = document.getElementById(id);
             const handlePress = (e) => {
                 e.preventDefault();
+                initAudio(); // ユーザー操作でAudioContextを初期化
                 // パーティ加入確認
                 if (partyJoinConfirm.active) {
                     if (dx < 0) partyJoinConfirm.selectedIndex = 0;
@@ -10742,7 +10831,7 @@
 
         function setupActionButton(id, callback) {
             const btn = document.getElementById(id);
-            const handlePress = (e) => { e.preventDefault(); btn.classList.add('pressed'); callback(); };
+            const handlePress = (e) => { e.preventDefault(); initAudio(); btn.classList.add('pressed'); callback(); };
             const handleRelease = () => { btn.classList.remove('pressed'); };
             btn.addEventListener('touchstart', handlePress, { passive: false });
             btn.addEventListener('touchend', handleRelease);
@@ -11348,6 +11437,19 @@
             pressStart.style.display = 'block';
             titleMenu.classList.remove('active');
             updateTitleMenuSelection();
+
+            // サウンドトグルアイコン初期化
+            updateSoundToggleIcon();
+
+            // サウンドトグルボタンのイベントリスナー
+            const soundToggleBtn = document.getElementById('soundToggle');
+            if (soundToggleBtn) {
+                soundToggleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // タイトル画面のクリックイベントを阻止
+                    initAudio();
+                    toggleSound();
+                });
+            }
         }
 
         function updateTitleMenuSelection() {
@@ -11366,6 +11468,10 @@
             pressStart.style.display = 'none';
             titleMenu.classList.add('active');
             updateTitleMenuSelection();
+            // タイトルBGM開始（モバイル対応：少し遅延させて確実に再生）
+            setTimeout(() => {
+                BGM.play('title');
+            }, 100);
         }
 
         async function selectTitleMenuItem() {
@@ -11409,6 +11515,9 @@
             updateMapNameColor();
             updateMapPinVisibility();
             updateFloorDisplay();
+
+            // BGM開始
+            BGM.play(BGM.getBgmTypeForMap(currentMap));
 
             // console.log('[DEBUG] resize前 tileSize:', tileSize, 'canvasWidth:', canvasWidth);
             resize();
@@ -11512,6 +11621,7 @@
 
         // タイトル画面のイベントリスナー
         menuContinue.addEventListener('click', () => {
+            initAudio(); // ユーザー操作でAudioContextを初期化
             if (gameMode === MODE.TITLE) {
                 titleMenuIndex = 0;
                 updateTitleMenuSelection();
@@ -11520,6 +11630,7 @@
         });
 
         menuNewGame.addEventListener('click', () => {
+            initAudio(); // ユーザー操作でAudioContextを初期化
             if (gameMode === MODE.TITLE) {
                 titleMenuIndex = hasSaveData ? 1 : 0;
                 updateTitleMenuSelection();
@@ -11528,6 +11639,7 @@
         });
 
         titleScreen.addEventListener('click', (e) => {
+            initAudio(); // ユーザー操作でAudioContextを初期化
             if (gameMode === MODE.TITLE && !titleMenuActive) {
                 activateTitleMenu();
             }
