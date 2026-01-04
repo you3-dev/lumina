@@ -214,6 +214,10 @@
             font-size: 24px;
             transition: all 0.2s ease;
             z-index: 101;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .sound-toggle:hover {
@@ -487,6 +491,7 @@
         let titleMenuActive = false;
         let hasSaveData = false;
         let debugToggleCount = 0;  // デバッグ用カウンター
+        let soundToggleListenerAdded = false;  // イベントリスナー重複防止フラグ
 
         // タイルタイプ
         const TILE = {
@@ -11444,11 +11449,21 @@
             // サウンドトグルアイコン初期化
             updateSoundToggleIcon();
 
-            // サウンドトグルボタンのイベントリスナー
+            // サウンドトグルボタンのイベントリスナー（重複防止）
             const soundToggleBtn = document.getElementById('soundToggle');
-            if (soundToggleBtn) {
-                soundToggleBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // タイトル画面のクリックイベントを阻止
+            if (soundToggleBtn && !soundToggleListenerAdded) {
+                soundToggleListenerAdded = true;
+                let lastToggleTime = 0;
+
+                const handleSoundToggle = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // ダブル実行防止（300ms以内は無視）
+                    const now = Date.now();
+                    if (now - lastToggleTime < 300) return;
+                    lastToggleTime = now;
+
                     initAudio();
                     toggleSound();
                     // デバッグ用：タイトル画面で20回切り替えるとデバッグセーブ作成
@@ -11460,7 +11475,10 @@
                             debugToggleCount = 0;
                         }
                     }
-                });
+                };
+
+                soundToggleBtn.addEventListener('click', handleSoundToggle);
+                soundToggleBtn.addEventListener('touchend', handleSoundToggle);
             }
         }
 
