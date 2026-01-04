@@ -447,6 +447,8 @@
         <!-- デバッグ表示（開発用、コメントアウトで非表示）
         <div id="encounterDebug" style="position: fixed; top: 40px; right: 10px; background: rgba(0,0,0,0.7); color: #0f0; padding: 5px 10px; font-size: 12px; font-family: monospace; border-radius: 4px; z-index: 1000;"></div>
         -->
+        <!-- オーディオデバッグ表示 -->
+        <div id="audioDebug" style="position: fixed; top: 40px; left: 10px; background: rgba(0,0,0,0.85); color: #0f0; padding: 8px; font-size: 10px; font-family: monospace; border-radius: 4px; z-index: 2000; max-width: 300px; max-height: 200px; overflow-y: auto;"></div>
 
         <div id="dpad">
             <div class="dpad-btn" id="dpad-up">▲</div>
@@ -1658,6 +1660,21 @@
         let bgmVolume = 0.3;
         let audioInitialized = false;
 
+        // オーディオデバッグログ（画面とコンソール両方に出力）
+        function audioLog(msg) {
+            console.log(msg);
+            const debugEl = document.getElementById('audioDebug');
+            if (debugEl) {
+                const time = new Date().toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+                debugEl.innerHTML = `[${time}] ${msg}<br>` + debugEl.innerHTML;
+                // 最大20行に制限
+                const lines = debugEl.innerHTML.split('<br>');
+                if (lines.length > 20) {
+                    debugEl.innerHTML = lines.slice(0, 20).join('<br>');
+                }
+            }
+        }
+
         // AudioContextを初期化（ユーザー操作後に呼び出す）
         function initAudio() {
             if (!audioInitialized) {
@@ -1675,7 +1692,7 @@
         const seAudioCache = {};  // Audioオブジェクトキャッシュ（メモリリーク対策）
 
         function playSE(filename) {
-            console.log('[SE]', filename, 'seEnabled:', seEnabled, 'audioInit:', audioInitialized);
+            audioLog(`[SE] ${filename} en:${seEnabled} init:${audioInitialized}`);
             if (!seEnabled) return;
             // audioInitializedがfalseでも、initAudio()を呼んで初期化を試みる
             if (!audioInitialized) {
@@ -1687,14 +1704,15 @@
                 if (!audio) {
                     audio = new Audio(`se/${filename}`);
                     seAudioCache[filename] = audio;
-                    console.log('[SE] Created new Audio:', filename);
                 }
                 // cloneNode()で複製して再生（同時再生対応）
                 const clone = audio.cloneNode();
                 clone.volume = seVolume;
-                clone.play().catch(e => console.log('SE play failed:', e));
+                clone.play().then(() => {
+                    audioLog(`[SE] OK: ${filename}`);
+                }).catch(e => audioLog(`[SE] FAIL: ${filename} ${e.message}`));
             } catch (e) {
-                console.log('SE error:', e);
+                audioLog(`[SE] ERR: ${e.message}`);
             }
         }
 
@@ -1934,9 +1952,9 @@
             },
 
             play: function(type) {
-                console.log('[BGM] play:', type, 'bgmEnabled:', bgmEnabled, 'audioInit:', audioInitialized, 'currentType:', this.currentType);
+                audioLog(`[BGM] ${type} en:${bgmEnabled} init:${audioInitialized} cur:${this.currentType}`);
                 if (!bgmEnabled) {
-                    console.log('[BGM] bgmEnabled is false, returning');
+                    audioLog('[BGM] disabled');
                     return;
                 }
                 // audioInitializedがfalseでも、initAudio()を呼んで初期化を試みる
@@ -1944,7 +1962,7 @@
                     initAudio();
                 }
                 if (this.currentType === type && this.current && !this.current.paused) {
-                    console.log('[BGM] same type already playing, returning');
+                    audioLog('[BGM] same, skip');
                     return;
                 }
 
@@ -1952,21 +1970,20 @@
 
                 const file = this.files[type];
                 if (!file) {
-                    console.log('[BGM] file not found for type:', type);
+                    audioLog(`[BGM] no file: ${type}`);
                     return;
                 }
 
                 try {
-                    console.log('[BGM] creating Audio for:', file);
                     this.current = new Audio(`se/${file}`);
                     this.current.volume = bgmVolume;
                     this.current.loop = true;
                     this.currentType = type;
                     this.current.play().then(() => {
-                        console.log('[BGM] play success:', type);
-                    }).catch(e => console.log('[BGM] play failed:', type, e));
+                        audioLog(`[BGM] OK: ${type}`);
+                    }).catch(e => audioLog(`[BGM] FAIL: ${type} ${e.message}`));
                 } catch (e) {
-                    console.log('BGM error:', e);
+                    audioLog(`[BGM] ERR: ${e.message}`);
                 }
             },
 
