@@ -4336,7 +4336,7 @@
                         const spell = spells[spellId];
                         if (spell) {
                             const isSelected = (i === menu.spellCursor);
-                            const canUseInField = spell.type === 'heal' || spell.type === 'travel';
+                            const canUseInField = spell.type === 'heal' || spell.type === 'travel' || spell.type === 'warp' || spell.type === 'escape';
 
                             // フィールドで使えない呪文は暗く表示
                             if (canUseInField) {
