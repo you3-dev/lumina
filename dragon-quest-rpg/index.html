@@ -447,8 +447,6 @@
         <!-- デバッグ表示（開発用、コメントアウトで非表示）
         <div id="encounterDebug" style="position: fixed; top: 40px; right: 10px; background: rgba(0,0,0,0.7); color: #0f0; padding: 5px 10px; font-size: 12px; font-family: monospace; border-radius: 4px; z-index: 1000;"></div>
         -->
-        <!-- オーディオデバッグ表示 -->
-        <div id="audioDebug" style="position: fixed; top: 40px; left: 10px; background: rgba(0,0,0,0.85); color: #0f0; padding: 8px; font-size: 10px; font-family: monospace; border-radius: 4px; z-index: 2000; max-width: 300px; max-height: 200px; overflow-y: auto;"></div>
 
         <div id="dpad">
             <div class="dpad-btn" id="dpad-up">▲</div>
@@ -1660,21 +1658,6 @@
         let bgmVolume = 0.3;
         let audioInitialized = false;
 
-        // オーディオデバッグログ（画面とコンソール両方に出力）
-        function audioLog(msg) {
-            console.log(msg);
-            const debugEl = document.getElementById('audioDebug');
-            if (debugEl) {
-                const time = new Date().toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
-                debugEl.innerHTML = `[${time}] ${msg}<br>` + debugEl.innerHTML;
-                // 最大20行に制限
-                const lines = debugEl.innerHTML.split('<br>');
-                if (lines.length > 20) {
-                    debugEl.innerHTML = lines.slice(0, 20).join('<br>');
-                }
-            }
-        }
-
         // AudioContextを初期化（ユーザー操作後に呼び出す）
         let audioUnlocked = false;
 
@@ -1697,9 +1680,8 @@
                 source.buffer = buffer;
                 source.connect(audioCtx.destination);
                 source.start(0);
-                audioLog('[UNLOCK] Audio unlocked via WebAudio');
             } catch (e) {
-                audioLog('[UNLOCK] WebAudio unlock failed');
+                // WebAudio unlock failed
             }
 
             audioInitialized = true;
@@ -1719,7 +1701,6 @@
                 audioBufferCache[filename] = audioBuffer;
                 return audioBuffer;
             } catch (e) {
-                audioLog(`[LOAD] FAIL: ${filename}`);
                 return null;
             }
         }
@@ -1738,18 +1719,15 @@
         }
 
         function playSE(filename) {
-            audioLog(`[SE] ${filename} en:${seEnabled} unlocked:${audioUnlocked}`);
             if (!seEnabled || !audioCtx) return;
 
             // キャッシュにあれば即再生、なければロードして再生
             if (audioBufferCache[filename]) {
                 playAudioBuffer(audioBufferCache[filename], seVolume);
-                audioLog(`[SE] OK: ${filename}`);
             } else {
                 loadAudioBuffer(filename).then(buffer => {
                     if (buffer) {
                         playAudioBuffer(buffer, seVolume);
-                        audioLog(`[SE] OK: ${filename}`);
                     }
                 });
             }
@@ -1999,23 +1977,13 @@
             isPlaying: false,
 
             play: function(type) {
-                audioLog(`[BGM] ${type} en:${bgmEnabled} unlocked:${audioUnlocked} cur:${this.currentType}`);
-                if (!bgmEnabled || !audioCtx) {
-                    audioLog('[BGM] disabled');
-                    return;
-                }
-                if (this.currentType === type && this.isPlaying) {
-                    audioLog('[BGM] same, skip');
-                    return;
-                }
+                if (!bgmEnabled || !audioCtx) return;
+                if (this.currentType === type && this.isPlaying) return;
 
                 this.stop();
 
                 const file = this.files[type];
-                if (!file) {
-                    audioLog(`[BGM] no file: ${type}`);
-                    return;
-                }
+                if (!file) return;
 
                 this.currentType = type;
 
@@ -2024,9 +1992,8 @@
                     if (buffer && this.currentType === type) {
                         this.buffer = buffer;
                         this._startPlayback(0);
-                        audioLog(`[BGM] OK: ${type}`);
                     }
-                }).catch(e => audioLog(`[BGM] FAIL: ${type}`));
+                }).catch(e => {});
             },
 
             _startPlayback: function(offset) {
