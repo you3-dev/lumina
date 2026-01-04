@@ -3691,6 +3691,16 @@
                     if (data.gameProgress.lastEntrance) {
                         gameProgress.lastEntrance = { ...data.gameProgress.lastEntrance };
                     }
+
+                    // セーブデータ移行：エリア3クリア済みならnorthPathOpenedを設定
+                    if (gameProgress.storyFlags.shadowGuardianDefeated && !gameProgress.storyFlags.northPathOpened) {
+                        gameProgress.storyFlags.northPathOpened = true;
+                    }
+                    // セーブデータ移行：ボス撃破フラグとストーリーフラグの整合性を確保
+                    if (gameProgress.bossDefeated.shadowGuardian && !gameProgress.storyFlags.shadowGuardianDefeated) {
+                        gameProgress.storyFlags.shadowGuardianDefeated = true;
+                        gameProgress.storyFlags.northPathOpened = true;
+                    }
                 } else {
                     // 旧セーブデータからの移行：gameClearedからmaou撃破フラグを推測
                     gameProgress.bossDefeated.maou = gameCleared;
