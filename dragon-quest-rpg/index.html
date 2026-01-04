@@ -1705,27 +1705,53 @@
             audioInitialized = true;
         }
 
-        // SE再生用ヘルパー（mp3ファイル）
-        const seAudioCache = {};  // Audioオブジェクトキャッシュ（メモリリーク対策）
+        // SE再生用ヘルパー（Web Audio API版）
+        const audioBufferCache = {};  // デコード済みバッファのキャッシュ
+
+        async function loadAudioBuffer(filename) {
+            if (audioBufferCache[filename]) {
+                return audioBufferCache[filename];
+            }
+            try {
+                const response = await fetch(`se/${filename}`);
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                audioBufferCache[filename] = audioBuffer;
+                return audioBuffer;
+            } catch (e) {
+                audioLog(`[LOAD] FAIL: ${filename}`);
+                return null;
+            }
+        }
+
+        function playAudioBuffer(buffer, volume, loop = false) {
+            if (!buffer || !audioCtx) return null;
+            const source = audioCtx.createBufferSource();
+            const gainNode = audioCtx.createGain();
+            source.buffer = buffer;
+            source.loop = loop;
+            gainNode.gain.value = volume;
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            source.start(0);
+            return { source, gainNode };
+        }
 
         function playSE(filename) {
             audioLog(`[SE] ${filename} en:${seEnabled} unlocked:${audioUnlocked}`);
-            if (!seEnabled) return;
-            try {
-                // キャッシュから取得
-                let audio = seAudioCache[filename];
-                if (!audio) {
-                    audio = new Audio(`se/${filename}`);
-                    seAudioCache[filename] = audio;
-                }
-                // cloneNode()で複製して再生（同時再生対応）
-                const clone = audio.cloneNode();
-                clone.volume = seVolume;
-                clone.play().then(() => {
-                    audioLog(`[SE] OK: ${filename}`);
-                }).catch(e => audioLog(`[SE] FAIL: ${filename} ${e.message}`));
-            } catch (e) {
-                audioLog(`[SE] ERR: ${e.message}`);
+            if (!seEnabled || !audioCtx) return;
+
+            // キャッシュにあれば即再生、なければロードして再生
+            if (audioBufferCache[filename]) {
+                playAudioBuffer(audioBufferCache[filename], seVolume);
+                audioLog(`[SE] OK: ${filename}`);
+            } else {
+                loadAudioBuffer(filename).then(buffer => {
+                    if (buffer) {
+                        playAudioBuffer(buffer, seVolume);
+                        audioLog(`[SE] OK: ${filename}`);
+                    }
+                });
             }
         }
 
@@ -1964,13 +1990,21 @@
                 ending: 'ending.mp3'
             },
 
+            // Web Audio API用の状態管理
+            source: null,
+            gainNode: null,
+            buffer: null,
+            startTime: 0,
+            pauseTime: 0,
+            isPlaying: false,
+
             play: function(type) {
                 audioLog(`[BGM] ${type} en:${bgmEnabled} unlocked:${audioUnlocked} cur:${this.currentType}`);
-                if (!bgmEnabled) {
+                if (!bgmEnabled || !audioCtx) {
                     audioLog('[BGM] disabled');
                     return;
                 }
-                if (this.currentType === type && this.current && !this.current.paused) {
+                if (this.currentType === type && this.isPlaying) {
                     audioLog('[BGM] same, skip');
                     return;
                 }
@@ -1983,45 +2017,64 @@
                     return;
                 }
 
-                try {
-                    this.current = new Audio(`se/${file}`);
-                    audioLog(`[BGM] new Audio: ${file}`);
-                    this.current.volume = bgmVolume;
-                    this.current.loop = true;
-                    this.currentType = type;
-                    this.current.play().then(() => {
+                this.currentType = type;
+
+                // バッファをロードして再生
+                loadAudioBuffer(file).then(buffer => {
+                    if (buffer && this.currentType === type) {
+                        this.buffer = buffer;
+                        this._startPlayback(0);
                         audioLog(`[BGM] OK: ${type}`);
-                    }).catch(e => audioLog(`[BGM] FAIL: ${type} ${e.message}`));
-                } catch (e) {
-                    audioLog(`[BGM] ERR: ${e.message}`);
-                }
+                    }
+                }).catch(e => audioLog(`[BGM] FAIL: ${type}`));
+            },
+
+            _startPlayback: function(offset) {
+                if (!this.buffer || !audioCtx) return;
+
+                this.source = audioCtx.createBufferSource();
+                this.gainNode = audioCtx.createGain();
+                this.source.buffer = this.buffer;
+                this.source.loop = true;
+                this.gainNode.gain.value = bgmVolume;
+                this.source.connect(this.gainNode);
+                this.gainNode.connect(audioCtx.destination);
+                this.source.start(0, offset);
+                this.startTime = audioCtx.currentTime - offset;
+                this.isPlaying = true;
             },
 
             stop: function() {
-                if (this.current) {
-                    this.current.pause();
-                    this.current.currentTime = 0;
-                    this.current = null;
-                    this.currentType = null;
+                if (this.source) {
+                    try { this.source.stop(); } catch(e) {}
+                    this.source = null;
                 }
+                this.gainNode = null;
+                this.buffer = null;
+                this.currentType = null;
+                this.isPlaying = false;
+                this.pauseTime = 0;
             },
 
             pause: function() {
-                if (this.current) {
-                    this.current.pause();
+                if (this.source && this.isPlaying) {
+                    this.pauseTime = (audioCtx.currentTime - this.startTime) % this.buffer.duration;
+                    try { this.source.stop(); } catch(e) {}
+                    this.source = null;
+                    this.isPlaying = false;
                 }
             },
 
             resume: function() {
-                if (this.current && bgmEnabled) {
-                    this.current.play().catch(e => console.log('BGM resume failed:', e));
+                if (this.buffer && !this.isPlaying && bgmEnabled) {
+                    this._startPlayback(this.pauseTime);
                 }
             },
 
             setVolume: function(vol) {
                 bgmVolume = vol;
-                if (this.current) {
-                    this.current.volume = vol;
+                if (this.gainNode) {
+                    this.gainNode.gain.value = vol;
                 }
             },
 
