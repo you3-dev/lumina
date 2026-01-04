@@ -5092,6 +5092,7 @@
             }
 
             SE.encounter(); // エンカウント音
+            initAudio();
             BGM.play('battle'); // 戦闘BGM
             battle.active = true;
             battle.enemies = enemies;
@@ -6194,6 +6195,7 @@
                 : 'まものたちを やっつけた！';
 
             SE.victory(); // 勝利ファンファーレ
+            initAudio();
             BGM.play('victory'); // 勝利BGM
             showBattleMessage(winMessage, () => {
                 // 魔王討伐時は特別な演出
@@ -9013,6 +9015,7 @@
             };
 
             SE.encounter(); // エンカウント音
+            initAudio();
             BGM.play('bossBattle'); // ボス戦BGM
             battle.active = true;
             battle.enemies = [bossEnemy];
@@ -9083,6 +9086,7 @@
             // 魔王専用の演出付きバトル開始
             const monsterData = monsters['maou'];
             SE.encounter(); // エンカウント音
+            initAudio();
             BGM.play('bossBattle'); // ボス戦BGM
             battle.active = true;
             battle.enemy = {
