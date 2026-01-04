@@ -7836,7 +7836,7 @@
                         startDialogWithCallback(
                             [`${item.name}を使った！`, `${lastTown.name}に 飛んでいく...`],
                             () => {
-                                performMapWarp(lastTown.mapPath, lastTown.x, lastTown.y);
+                                performWarp(lastTown.mapPath, lastTown.x, lastTown.y);
                             }
                         );
                         return true;
