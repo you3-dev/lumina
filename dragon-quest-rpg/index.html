@@ -1675,7 +1675,11 @@
         const seAudioCache = {};  // Audioオブジェクトキャッシュ（メモリリーク対策）
 
         function playSE(filename) {
-            if (!seEnabled || !audioInitialized) return;
+            if (!seEnabled) return;
+            // audioInitializedがfalseでも、initAudio()を呼んで初期化を試みる
+            if (!audioInitialized) {
+                initAudio();
+            }
             try {
                 // キャッシュから取得、なければ新規作成
                 let audio = seAudioCache[filename];
