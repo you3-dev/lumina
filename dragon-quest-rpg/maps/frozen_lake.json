@@ -1735,9 +1735,17 @@
     {
       "x": 20,
       "y": 39,
-      "targetMap": "maps/surface_4.json",
-      "targetX": 32,
-      "targetY": 23
+      "targetMap": "maps/ice_field.json",
+      "targetX": 70,
+      "targetY": 41
+    },
+    {
+      "x": 20,
+      "y": 5,
+      "targetMap": "maps/ice_temple_1f.json",
+      "targetX": 15,
+      "targetY": 28,
+      "requiresFlag": "frozenLakeCleared"
     }
   ],
   "npcs": [],

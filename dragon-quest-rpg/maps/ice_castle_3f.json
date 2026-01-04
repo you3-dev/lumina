@@ -693,6 +693,14 @@
       "targetMap": "maps/ice_castle_2f.json",
       "targetX": 15,
       "targetY": 6
+    },
+    {
+      "x": 12,
+      "y": 3,
+      "targetMap": "maps/ice_field.json",
+      "targetX": 50,
+      "targetY": 11,
+      "requiresFlag": "iceQueenDefeated"
     }
   ],
   "npcs": [
