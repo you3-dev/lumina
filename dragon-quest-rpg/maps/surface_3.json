@@ -10221,10 +10221,34 @@
       "targetY": 25
     },
     {
+      "x": 48,
+      "y": 0,
+      "targetMap": "maps/ice_field.json",
+      "targetX": 48,
+      "targetY": 99,
+      "requiresFlag": "northPathOpened"
+    },
+    {
+      "x": 49,
+      "y": 0,
+      "targetMap": "maps/ice_field.json",
+      "targetX": 49,
+      "targetY": 99,
+      "requiresFlag": "northPathOpened"
+    },
+    {
       "x": 50,
       "y": 0,
       "targetMap": "maps/ice_field.json",
       "targetX": 50,
+      "targetY": 99,
+      "requiresFlag": "northPathOpened"
+    },
+    {
+      "x": 51,
+      "y": 0,
+      "targetMap": "maps/ice_field.json",
+      "targetX": 51,
       "targetY": 99,
       "requiresFlag": "northPathOpened"
     }
