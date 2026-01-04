@@ -1676,17 +1676,13 @@
         }
 
         // AudioContextを初期化（ユーザー操作後に呼び出す）
-        // モバイル用：主要な音声を事前にアンロック
-        const preloadedAudio = {};
-        const audioFilesToPreload = [
-            'encounter.mp3', 'battle-attack.mp3', 'battle-victory-intro.mp3',
-            'cursor.mp3', 'cancel.mp3', 'heal.mp3',
-            'field.mp3', 'town.mp3', 'castle.mp3', 'dungeon.mp3',
-            'battle.mp3', 'battle-victory.mp3', 'title.mp3'
-        ];
         let audioUnlocked = false;
 
         function initAudio() {
+            if (audioUnlocked) return;
+            audioUnlocked = true;
+
+            // AudioContext初期化
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
@@ -1694,30 +1690,19 @@
                 audioCtx.resume();
             }
 
-            if (!audioUnlocked) {
-                audioUnlocked = true;
-                audioLog('[UNLOCK] Starting audio unlock...');
-                // モバイル用：全ての音声ファイルをユーザー操作コンテキストでアンロック
-                audioFilesToPreload.forEach(filename => {
-                    const audio = new Audio(`se/${filename}`);
-                    audio.muted = true;  // 完全ミュート
-                    audio.volume = 0;
-                    const playPromise = audio.play();
-                    if (playPromise) {
-                        playPromise.then(() => {
-                            audio.pause();
-                            audio.currentTime = 0;
-                            audio.muted = false;
-                            audio.volume = 1;
-                            preloadedAudio[filename] = audio;
-                        }).catch(e => {});
-                    }
-                });
+            // Web Audio APIで無音バッファを再生してオーディオをアンロック
+            try {
+                const buffer = audioCtx.createBuffer(1, 1, 22050);
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                source.start(0);
+                audioLog('[UNLOCK] Audio unlocked via WebAudio');
+            } catch (e) {
+                audioLog('[UNLOCK] WebAudio unlock failed');
             }
 
-            if (!audioInitialized) {
-                audioInitialized = true;
-            }
+            audioInitialized = true;
         }
 
         // SE再生用ヘルパー（mp3ファイル）
@@ -1727,8 +1712,8 @@
             audioLog(`[SE] ${filename} en:${seEnabled} unlocked:${audioUnlocked}`);
             if (!seEnabled) return;
             try {
-                // プリロード済みの音声を優先使用
-                let audio = preloadedAudio[filename] || seAudioCache[filename];
+                // キャッシュから取得
+                let audio = seAudioCache[filename];
                 if (!audio) {
                     audio = new Audio(`se/${filename}`);
                     seAudioCache[filename] = audio;
@@ -1999,15 +1984,8 @@
                 }
 
                 try {
-                    // プリロード済みの音声があれば複製して使用
-                    const preloaded = preloadedAudio[file];
-                    if (preloaded) {
-                        this.current = preloaded.cloneNode();
-                        audioLog(`[BGM] using preloaded: ${file}`);
-                    } else {
-                        this.current = new Audio(`se/${file}`);
-                        audioLog(`[BGM] new Audio: ${file}`);
-                    }
+                    this.current = new Audio(`se/${file}`);
+                    audioLog(`[BGM] new Audio: ${file}`);
                     this.current.volume = bgmVolume;
                     this.current.loop = true;
                     this.currentType = type;
