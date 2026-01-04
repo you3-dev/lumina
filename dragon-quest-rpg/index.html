@@ -11465,7 +11465,7 @@
 
         // デバッグ用：エリア3クリア状態のセーブデータ作成
         function createDebugSaveData() {
-            resetGameState().then(() => {
+            resetGameState().then(async () => {
                 // レベルと装備を強化
                 party[0].level = 40;
                 party[0].exp = 50000;
@@ -11480,9 +11480,14 @@
                 gameProgress.bossDefeated.shadowGuardian = true;
                 gameProgress.storyFlags.shadowGuardianDefeated = true;
                 gameProgress.storyFlags.northPathOpened = true;
+                // スポーン地点をsurface_3北側（エリア4入口付近）に設定
+                currentMapPath = 'maps/surface_3.json';
+                player.x = 49;
+                player.y = 2;
+                await loadMapFromPath(currentMapPath);
                 // セーブ
                 saveGame();
-                alert('デバッグ用セーブデータ作成完了（エリア3クリア状態）');
+                alert('データセット完了');
                 location.reload();
             });
         }
