@@ -1636,10 +1636,18 @@
         }
 
         // SE再生用ヘルパー（mp3ファイル）
+        const seAudioCache = {};  // Audioオブジェクトキャッシュ（メモリリーク対策）
+
         function playSE(filename) {
             if (!seEnabled || !audioInitialized) return;
             try {
-                const audio = new Audio(`se/${filename}`);
+                // キャッシュから取得、なければ新規作成
+                let audio = seAudioCache[filename];
+                if (!audio) {
+                    audio = new Audio(`se/${filename}`);
+                    seAudioCache[filename] = audio;
+                }
+                audio.currentTime = 0;  // 再生位置をリセット
                 audio.volume = seVolume;
                 audio.play().catch(e => console.log('SE play failed:', e));
             } catch (e) {
@@ -10670,6 +10678,8 @@
             pressStart.style.display = 'none';
             titleMenu.classList.add('active');
             updateTitleMenuSelection();
+            // タイトルBGM開始（ユーザー操作後なので再生可能）
+            BGM.play('title');
         }
 
         async function selectTitleMenuItem() {
@@ -10819,6 +10829,7 @@
 
         // タイトル画面のイベントリスナー
         menuContinue.addEventListener('click', () => {
+            initAudio(); // ユーザー操作でAudioContextを初期化
             if (gameMode === MODE.TITLE) {
                 titleMenuIndex = 0;
                 updateTitleMenuSelection();
@@ -10827,6 +10838,7 @@
         });
 
         menuNewGame.addEventListener('click', () => {
+            initAudio(); // ユーザー操作でAudioContextを初期化
             if (gameMode === MODE.TITLE) {
                 titleMenuIndex = hasSaveData ? 1 : 0;
                 updateTitleMenuSelection();
@@ -10835,6 +10847,7 @@
         });
 
         titleScreen.addEventListener('click', (e) => {
+            initAudio(); // ユーザー操作でAudioContextを初期化
             if (gameMode === MODE.TITLE && !titleMenuActive) {
                 activateTitleMenu();
             }
