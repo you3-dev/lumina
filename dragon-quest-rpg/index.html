@@ -486,6 +486,7 @@
         let titleMenuIndex = 0;
         let titleMenuActive = false;
         let hasSaveData = false;
+        let debugToggleCount = 0;  // デバッグ用カウンター
 
         // タイルタイプ
         const TILE = {
@@ -11434,6 +11435,7 @@
             }
 
             titleMenuActive = false;
+            debugToggleCount = 0;  // デバッグ用カウンターリセット
             pressStart.style.display = 'block';
             titleMenu.classList.remove('active');
             updateTitleMenuSelection();
@@ -11448,8 +11450,41 @@
                     e.stopPropagation(); // タイトル画面のクリックイベントを阻止
                     initAudio();
                     toggleSound();
+                    // デバッグ用：タイトル画面で20回切り替えるとデバッグセーブ作成
+                    const titleScreen = document.getElementById('titleScreen');
+                    if (titleScreen && !titleScreen.classList.contains('hidden')) {
+                        debugToggleCount++;
+                        if (debugToggleCount === 20) {
+                            createDebugSaveData();
+                            debugToggleCount = 0;
+                        }
+                    }
                 });
             }
+        }
+
+        // デバッグ用：エリア3クリア状態のセーブデータ作成
+        function createDebugSaveData() {
+            resetGameState().then(() => {
+                // レベルと装備を強化
+                party[0].level = 40;
+                party[0].exp = 50000;
+                party[0].maxHp = 200;
+                party[0].hp = 200;
+                party[0].maxMp = 80;
+                party[0].mp = 80;
+                party[0].equipment = { weapon: 35, armor: 43, accessory: 51 };
+                updateActualStats();
+                player.gold = 50000;
+                // エリア3ボス撃破フラグ設定
+                gameProgress.bossDefeated.shadowGuardian = true;
+                gameProgress.storyFlags.shadowGuardianDefeated = true;
+                gameProgress.storyFlags.northPathOpened = true;
+                // セーブ
+                saveGame();
+                alert('デバッグ用セーブデータ作成完了（エリア3クリア状態）');
+                location.reload();
+            });
         }
 
         function updateTitleMenuSelection() {
