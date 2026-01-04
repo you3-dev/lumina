@@ -11465,15 +11465,27 @@
 
         // デバッグ用：エリア3クリア状態のセーブデータ作成
         function createDebugSaveData() {
-            resetGameState().then(async () => {
-                // ヒーローを強化
-                party[0].level = 40;
-                party[0].exp = 50000;
-                party[0].maxHp = 200;
-                party[0].hp = 200;
-                party[0].maxMp = 80;
-                party[0].mp = 80;
-                party[0].equipment = { weapon: 35, armor: 43, accessory: 51 };
+            try {
+                // パーティをクリアしてヒーローを作成
+                party.length = 0;
+                const hero = createPartyMember({
+                    id: 'hero',
+                    name: 'ゆうしゃ',
+                    job: 'hero',
+                    sprite: '🧙',
+                    hp: 200,
+                    maxHp: 200,
+                    mp: 80,
+                    maxMp: 80,
+                    baseAtk: 50,
+                    baseDef: 40,
+                    speed: 10,
+                    level: 40,
+                    exp: 50000,
+                    spells: ['hoimi', 'behoimi', 'gira'],
+                    equipment: { weapon: 35, armor: 43, accessory: 51 }
+                });
+                party.push(hero);
 
                 // マリア（魔法使い）を追加
                 const mage = createPartyMember({
@@ -11515,8 +11527,15 @@
                 });
                 party.push(seren);
 
-                updateActualStats();
+                // partyData設定
                 partyData.gold = 50000;
+                partyData.x = 49;
+                partyData.y = 2;
+                partyData.direction = 'up';
+                partyData.inventory = [
+                    { id: 1, quantity: 10 },
+                    { id: 2, quantity: 5 }
+                ];
 
                 // フラグ設定
                 gameProgress.storyFlags.mageJoined = true;
@@ -11527,18 +11546,49 @@
                 gameProgress.storyFlags.northPathOpened = true;
                 gameProgress.storyFlags.area3Completed = true;
 
-                // スポーン地点をsurface_3北側（エリア4入口付近）に設定
-                currentMapPath = 'maps/surface_3.json';
-                partyData.x = 49;
-                partyData.y = 2;
-                partyData.direction = 'up';
-                await loadMapFromPath(currentMapPath);
-
-                // セーブ
-                saveGame();
+                // 直接localStorageにセーブデータを書き込む
+                const saveData = {
+                    party: party.map(m => ({
+                        id: m.id,
+                        name: m.name,
+                        job: m.job,
+                        sprite: m.sprite,
+                        hp: m.hp,
+                        maxHp: m.maxHp,
+                        mp: m.mp,
+                        maxMp: m.maxMp,
+                        baseAtk: m.baseAtk,
+                        baseDef: m.baseDef,
+                        speed: m.speed,
+                        level: m.level,
+                        exp: m.exp,
+                        spells: [...m.spells],
+                        equipment: { ...m.equipment }
+                    })),
+                    currentMapPath: 'maps/surface_3.json',
+                    currentMapId: 'surface_3',
+                    x: 49,
+                    y: 2,
+                    direction: 'up',
+                    gold: 50000,
+                    inventory: [{ id: 1, quantity: 10 }, { id: 2, quantity: 5 }],
+                    chestStates: {},
+                    gameProgress: {
+                        bossDefeated: { ...gameProgress.bossDefeated },
+                        storyFlags: { ...gameProgress.storyFlags },
+                        areas: { ...gameProgress.areas },
+                        quests: JSON.parse(JSON.stringify(gameProgress.quests)),
+                        openedPassages: {},
+                        visitedLocations: [],
+                        lastEntrance: null
+                    }
+                };
+                localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
                 alert('データセット完了');
                 location.reload();
-            });
+            } catch (e) {
+                alert('エラー: ' + e.message);
+            }
         }
 
         function updateTitleMenuSelection() {
