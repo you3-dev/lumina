@@ -8730,10 +8730,16 @@
                     player.y = icePuzzleEntrance.y;
                 } else {
                     // フォールバック: 最寄りの安全な場所（ワープ出口など）
-                    const warp = currentMap.warps.find(w => w.fromX !== undefined);
-                    if (warp) {
-                        player.x = warp.fromX;
-                        player.y = warp.fromY;
+                    if (currentMap.warps && currentMap.warps.length > 0) {
+                        const warp = currentMap.warps.find(w => w.fromX !== undefined);
+                        if (warp) {
+                            player.x = warp.fromX;
+                            player.y = warp.fromY;
+                        } else {
+                            // fromXがない場合は最初のワープ位置を使用
+                            player.x = currentMap.warps[0].x;
+                            player.y = currentMap.warps[0].y;
+                        }
                     }
                 }
                 updateCamera();
