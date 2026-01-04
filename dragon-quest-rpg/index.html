@@ -198,6 +198,38 @@
             display: none;
         }
 
+        .sound-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 44px;
+            height: 44px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.2s ease;
+            z-index: 101;
+        }
+
+        .sound-toggle:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: scale(1.1);
+        }
+
+        .sound-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .sound-toggle.muted {
+            border-color: #666;
+            opacity: 0.7;
+        }
+
         .title-content {
             text-align: center;
             color: #fff;
@@ -370,6 +402,7 @@
 
     <!-- タイトル画面 -->
     <div id="titleScreen">
+        <div id="soundToggle" class="sound-toggle">🔊</div>
         <div class="title-content">
             <h1 class="game-title">ドラゴンクエスト</h1>
             <p class="subtitle">〜 勇者の冒険 〜</p>
@@ -1615,10 +1648,13 @@
         // ========================================
         // サウンドシステム (SE + BGM)
         // ========================================
+        const SOUND_SETTING_KEY = 'dragonQuestSoundEnabled';
         let audioCtx = null;
-        let seEnabled = true;
+        // localStorageからサウンド設定を読み込み（デフォルトはON）
+        let soundEnabled = localStorage.getItem(SOUND_SETTING_KEY) !== 'false';
+        let seEnabled = soundEnabled;
         let seVolume = 0.5;
-        let bgmEnabled = true;
+        let bgmEnabled = soundEnabled;
         let bgmVolume = 0.3;
         let audioInitialized = false;
 
@@ -1962,6 +1998,39 @@
                 }
             }
         };
+
+        // サウンドトグル機能
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            seEnabled = soundEnabled;
+            bgmEnabled = soundEnabled;
+
+            // localStorageに保存
+            localStorage.setItem(SOUND_SETTING_KEY, soundEnabled);
+
+            // アイコン更新
+            updateSoundToggleIcon();
+
+            // BGM制御
+            if (soundEnabled) {
+                // ONにした場合、タイトル画面ならタイトルBGMを再生
+                const titleScreen = document.getElementById('titleScreen');
+                if (titleScreen && !titleScreen.classList.contains('hidden')) {
+                    BGM.play('title');
+                }
+            } else {
+                // OFFにした場合、BGM停止
+                BGM.stop();
+            }
+        }
+
+        function updateSoundToggleIcon() {
+            const toggleBtn = document.getElementById('soundToggle');
+            if (toggleBtn) {
+                toggleBtn.textContent = soundEnabled ? '🔊' : '🔇';
+                toggleBtn.classList.toggle('muted', !soundEnabled);
+            }
+        }
 
         // ========================================
         // ゲーム進行フラグ管理
@@ -10661,6 +10730,19 @@
             pressStart.style.display = 'block';
             titleMenu.classList.remove('active');
             updateTitleMenuSelection();
+
+            // サウンドトグルアイコン初期化
+            updateSoundToggleIcon();
+
+            // サウンドトグルボタンのイベントリスナー
+            const soundToggleBtn = document.getElementById('soundToggle');
+            if (soundToggleBtn) {
+                soundToggleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // タイトル画面のクリックイベントを阻止
+                    initAudio();
+                    toggleSound();
+                });
+            }
         }
 
         function updateTitleMenuSelection() {
