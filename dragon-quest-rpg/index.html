@@ -510,7 +510,17 @@
             UNDERWORLD_FLOOR: 17, // 地底床
             UNDERWORLD_WALL: 18,  // 地底壁
             WEDGE_ALTAR: 19,      // 楔の祭壇
-            UNDERWORLD_TOWN: 20   // 地底の街（暗い背景）
+            UNDERWORLD_TOWN: 20,  // 地底の街（暗い背景）
+            // エリア4: 氷雪の大陸タイル
+            ICE_FLOOR: 21,        // 滑る氷床
+            ICE_WALL: 22,         // 氷の壁（止まれる）
+            ICE_HOLE: 23,         // 氷の穴（落ちると戻る）
+            SNOW: 24,             // 雪原（通常歩行可能）
+            ICE_CASTLE_FLOOR: 25, // 氷の城の床
+            TORCH: 26,            // 燭台（灯火パズル用）
+            ICE_ALTAR: 27,        // 氷の祭壇（記憶パズル用）
+            ICE_SWITCH: 28,       // 圧力スイッチ
+            ICE_BLOCK: 29         // 押せる氷ブロック
         };
 
         // マップタイプ別のタイル色
@@ -564,11 +574,21 @@
             [TILE.UNDERWORLD_FLOOR]: '#2a1a2a',
             [TILE.UNDERWORLD_WALL]: '#0a0a0a',
             [TILE.WEDGE_ALTAR]: '#8a6a3a',
-            [TILE.UNDERWORLD_TOWN]: '#2a1a2a'  // 地底床と同じ暗い背景
+            [TILE.UNDERWORLD_TOWN]: '#2a1a2a',  // 地底床と同じ暗い背景
+            // エリア4: 氷雪の大陸タイル色
+            [TILE.ICE_FLOOR]: '#a8d8ea',       // 氷床（薄い水色）
+            [TILE.ICE_WALL]: '#5a8aa8',        // 氷壁（濃い水色）
+            [TILE.ICE_HOLE]: '#1a3a5a',        // 氷の穴（暗い青）
+            [TILE.SNOW]: '#e8f0f8',            // 雪原（白に近い色）
+            [TILE.ICE_CASTLE_FLOOR]: '#c8e0f0', // 氷の城床（明るい水色）
+            [TILE.TORCH]: '#c8e0f0',           // 燭台（床と同色）
+            [TILE.ICE_ALTAR]: '#88b8d8',       // 氷の祭壇（中間の水色）
+            [TILE.ICE_SWITCH]: '#7898b8',      // スイッチ（やや暗い水色）
+            [TILE.ICE_BLOCK]: '#6888a8'        // 氷ブロック（暗めの水色）
         };
 
-        const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR, TILE.PORTAL, TILE.STAIRS_UP, TILE.STAIRS_DOWN, TILE.SAND, TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND, TILE.UNDERWORLD_FLOOR, TILE.WEDGE_ALTAR, TILE.UNDERWORLD_TOWN];
-        const ENCOUNTER_TILES = [TILE.GRASS, TILE.FLOOR, TILE.SAND, TILE.UNDERWORLD_FLOOR]; // エンカウントが発生するタイル（草原、ダンジョン床、砂漠、地底床）
+        const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR, TILE.PORTAL, TILE.STAIRS_UP, TILE.STAIRS_DOWN, TILE.SAND, TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND, TILE.UNDERWORLD_FLOOR, TILE.WEDGE_ALTAR, TILE.UNDERWORLD_TOWN, TILE.ICE_FLOOR, TILE.SNOW, TILE.ICE_CASTLE_FLOOR, TILE.TORCH, TILE.ICE_ALTAR, TILE.ICE_SWITCH, TILE.ICE_HOLE];
+        const ENCOUNTER_TILES = [TILE.GRASS, TILE.FLOOR, TILE.SAND, TILE.UNDERWORLD_FLOOR, TILE.ICE_FLOOR, TILE.SNOW, TILE.ICE_CASTLE_FLOOR]; // エンカウントが発生するタイル（草原、ダンジョン床、砂漠、地底床、氷床、雪原、氷の城）
 
         // ========================================
         // アイテムデータ
@@ -623,7 +643,30 @@
             // 回復アイテム（上位）
             4: { id: 4, name: '上薬草', description: 'HPを100回復する', type: 'heal', value: 100, price: 50 },
             5: { id: 5, name: '世界樹の葉', description: '戦闘不能を回復する', type: 'revive', price: 500 },
-            9: { id: 9, name: 'キメラのつばさ', description: '最後に訪れた町に戻る', type: 'escape', price: 25 }
+            9: { id: 9, name: 'キメラのつばさ', description: '最後に訪れた町に戻る', type: 'escape', price: 25 },
+            // エリア4: 氷雪の大陸アイテム
+            // 消費アイテム
+            60: { id: 60, name: 'ほかほかスープ', description: '凍結状態を回復、3ターン凍結耐性', type: 'cure', price: 100 },
+            61: { id: 61, name: 'たいまつ', description: '暗所を照らす', type: 'tool', price: 50 },
+            62: { id: 62, name: 'ふぶきよけの薬', description: '氷属性ダメージ50%軽減（3ターン）', type: 'buff', price: 200 },
+            // 武器（エリア4）
+            70: { id: 70, name: 'こおりのつるぎ', type: 'weapon', value: 55, price: 12000, equippable: ['hero'] },
+            71: { id: 71, name: 'ブリザードソード', type: 'weapon', value: 70, price: 0, equippable: ['hero'] },
+            72: { id: 72, name: 'こおりのつえ', type: 'weapon', value: 45, price: 10000, equippable: ['mage', 'seer'] },
+            73: { id: 73, name: 'ダイヤモンドロッド', type: 'weapon', value: 60, price: 0, equippable: ['mage', 'seer'] },
+            74: { id: 74, name: 'こおりのおおなた', type: 'weapon', value: 65, price: 0, equippable: ['iceKnight'] },
+            // 防具（エリア4）
+            80: { id: 80, name: 'ふゆごもりのふく', type: 'armor', value: 45, price: 8000, equippable: ['hero', 'mage', 'seer', 'iceKnight'], resistances: { ice: 0.7 } },
+            81: { id: 81, name: 'ブリザードメイル', type: 'armor', value: 60, price: 0, equippable: ['hero', 'iceKnight'], resistances: { ice: 0.5 } },
+            82: { id: 82, name: 'ゆきのローブ', type: 'armor', value: 40, price: 7000, equippable: ['mage', 'seer'], resistances: { ice: 0.6 } },
+            83: { id: 83, name: 'クリスタルローブ', type: 'armor', value: 55, price: 0, equippable: ['mage', 'seer'], resistances: { ice: 0.4, fire: 0.8 } },
+            // アクセサリ（エリア4）
+            90: { id: 90, name: 'こおりのゆびわ', type: 'accessory', value: 0, price: 5000, equippable: ['hero', 'mage', 'seer', 'iceKnight'], resistances: { ice: 0.75 } },
+            91: { id: 91, name: 'ほのおのペンダント', type: 'accessory', value: 0, price: 0, equippable: ['hero', 'mage', 'seer', 'iceKnight'], spellBoost: { fire: 1.2 } },
+            92: { id: 92, name: 'じょおうのティアラ', type: 'accessory', value: 0, price: 0, equippable: ['hero', 'mage', 'seer', 'iceKnight'], mpBoost: 30 },
+            // クエストアイテム（エリア4）
+            95: { id: 95, name: '太陽の炎', description: '女王を救う力を持つ聖なる炎', type: 'quest', price: 0 },
+            96: { id: 96, name: '極光の宝珠', description: '海を渡る力を持つ宝珠', type: 'quest', price: 0 }
         };
 
         // ショップ商品リスト（エリア別対応）
@@ -635,7 +678,10 @@
             bazaar_shop: [1, 2, 4, 5, 9, 13, 15, 23, 25, 41, 51], // バザールの町：中級装備 + 魔法使い中級装備
             hidden_shop: [4, 5, 15, 16, 25, 26, 42, 52], // 隠れ里：高級装備 + 魔法使い高級装備
             // エリア3のショップ
-            underworld_shop: [1, 4, 5, 9, 18, 19, 27, 28, 44, 45, 53, 54] // 地底の村：回復アイテム + エリア3装備
+            underworld_shop: [1, 4, 5, 9, 18, 19, 27, 28, 44, 45, 53, 54], // 地底の村：回復アイテム + エリア3装備
+            // エリア4のショップ
+            snow_village_weapon: [70, 72, 80, 82, 90], // 雪原の村・武器屋：氷の武器・防具
+            snow_village_item: [1, 4, 5, 9, 60, 61, 62] // 雪原の村・道具屋：回復アイテム + 氷対策アイテム
         };
         let currentShopId = 'default';
         const shopItems = shopItemsByArea.default; // 互換性のため維持
@@ -1387,6 +1433,129 @@
                 resistances: { sleep: 0, blind: 0, poison: 0 }, // 完全耐性
                 // 魔王専用スキル
                 skills: ['attack', 'hageshiiHonoo', 'behoma', 'ionazun']
+            },
+            // ===== エリア4: 氷雪の大陸（Lv35~50）=====
+            snowSlime: {
+                name: 'ゆきスライム',
+                sprite: '🧊',
+                level: 35,
+                hp: 120,
+                atk: 55,
+                def: 35,
+                speed: 12,
+                exp: 180,
+                gold: 80,
+                skills: ['attack', 'iceBreath'],
+                resistances: { ice: 0, fire: 2.0 }
+            },
+            iceBat: {
+                name: 'アイスバット',
+                sprite: '🦇',
+                level: 36,
+                hp: 90,
+                atk: 60,
+                def: 25,
+                speed: 25,
+                exp: 200,
+                gold: 90,
+                skills: ['attack', 'drain'],
+                resistances: { ice: 0.5, fire: 1.5 }
+            },
+            snowWolf: {
+                name: 'スノーウルフ',
+                sprite: '🐺',
+                level: 37,
+                hp: 140,
+                atk: 70,
+                def: 40,
+                speed: 20,
+                exp: 220,
+                gold: 100,
+                skills: ['attack', 'howl'],
+                resistances: { ice: 0.5, fire: 1.5 }
+            },
+            frozenKnight: {
+                name: 'こおりのきし',
+                sprite: '🗡️',
+                level: 38,
+                hp: 180,
+                atk: 75,
+                def: 55,
+                speed: 10,
+                exp: 280,
+                gold: 150,
+                skills: ['attack', 'strongAttack'],
+                resistances: { ice: 0, fire: 1.5, lightning: 1.5 }
+            },
+            iceElemental: {
+                name: 'アイスエレメント',
+                sprite: '💠',
+                level: 40,
+                hp: 160,
+                atk: 65,
+                def: 45,
+                speed: 15,
+                exp: 300,
+                gold: 130,
+                skills: ['attack', 'hyados'],
+                resistances: { ice: 0, fire: 2.0, lightning: 0.5 }
+            },
+            frostGiant: {
+                name: 'フロストジャイアント',
+                sprite: '👹',
+                level: 42,
+                hp: 250,
+                atk: 90,
+                def: 60,
+                speed: 8,
+                exp: 400,
+                gold: 200,
+                skills: ['attack', 'strongAttack'],
+                resistances: { ice: 0, fire: 1.5 }
+            },
+            crystalDragon: {
+                name: 'クリスタルドラゴン',
+                sprite: '🐲',
+                level: 45,
+                hp: 300,
+                atk: 100,
+                def: 70,
+                speed: 18,
+                exp: 500,
+                gold: 300,
+                skills: ['attack', 'iceBreath', 'hyados'],
+                resistances: { ice: 0, fire: 1.5, light: 0.5 }
+            },
+            // エリア4中ボス: 氷のゴーレム
+            iceGolem: {
+                name: 'こおりのゴーレム',
+                sprite: '🗿',
+                level: 40,
+                hp: 800,
+                atk: 75,
+                def: 60,
+                speed: 8,
+                exp: 1500,
+                gold: 900,
+                isBoss: true,
+                skills: ['attack', 'iceBreath', 'strongAttack'],
+                resistances: { ice: 0, fire: 2.0, lightning: 1.5, sleep: 0, poison: 0 }
+            },
+            // エリア4最終ボス: 氷の女王
+            iceQueen: {
+                name: 'こおりのじょおう',
+                sprite: '👸',
+                level: 48,
+                hp: 1500,
+                atk: 95,
+                def: 70,
+                speed: 20,
+                exp: 3000,
+                gold: 1500,
+                isBoss: true,
+                actions: 2,
+                skills: ['attack', 'hyados', 'iceBreath', 'absoluteZero', 'behoma'],
+                resistances: { ice: 0, fire: 2.0, light: 0.5, sleep: 0, poison: 0 }
             }
         };
 
@@ -1401,10 +1570,18 @@
             raiden: { name: 'ライデイン', type: 'attack', target: 'all', power: 48, element: 'lightning', flashColor: 'rgba(255, 255, 100, 0.8)' },
             // 単体攻撃スキル（物理なので属性なし）
             strongAttack: { name: 'つよいこうげき', type: 'attack', target: 'single', power: 60, flashColor: 'rgba(255, 100, 100, 0.5)' },
+            // グラシオ用スキル
+            iceSlash: { name: 'こおりのいちげき', type: 'attack', target: 'single', power: 55, element: 'ice', flashColor: 'rgba(150, 220, 255, 0.6)' },
             // 回復スキル
             behoma: { name: 'ベホマ', type: 'heal', power: 9999, flashColor: 'rgba(0, 255, 100, 0.5)' },
             // 補助スキル
-            mahoton: { name: 'マホトーン', type: 'debuff', effect: 'silence', flashColor: 'rgba(128, 0, 128, 0.5)' }
+            mahoton: { name: 'マホトーン', type: 'debuff', effect: 'silence', flashColor: 'rgba(128, 0, 128, 0.5)' },
+            // エリア4用スキル
+            iceBreath: { name: 'つめたいいき', type: 'attack', target: 'all', power: 35, element: 'ice', flashColor: 'rgba(150, 220, 255, 0.7)' },
+            absoluteZero: { name: 'ぜったいれいど', type: 'attack', target: 'all', power: 65, element: 'ice', flashColor: 'rgba(200, 240, 255, 0.9)' },
+            // 雑魚敵用スキル
+            drain: { name: 'HP吸収', type: 'drain', target: 'single', power: 20, flashColor: 'rgba(150, 50, 150, 0.5)' },
+            howl: { name: 'おたけび', type: 'debuff', effect: 'stun', flashColor: 'rgba(255, 200, 100, 0.5)' }
         };
 
         // エリア別エンカウントテーブル（mapIdベース）
@@ -1452,7 +1629,12 @@
             castle_b1: ['skeleton', 'skeleton', 'darkArmor', 'deathWraith'],
             castle_1f: ['darkArmor', 'skeleton', 'deathMagician', 'cursedKnight'],
             castle_2f: ['darkArmor', 'deathMagician', 'deathMagician', 'cursedKnight'],
-            castle_3f: ['cursedKnight', 'cursedKnight', 'deathMagician'] // ボスフロア（低エンカウント）
+            castle_3f: ['cursedKnight', 'cursedKnight', 'deathMagician'], // ボスフロア（低エンカウント）
+            // エリア4: 氷雪の大陸（Lv35~50）
+            area4_field: ['snowSlime', 'snowSlime', 'iceBat', 'snowWolf', 'snowWolf'],
+            area4_cave: ['snowSlime', 'frozenKnight', 'iceElemental', 'iceBat'],
+            area4_temple: ['iceElemental', 'iceElemental', 'frostGiant', 'frozenKnight'],
+            area4_castle: ['frozenKnight', 'frostGiant', 'crystalDragon', 'crystalDragon']
         };
 
         // 旧type名との互換用フォールバック
@@ -1504,7 +1686,10 @@
             piorimu: { id: 'piorimu', name: 'ピオリム', mp: 4, type: 'buff', buffType: 'speed', buffRate: 2.0, duration: 99, learnLevel: 8, learnableBy: ['seer'], element: 'buff', flashColor: 'rgba(150, 255, 150, 0.5)' },
             // 移動呪文
             riremito: { id: 'riremito', name: 'リレミト', mp: 4, type: 'escape', learnLevel: 12, learnableBy: ['hero', 'mage'], element: 'move', flashColor: 'rgba(200, 200, 255, 0.5)' },
-            rura: { id: 'rura', name: 'ルーラ', mp: 8, type: 'warp', learnLevel: 15, learnableBy: ['hero'], element: 'move', flashColor: 'rgba(100, 200, 255, 0.7)' }
+            rura: { id: 'rura', name: 'ルーラ', mp: 8, type: 'warp', learnLevel: 15, learnableBy: ['hero'], element: 'move', flashColor: 'rgba(100, 200, 255, 0.7)' },
+            // 氷結騎士専用スキル
+            iceSlash: { id: 'iceSlash', name: 'こおりのいちげき', mp: 6, type: 'attack', target: 'single', power: 55, learnLevel: 1, learnableBy: ['iceKnight'], element: 'ice', flashColor: 'rgba(150, 220, 255, 0.6)' },
+            frostArmor: { id: 'frostArmor', name: 'フロストアーマー', mp: 8, type: 'buff', buffType: 'defense', buffRate: 1.8, learnLevel: 40, learnableBy: ['iceKnight'], element: 'ice', flashColor: 'rgba(180, 230, 255, 0.6)' }
         };
 
         // 状態異常の定義
@@ -2121,7 +2306,10 @@
                 wedgeGuardian_east: false,  // 東の楔守護者
                 wedgeGuardian_south: false, // 南の楔守護者
                 wedgeGuardian_west: false,  // 西の楔守護者
-                libraryGuardian: false      // 図書室の守護者
+                libraryGuardian: false,     // 図書室の守護者
+                // エリア4ボス
+                iceGolem: false,            // 氷のゴーレム（中ボス）
+                iceQueen: false             // 氷の女王（エリアボス）
             },
             // ストーリー進行フラグ
             storyFlags: {
@@ -2137,7 +2325,19 @@
                 area3SealActivated: false,     // 封印が発動した
                 shadowGuardianDefeated: false, // 闘の守護者を撃破した
                 area3Completed: false,         // エリア3をクリアした
-                ancientSpellReceived: false    // 古代呪文ザオリクを授かった
+                ancientSpellReceived: false,   // 古代呪文ザオリクを授かった
+                // エリア4フラグ
+                northPathOpened: false,        // 北の山道開通
+                area4Entered: false,           // エリア4に入った
+                iceGolemDefeated: false,       // 氷のゴーレム撃破
+                frozenLakeCleared: false,      // 凍りついた湖クリア
+                torchPuzzleCleared: false,     // 灯火パズルクリア
+                memoryPuzzleCleared: false,    // 記憶パズルクリア
+                sunFlameObtained: false,       // 太陽の炎入手
+                glacioJoined: false,           // グラシオ加入
+                iceQueenDefeated: false,       // 氷の女王撃破
+                area4Completed: false,         // エリア4クリア
+                auroraOrbObtained: false       // 極光の宝珠入手
             },
             // クエストフラグ（エリア2）
             quests: {
@@ -2166,6 +2366,12 @@
                     stage1_met: false,        // 初回遭遇
                     stage2_helped: false,     // クエスト受注
                     stage3_completed: false,  // 条件達成
+                    joined: false             // 加入完了
+                },
+                // グラシオ加入クエスト
+                glacioJoin: {
+                    met: false,               // 氷結騎士と遭遇
+                    iceGolemDefeated: false,  // 氷のゴーレム撃破で解放
                     joined: false             // 加入完了
                 },
                 // 楔クエスト
@@ -2234,6 +2440,20 @@
             gameProgress.storyFlags.shadowGuardianDefeated = false;
             gameProgress.storyFlags.area3Completed = false;
             gameProgress.storyFlags.ancientSpellReceived = false;
+            // エリア4フラグリセット
+            gameProgress.bossDefeated.iceGolem = false;
+            gameProgress.bossDefeated.iceQueen = false;
+            gameProgress.storyFlags.northPathOpened = false;
+            gameProgress.storyFlags.area4Entered = false;
+            gameProgress.storyFlags.iceGolemDefeated = false;
+            gameProgress.storyFlags.frozenLakeCleared = false;
+            gameProgress.storyFlags.torchPuzzleCleared = false;
+            gameProgress.storyFlags.memoryPuzzleCleared = false;
+            gameProgress.storyFlags.sunFlameObtained = false;
+            gameProgress.storyFlags.glacioJoined = false;
+            gameProgress.storyFlags.iceQueenDefeated = false;
+            gameProgress.storyFlags.area4Completed = false;
+            gameProgress.storyFlags.auroraOrbObtained = false;
             // クエストリセット
             Object.keys(gameProgress.quests).forEach(questName => {
                 Object.keys(gameProgress.quests[questName]).forEach(flag => {
@@ -3640,6 +3860,56 @@
                 ctx.fillText('⬆️', x + tileSize / 2, y + tileSize / 2);
             } else if (tile === TILE.STAIRS_DOWN) {
                 ctx.fillText('⬇️', x + tileSize / 2, y + tileSize / 2);
+            } else if (tile === TILE.ICE_FLOOR) {
+                // 氷床: 滑りやすさを表現
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(x + i * tileSize * 0.3, y + tileSize * 0.2);
+                    ctx.lineTo(x + tileSize * 0.2 + i * tileSize * 0.3, y + tileSize * 0.8);
+                    ctx.stroke();
+                }
+            } else if (tile === TILE.ICE_WALL) {
+                // 氷の壁
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.fillRect(x + 2, y + 2, tileSize * 0.4, tileSize * 0.3);
+                ctx.font = `${tileSize * 0.5}px serif`;
+                ctx.fillText('🧊', x + tileSize / 2, y + tileSize / 2);
+            } else if (tile === TILE.ICE_HOLE) {
+                // 氷の穴: 危険な雰囲気
+                ctx.fillStyle = 'rgba(0, 30, 60, 0.5)';
+                ctx.beginPath();
+                ctx.ellipse(x + tileSize / 2, y + tileSize / 2, tileSize * 0.35, tileSize * 0.25, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.font = `${tileSize * 0.4}px serif`;
+                ctx.fillText('⚠️', x + tileSize / 2, y + tileSize / 2);
+            } else if (tile === TILE.SNOW) {
+                // 雪原
+                const seed = (col * 11 + row * 17) % 100;
+                if (seed < 30) {
+                    ctx.font = `${tileSize * 0.25}px serif`;
+                    ctx.fillText('❄', x + tileSize * 0.3, y + tileSize * 0.3);
+                }
+            } else if (tile === TILE.TORCH) {
+                // 燭台
+                const flicker = Math.sin(Date.now() / 100) * 0.15 + 0.85;
+                ctx.font = `${tileSize * 0.6 * flicker}px serif`;
+                ctx.fillText('🕯️', x + tileSize / 2, y + tileSize / 2);
+            } else if (tile === TILE.ICE_ALTAR) {
+                // 氷の祭壇
+                ctx.font = `${tileSize * 0.6}px serif`;
+                ctx.fillText('🔮', x + tileSize / 2, y + tileSize / 2);
+            } else if (tile === TILE.ICE_SWITCH) {
+                // 圧力スイッチ
+                const isPressed = switchStates[currentMap?.id]?.[`switch_${col}_${row}`];
+                ctx.fillStyle = isPressed ? 'rgba(100, 255, 100, 0.3)' : 'rgba(255, 255, 255, 0.2)';
+                ctx.beginPath();
+                ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = isPressed ? '#4a8' : '#888';
+                ctx.lineWidth = 2;
+                ctx.stroke();
             }
             ctx.restore();
         }
@@ -3654,6 +3924,38 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(chest.isOpened ? '📦' : '🎁', screenX + tileSize / 2, screenY + tileSize / 2);
+            }
+        }
+
+        // 氷ブロック描画
+        function drawIceBlocks() {
+            const blocks = pushedIceBlocks[currentMap?.id];
+            if (!blocks) return;
+
+            for (const block of blocks) {
+                const screenX = block.x * tileSize - cameraX;
+                const screenY = block.y * tileSize - cameraY;
+                if (screenX < -tileSize || screenX > canvasWidth || screenY < -tileSize || screenY > canvasHeight) continue;
+
+                // 氷ブロックの描画
+                ctx.fillStyle = '#88c8e8';
+                ctx.fillRect(screenX + 2, screenY + 2, tileSize - 4, tileSize - 4);
+
+                // 光沢エフェクト
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.fillRect(screenX + 4, screenY + 4, tileSize * 0.3, tileSize * 0.2);
+
+                // 輪郭
+                ctx.strokeStyle = '#5898b8';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(screenX + 2, screenY + 2, tileSize - 4, tileSize - 4);
+
+                // 氷の模様
+                ctx.font = `${tileSize * 0.5}px serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.fillText('❄', screenX + tileSize / 2, screenY + tileSize / 2);
             }
         }
 
@@ -5114,6 +5416,7 @@
             } else {
                 drawMap();
                 drawChests();
+                drawIceBlocks();
                 drawNPCs();
                 drawPlayer();
                 drawMessageWindow();
@@ -6356,6 +6659,7 @@
                                 } else if (bossId === 'shadowGuardian') {
                                     setStoryFlag('shadowGuardianDefeated', true);
                                     setStoryFlag('area3Completed', true);
+                                    setStoryFlag('northPathOpened', true);  // エリア4への道が開く
                                     questMessage = '闇の守護者が 光を取り戻した...';
                                 } else if (bossId === 'wedgeGuardian_north') {
                                     collectWedge('wedge_north', true);
@@ -6372,6 +6676,16 @@
                                 } else if (bossId === 'libraryGuardian') {
                                     setBossDefeated('libraryGuardian', true);
                                     questMessage = '図書室の封印が解かれた...';
+                                } else if (bossId === 'iceGolem') {
+                                    setStoryFlag('iceGolemDefeated', true);
+                                    setQuestFlag('glacioJoin', 'iceGolemDefeated', true);
+                                    questMessage = '氷の洞窟の守護者が倒れた...氷の神殿への道が開かれた！';
+                                } else if (bossId === 'iceQueen') {
+                                    setStoryFlag('iceQueenDefeated', true);
+                                    setStoryFlag('area4Completed', true);
+                                    setStoryFlag('auroraOrbObtained', true);
+                                    addItem(96);  // 極光の宝珠
+                                    questMessage = '...女王の中の闇が消えていく...';
                                 }
 
                                 if (questMessage) {
@@ -8224,6 +8538,9 @@
                 // 発見済み隠し通路を適用
                 applyOpenedPassages(currentMap);
 
+                // 氷ブロックの初期化
+                initIceBlocks();
+
                 // セーブデータから宝箱の開封状態を復元
                 try {
                     const savedData = localStorage.getItem(SAVE_KEY);
@@ -8363,8 +8680,21 @@
             const tile = currentMap.data[y][x];
             if (!WALKABLE_TILES.includes(tile)) return false;
             if (isNpcBlocking(x, y) || isChestBlocking(x, y)) return false;
+            // 氷ブロック判定（押せる場合は移動可能）
+            if (getIceBlockAt(x, y)) return false;
             return true;
         }
+
+        // 氷ブロック判定（初期化前でも安全に呼べるように）
+        function getIceBlockAt(x, y) {
+            if (!currentMap) return null;
+            const blocks = pushedIceBlocks[currentMap.id];
+            if (!blocks) return null;
+            return blocks.find(b => b.x === x && b.y === y);
+        }
+
+        // 氷床パズル: 滑り始め位置を記録
+        let icePuzzleEntrance = null;
 
         function movePlayer(dx, dy) {
             if (player.moving || isTransitioning || dialog.active || menu.active || inn.active || shop.active || partyJoinConfirm.active || gameMode === MODE.BATTLE) return;
@@ -8376,6 +8706,25 @@
 
             const newX = player.x + dx;
             const newY = player.y + dy;
+
+            // 氷ブロック押し処理
+            const iceBlock = getIceBlockAt(newX, newY);
+            if (iceBlock) {
+                if (pushIceBlock(newX, newY, dx, dy)) {
+                    // ブロックを押したら自分も移動
+                    player.moving = true;
+                    player.x = newX;
+                    player.y = newY;
+                    updateCamera();
+
+                    setTimeout(() => {
+                        player.moving = false;
+                        // 氷床滑り処理（ブロック押し後も滑る）
+                        handleIceFloorSlide(dx, dy);
+                    }, player.moveDelay);
+                }
+                return;
+            }
 
             if (canMove(newX, newY)) {
                 player.moving = true;
@@ -8389,8 +8738,181 @@
                         checkRandomEncounter();
                     }
                     player.moving = false;
+
+                    // 氷床滑り処理
+                    handleIceFloorSlide(dx, dy);
                 }, player.moveDelay);
             }
+        }
+
+        // 氷床滑り処理
+        function handleIceFloorSlide(dx, dy) {
+            if (player.moving || isTransitioning || dialog.active) return;
+
+            const currentTile = currentMap.data[player.y][player.x];
+
+            // 氷の穴チェック
+            if (currentTile === TILE.ICE_HOLE) {
+                handleIceHoleFall();
+                return;
+            }
+
+            // 氷床でなければ滑らない
+            if (currentTile !== TILE.ICE_FLOOR) {
+                icePuzzleEntrance = null; // 氷床から出たらリセット
+                return;
+            }
+
+            // 氷床に乗った最初の位置を記録
+            if (!icePuzzleEntrance) {
+                icePuzzleEntrance = { x: player.x - dx, y: player.y - dy, mapId: currentMap.id };
+            }
+
+            // 次の位置を確認
+            const nextX = player.x + dx;
+            const nextY = player.y + dy;
+
+            // 境界チェック
+            if (nextX < 0 || nextX >= currentMap.cols || nextY < 0 || nextY >= currentMap.rows) {
+                return; // 壁にぶつかって止まる
+            }
+
+            const nextTile = currentMap.data[nextY][nextX];
+
+            // 氷の壁・通常の壁で止まる
+            if (nextTile === TILE.ICE_WALL || !WALKABLE_TILES.includes(nextTile)) {
+                return;
+            }
+
+            // NPCがいたら止まる
+            if (isNpcBlocking(nextX, nextY)) {
+                return;
+            }
+
+            // 滑り続ける
+            player.moving = true;
+            player.x = nextX;
+            player.y = nextY;
+            updateCamera();
+
+            setTimeout(() => {
+                player.moving = false;
+                handleIceFloorSlide(dx, dy); // 再帰的に滑り続ける
+            }, 80); // 滑りは通常移動より速い
+        }
+
+        // 氷の穴に落ちた時の処理
+        function handleIceHoleFall() {
+            player.moving = true;
+
+            startDialogWithCallback(['氷が割れて落ちてしまった！'], () => {
+                if (icePuzzleEntrance && icePuzzleEntrance.mapId === currentMap.id) {
+                    // パズル入口に戻る
+                    player.x = icePuzzleEntrance.x;
+                    player.y = icePuzzleEntrance.y;
+                } else {
+                    // フォールバック: 最寄りの安全な場所（ワープ出口など）
+                    if (currentMap.warps && currentMap.warps.length > 0) {
+                        const warp = currentMap.warps.find(w => w.fromX !== undefined);
+                        if (warp) {
+                            player.x = warp.fromX;
+                            player.y = warp.fromY;
+                        } else {
+                            // fromXがない場合は最初のワープ位置を使用
+                            player.x = currentMap.warps[0].x;
+                            player.y = currentMap.warps[0].y;
+                        }
+                    }
+                }
+                updateCamera();
+                player.moving = false;
+                icePuzzleEntrance = null;
+            });
+        }
+
+        // ========================================
+        // 圧力スイッチ・氷ブロックパズルシステム
+        // ========================================
+
+        // 押された氷ブロック位置を記録 { mapId: [ {x, y}, ... ] }
+        const pushedIceBlocks = {};
+
+        // スイッチ状態を記録 { mapId: { switchId: boolean } }
+        const switchStates = {};
+
+        // 氷ブロックを押す処理
+        function pushIceBlock(blockX, blockY, dx, dy) {
+            const newX = blockX + dx;
+            const newY = blockY + dy;
+
+            // 押す先が有効か確認
+            if (newX < 0 || newX >= currentMap.cols || newY < 0 || newY >= currentMap.rows) {
+                return false;
+            }
+
+            const targetTile = currentMap.data[newY][newX];
+
+            // 押せない場所（壁、氷の壁、穴など）
+            if (!WALKABLE_TILES.includes(targetTile) || targetTile === TILE.ICE_HOLE) {
+                return false;
+            }
+
+            // 他のブロックがあれば押せない
+            if (getIceBlockAt(newX, newY)) {
+                return false;
+            }
+
+            // ブロックを移動
+            if (!pushedIceBlocks[currentMap.id]) {
+                pushedIceBlocks[currentMap.id] = [];
+            }
+
+            // 元の位置からブロックを削除
+            const blocks = pushedIceBlocks[currentMap.id];
+            const blockIndex = blocks.findIndex(b => b.x === blockX && b.y === blockY);
+            if (blockIndex >= 0) {
+                blocks.splice(blockIndex, 1);
+            }
+
+            // 新しい位置にブロック追加
+            blocks.push({ x: newX, y: newY });
+
+            // スイッチチェック
+            checkIceSwitches();
+
+            return true;
+        }
+
+        // 圧力スイッチの状態をチェック
+        function checkIceSwitches() {
+            if (!currentMap.iceSwitches) return;
+
+            if (!switchStates[currentMap.id]) {
+                switchStates[currentMap.id] = {};
+            }
+
+            let allPressed = true;
+            currentMap.iceSwitches.forEach(sw => {
+                const blockOnSwitch = getIceBlockAt(sw.x, sw.y);
+                const isPressed = !!blockOnSwitch;
+                switchStates[currentMap.id][sw.id] = isPressed;
+                if (!isPressed) allPressed = false;
+            });
+
+            // 全スイッチ押下時のイベント
+            if (allPressed && currentMap.iceSwitches.length > 0 && currentMap.onAllSwitchesPressed) {
+                currentMap.onAllSwitchesPressed();
+            }
+        }
+
+        // マップ初期化時に氷ブロックを配置
+        function initIceBlocks() {
+            if (!currentMap.iceBlocks) return;
+
+            pushedIceBlocks[currentMap.id] = currentMap.iceBlocks.map(b => ({
+                x: b.x,
+                y: b.y
+            }));
         }
 
         function getFrontPosition() {
@@ -8440,6 +8962,9 @@
                 } else if (npc.type === 'party_join_seren') {
                     // セレン加入NPC（段階的な会話フロー）
                     handleSerenJoinNpc(npc);
+                } else if (npc.type === 'party_join_glacio') {
+                    // グラシオ加入NPC
+                    handleGlacioJoinNpc(npc);
                 } else if (npc.type === 'portal_guard') {
                     // 旅の扉の番兵 - NPCごとに異なるフラグをチェック
                     let isUnlocked = false;
@@ -8847,6 +9372,12 @@
                 return;
             }
 
+            // 太陽の炎クエスト（氷の神殿）
+            if (questId === 'sunFlame') {
+                handleSunFlameQuest(npc);
+                return;
+            }
+
             // 通行手形クエスト関連は盗賊ボス撃破で自動完了
             // 王家の紋章クエスト関連はピラミッドボス撃破で自動完了
 
@@ -8904,6 +9435,35 @@
             } else {
                 startDialog(npc.messages);
             }
+        }
+
+        // 太陽の炎クエスト処理
+        function handleSunFlameQuest(npc) {
+            // 既に入手済み
+            if (getStoryFlag('sunFlameObtained')) {
+                startDialog(npc.clearedMessages || [
+                    '汝は既に太陽の炎を持っている。',
+                    '行け、女王を救うのだ。'
+                ]);
+                return;
+            }
+
+            // 太陽の炎を授ける
+            startDialogWithCallback([
+                '汝、試練を乗り越えし者よ...',
+                'この地の民を救うため、太陽の炎を授けよう。',
+                'この炎は、いかなる氷をも溶かす力を持つ。',
+                '氷の城へ向かい、女王を救うのだ。'
+            ], () => {
+                addItem(95);  // 太陽の炎
+                setStoryFlag('sunFlameObtained', true);
+                startDialogWithCallback([
+                    '太陽の炎 を手に入れた！',
+                    '（氷の城の門が開けるようになった）'
+                ], () => {
+                    saveGame();
+                });
+            });
         }
 
         // パーティ加入確認状態
@@ -9051,6 +9611,78 @@
 
             startDialogWithCallback(['セレンが仲間になった！'], () => {
                 saveGame();
+            });
+        }
+
+        // グラシオ加入処理
+        function executeGlacioJoin() {
+            if (gameProgress.quests.glacioJoin.joined) return;
+
+            const glacio = createPartyMember({
+                id: 'frozen_knight_glacio',
+                name: 'グラシオ',
+                job: 'iceKnight',
+                sprite: '🧊',
+                hp: 90,
+                maxHp: 90,
+                mp: 15,
+                maxMp: 15,
+                baseAtk: 45,
+                baseDef: 35,
+                speed: 5,
+                level: 38,
+                exp: 45000,
+                spells: ['iceSlash', 'frostArmor'],
+                equipment: { weapon: 74, armor: 81 }  // こおりのおおなた、ブリザードメイル
+            });
+
+            party.push(glacio);
+            gameProgress.quests.glacioJoin.joined = true;
+            gameProgress.storyFlags.glacioJoined = true;
+
+            startDialogWithCallback([
+                '凍りついた騎士グラシオが仲間になった！',
+                '「我が剣は、今度こそ正しき道のために振るおう」'
+            ], () => {
+                saveGame();
+            });
+        }
+
+        // グラシオ加入NPCの処理
+        function handleGlacioJoinNpc(npc) {
+            // 既に加入済み
+            if (gameProgress.quests.glacioJoin.joined) {
+                startDialog([
+                    '「共に戦おう、旅人よ。」',
+                    '「女王様を救うまで、我が剣は汝の盾となる。」'
+                ]);
+                return;
+            }
+
+            // 太陽の炎を持っていない場合
+            if (!getStoryFlag('sunFlameObtained')) {
+                startDialog([
+                    '...汝は...旅人か...',
+                    '私はグラシオ...この城の騎士だった。',
+                    '100年もの間...氷に閉ざされ...苦しみ続けた。',
+                    '...待っている...太陽の炎を持つ者を...',
+                    '西の神殿に...その炎があるはずだ...'
+                ]);
+                setQuestFlag('glacioJoin', 'met', true);
+                return;
+            }
+
+            // 太陽の炎を持っている場合 - 加入イベント
+            startDialogWithCallback([
+                '...その炎は...太陽の炎！',
+                '100年待ち続けた...ようやく来てくれた！',
+                '今、私を氷から解放してくれ！'
+            ], () => {
+                startDialogWithCallback([
+                    '（太陽の炎がグラシオの氷を溶かしていく...）'
+                ], () => {
+                    executeGlacioJoin();
+                });
             });
         }
 
