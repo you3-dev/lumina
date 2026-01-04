@@ -1676,15 +1676,45 @@
         }
 
         // AudioContextを初期化（ユーザー操作後に呼び出す）
+        // モバイル用：主要な音声を事前にアンロック
+        const preloadedAudio = {};
+        const audioFilesToPreload = [
+            'encounter.mp3', 'battle-attack.mp3', 'battle-victory-intro.mp3',
+            'cursor.mp3', 'cancel.mp3', 'heal.mp3',
+            'field.mp3', 'town.mp3', 'castle.mp3', 'dungeon.mp3',
+            'battle.mp3', 'battle-victory.mp3', 'title.mp3'
+        ];
+        let audioUnlocked = false;
+
         function initAudio() {
-            if (!audioInitialized) {
-                audioInitialized = true;
-            }
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
+            }
+
+            if (!audioUnlocked) {
+                audioUnlocked = true;
+                audioLog('[UNLOCK] Starting audio unlock...');
+                // モバイル用：全ての音声ファイルをユーザー操作コンテキストでアンロック
+                audioFilesToPreload.forEach(filename => {
+                    const audio = new Audio(`se/${filename}`);
+                    audio.volume = 0.001;
+                    const playPromise = audio.play();
+                    if (playPromise) {
+                        playPromise.then(() => {
+                            audio.pause();
+                            audio.currentTime = 0;
+                            audio.volume = 1;
+                            preloadedAudio[filename] = audio;
+                        }).catch(e => {});
+                    }
+                });
+            }
+
+            if (!audioInitialized) {
+                audioInitialized = true;
             }
         }
 
@@ -1692,15 +1722,11 @@
         const seAudioCache = {};  // Audioオブジェクトキャッシュ（メモリリーク対策）
 
         function playSE(filename) {
-            audioLog(`[SE] ${filename} en:${seEnabled} init:${audioInitialized}`);
+            audioLog(`[SE] ${filename} en:${seEnabled} unlocked:${audioUnlocked}`);
             if (!seEnabled) return;
-            // audioInitializedがfalseでも、initAudio()を呼んで初期化を試みる
-            if (!audioInitialized) {
-                initAudio();
-            }
             try {
-                // キャッシュから取得、なければ新規作成
-                let audio = seAudioCache[filename];
+                // プリロード済みの音声を優先使用
+                let audio = preloadedAudio[filename] || seAudioCache[filename];
                 if (!audio) {
                     audio = new Audio(`se/${filename}`);
                     seAudioCache[filename] = audio;
@@ -1952,14 +1978,10 @@
             },
 
             play: function(type) {
-                audioLog(`[BGM] ${type} en:${bgmEnabled} init:${audioInitialized} cur:${this.currentType}`);
+                audioLog(`[BGM] ${type} en:${bgmEnabled} unlocked:${audioUnlocked} cur:${this.currentType}`);
                 if (!bgmEnabled) {
                     audioLog('[BGM] disabled');
                     return;
-                }
-                // audioInitializedがfalseでも、initAudio()を呼んで初期化を試みる
-                if (!audioInitialized) {
-                    initAudio();
                 }
                 if (this.currentType === type && this.current && !this.current.paused) {
                     audioLog('[BGM] same, skip');
@@ -1975,7 +1997,15 @@
                 }
 
                 try {
-                    this.current = new Audio(`se/${file}`);
+                    // プリロード済みの音声があれば複製して使用
+                    const preloaded = preloadedAudio[file];
+                    if (preloaded) {
+                        this.current = preloaded.cloneNode();
+                        audioLog(`[BGM] using preloaded: ${file}`);
+                    } else {
+                        this.current = new Audio(`se/${file}`);
+                        audioLog(`[BGM] new Audio: ${file}`);
+                    }
                     this.current.volume = bgmVolume;
                     this.current.loop = true;
                     this.currentType = type;
