@@ -8670,6 +8670,10 @@
                 BGM.play(BGM.getBgmTypeForMap(currentMap));
 
                 applyOpenedPassages(currentMap);
+
+                // 氷ブロックの初期化（キャッシュされたマップ再訪問時）
+                initIceBlocks();
+
                 updateMapPinVisibility();
                 updateFloorDisplay();
                 updateCamera();
