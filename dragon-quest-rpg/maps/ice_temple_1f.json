@@ -976,9 +976,9 @@
     {
       "x": 15,
       "y": 29,
-      "targetMap": "maps/surface_4.json",
+      "targetMap": "maps/frozen_lake.json",
       "targetX": 20,
-      "targetY": 36
+      "targetY": 6
     },
     {
       "x": 15,

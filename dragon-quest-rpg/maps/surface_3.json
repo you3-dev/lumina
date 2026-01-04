@@ -10221,11 +10221,11 @@
       "targetY": 25
     },
     {
-      "x": 49,
+      "x": 50,
       "y": 0,
-      "targetMap": "maps/surface_4.json",
-      "targetX": 25,
-      "targetY": 47,
+      "targetMap": "maps/ice_field.json",
+      "targetX": 50,
+      "targetY": 99,
       "requiresFlag": "northPathOpened"
     }
   ],

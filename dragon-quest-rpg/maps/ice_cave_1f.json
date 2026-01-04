@@ -976,9 +976,9 @@
     {
       "x": 15,
       "y": 29,
-      "targetMap": "maps/surface_4.json",
-      "targetX": 15,
-      "targetY": 16
+      "targetMap": "maps/ice_field.json",
+      "targetX": 30,
+      "targetY": 31
     },
     {
       "x": 15,

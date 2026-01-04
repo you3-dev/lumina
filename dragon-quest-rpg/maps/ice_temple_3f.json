@@ -458,6 +458,14 @@
       "targetMap": "maps/ice_temple_2f.json",
       "targetX": 12,
       "targetY": 5
+    },
+    {
+      "x": 10,
+      "y": 3,
+      "targetMap": "maps/ice_field.json",
+      "targetX": 70,
+      "targetY": 41,
+      "requiresFlag": "sunFlameObtained"
     }
   ],
   "npcs": [

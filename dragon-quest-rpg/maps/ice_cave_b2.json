@@ -694,6 +694,14 @@
       "targetMap": "maps/ice_cave_b1.json",
       "targetX": 17,
       "targetY": 4
+    },
+    {
+      "x": 12,
+      "y": 3,
+      "targetMap": "maps/ice_field.json",
+      "targetX": 31,
+      "targetY": 30,
+      "requiresFlag": "iceGolemDefeated"
     }
   ],
   "npcs": [

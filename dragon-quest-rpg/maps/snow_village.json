@@ -454,9 +454,9 @@
     {
       "x": 10,
       "y": 19,
-      "targetMap": "maps/surface_4.json",
-      "targetX": 25,
-      "targetY": 26
+      "targetMap": "maps/ice_field.json",
+      "targetX": 50,
+      "targetY": 51
     }
   ],
   "npcs": [
