@@ -11602,8 +11602,8 @@
 
                 // partyData設定
                 partyData.gold = 50000;
-                partyData.x = 49;
-                partyData.y = 2;
+                partyData.x = 70;
+                partyData.y = 41;
                 partyData.direction = 'up';
                 partyData.inventory = [
                     { id: 1, quantity: 10 },
@@ -11617,9 +11617,11 @@
                 gameProgress.storyFlags.serenJoined = true;
                 gameProgress.quests.serenJoin.joined = true;
                 gameProgress.bossDefeated.shadowGuardian = true;
+                gameProgress.bossDefeated.iceGolem = true;
                 gameProgress.storyFlags.shadowGuardianDefeated = true;
                 gameProgress.storyFlags.northPathOpened = true;
                 gameProgress.storyFlags.area3Completed = true;
+                gameProgress.storyFlags.iceGolemDefeated = true;
 
                 // 直接localStorageにセーブデータを書き込む
                 const saveData = {
@@ -11642,8 +11644,8 @@
                         isAlive: true
                     })),
                     partyData: {
-                        x: 49,
-                        y: 2,
+                        x: 70,
+                        y: 41,
                         direction: 'up',
                         gold: 50000,
                         inventory: [
@@ -11653,8 +11655,8 @@
                             { id: 9, quantity: 5 }
                         ]
                     },
-                    currentMapPath: 'maps/surface_3.json',
-                    currentMapId: 'surface_3',
+                    currentMapPath: 'maps/ice_field.json',
+                    currentMapId: 'ice_field',
                     chestStates: {},
                     gameProgress: {
                         bossDefeated: { ...gameProgress.bossDefeated },
