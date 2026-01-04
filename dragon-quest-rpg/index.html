@@ -6471,6 +6471,7 @@
                 gameMode = MODE.FIELD;
                 battle.active = false;
                 // フィールドBGMに戻す
+                initAudio();
                 BGM.play(BGM.getBgmTypeForMap(currentMap));
                 // マップ名を再表示
                 mapNameArea.style.display = 'flex';
@@ -8147,6 +8148,7 @@
                 updateMapNameColor();
 
                 // BGM切り替え
+                initAudio();
                 BGM.play(BGM.getBgmTypeForMap(currentMap));
 
                 // 発見済み隠し通路を適用
@@ -8244,6 +8246,7 @@
                 updateMapNameColor();
 
                 // BGM切り替え
+                initAudio();
                 BGM.play(BGM.getBgmTypeForMap(currentMap));
 
                 applyOpenedPassages(currentMap);
