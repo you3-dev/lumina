@@ -419,7 +419,7 @@
       24,
       24,
       24,
-      24,
+      5,
       24,
       24,
       24,
@@ -456,7 +456,7 @@
   "warps": [
     {
       "x": 10,
-      "y": 19,
+      "y": 18,
       "targetMap": "maps/ice_field.json",
       "targetX": 50,
       "targetY": 51
