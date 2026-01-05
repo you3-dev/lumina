@@ -9804,6 +9804,7 @@
             });
 
             party.push(seren);
+            updateMemberActualStats(seren);  // 装備ボーナスを反映
             gameProgress.quests.serenJoin.joined = true;
             gameProgress.storyFlags.serenJoined = true;
 
@@ -9835,6 +9836,7 @@
             });
 
             party.push(glacio);
+            updateMemberActualStats(glacio);  // 装備ボーナスを反映
             gameProgress.quests.glacioJoin.joined = true;
             gameProgress.storyFlags.glacioJoined = true;
 
