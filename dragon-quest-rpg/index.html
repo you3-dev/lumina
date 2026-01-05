@@ -666,6 +666,8 @@
             81: { id: 81, name: 'ブリザードメイル', type: 'armor', value: 60, price: 0, equippable: ['hero', 'iceKnight'], resistances: { ice: 0.5 } },
             82: { id: 82, name: 'ゆきのローブ', type: 'armor', value: 40, price: 7000, equippable: ['mage', 'seer'], resistances: { ice: 0.6 } },
             83: { id: 83, name: 'クリスタルローブ', type: 'armor', value: 55, price: 0, equippable: ['mage', 'seer'], resistances: { ice: 0.4, fire: 0.8 } },
+            // ボス報酬（エリア4）
+            85: { id: 85, name: 'ひょうりゅうのきば', type: 'weapon', value: 85, price: 0, equippable: ['hero', 'iceKnight'], element: 'ice' },
             // アクセサリ（エリア4）
             90: { id: 90, name: 'こおりのゆびわ', type: 'accessory', value: 0, price: 5000, equippable: ['hero', 'mage', 'seer', 'iceKnight'], resistances: { ice: 0.75 } },
             91: { id: 91, name: 'ほのおのペンダント', type: 'accessory', value: 0, price: 0, equippable: ['hero', 'mage', 'seer', 'iceKnight'], spellBoost: { fire: 1.2 } },
@@ -1562,6 +1564,22 @@
                 actions: 2,
                 skills: ['attack', 'hyados', 'iceBreath', 'absoluteZero', 'behoma'],
                 resistances: { ice: 0, fire: 2.0, light: 0.5, sleep: 0, poison: 0 }
+            },
+            // エリア4隠しボス: 氷龍フロストヴルム（難易度高め）
+            frostWyrm: {
+                name: 'ひょうりゅうフロストヴルム',
+                sprite: '🐲',
+                level: 52,
+                hp: 1800,
+                atk: 140,
+                def: 75,
+                speed: 28,
+                exp: 5000,
+                gold: 3000,
+                isBoss: true,
+                actions: 2,
+                skills: ['attack', 'strongAttack', 'absoluteZero', 'frostBite', 'iceBreath', 'behoma'],
+                resistances: { ice: 0, fire: 2.0, light: 0.5, sleep: 0, poison: 0, blind: 0 }
             }
         };
 
@@ -1585,6 +1603,7 @@
             // エリア4用スキル
             iceBreath: { name: 'つめたいいき', type: 'attack', target: 'all', power: 35, element: 'ice', flashColor: 'rgba(150, 220, 255, 0.7)' },
             absoluteZero: { name: 'ぜったいれいど', type: 'attack', target: 'all', power: 65, element: 'ice', flashColor: 'rgba(200, 240, 255, 0.9)' },
+            frostBite: { name: 'フロストバイト', type: 'attack', target: 'single', power: 80, element: 'ice', flashColor: 'rgba(180, 230, 255, 0.8)' },
             // 雑魚敵用スキル
             drain: { name: 'HP吸収', type: 'drain', target: 'single', power: 20, flashColor: 'rgba(150, 50, 150, 0.5)' },
             howl: { name: 'おたけび', type: 'debuff', effect: 'stun', flashColor: 'rgba(255, 200, 100, 0.5)' }
@@ -2342,6 +2361,7 @@
                 sunFlameObtained: false,       // 太陽の炎入手
                 glacioJoined: false,           // グラシオ加入
                 iceQueenDefeated: false,       // 氷の女王撃破
+                frostWyrmDefeated: false,      // 氷龍フロストヴルム撃破
                 area4Completed: false,         // エリア4クリア
                 auroraOrbObtained: false       // 極光の宝珠入手
             },
@@ -2458,6 +2478,7 @@
             gameProgress.storyFlags.sunFlameObtained = false;
             gameProgress.storyFlags.glacioJoined = false;
             gameProgress.storyFlags.iceQueenDefeated = false;
+            gameProgress.storyFlags.frostWyrmDefeated = false;
             gameProgress.storyFlags.area4Completed = false;
             gameProgress.storyFlags.auroraOrbObtained = false;
             // クエストリセット
@@ -6718,6 +6739,10 @@
                                     setStoryFlag('auroraOrbObtained', true);
                                     addItem(96);  // 極光の宝珠
                                     questMessage = '...女王の中の闇が消えていく...';
+                                } else if (bossId === 'frostWyrm') {
+                                    setStoryFlag('frostWyrmDefeated', true);
+                                    addItem(85);  // 氷龍の牙
+                                    questMessage = '氷龍フロストヴルムを討伐した！\n氷龍の牙 を手に入れた！';
                                 }
 
                                 if (questMessage) {
