@@ -2874,6 +2874,74 @@
             };
         }
 
+        // 仲間キャラクターのステータス修正（既存セーブデータ対応）
+        function migratePartyMemberStats() {
+            // 基準ステータス（レベル1時点の期待値）
+            const baseStats = {
+                'seer_seren': {
+                    job: 'seer',
+                    baseHp: 25, baseMp: 50, baseAtk: 5, baseDef: 4, baseSpeed: 12,
+                    hpPerLevel: 3.5, mpPerLevel: 2.5, atkPerLevel: 0.9, defPerLevel: 0.85
+                },
+                'frozen_knight_glacio': {
+                    job: 'iceKnight',
+                    baseHp: 35, baseMp: 8, baseAtk: 12, baseDef: 10, baseSpeed: 5,
+                    hpPerLevel: 4.7, mpPerLevel: 0.6, atkPerLevel: 1.5, defPerLevel: 1.3
+                }
+            };
+
+            party.forEach(member => {
+                const stats = baseStats[member.id];
+                if (!stats) return;
+
+                const level = member.level;
+
+                // 適正ステータスを計算
+                const expectedHp = Math.floor(stats.baseHp + stats.hpPerLevel * (level - 1));
+                const expectedMp = Math.floor(stats.baseMp + stats.mpPerLevel * (level - 1));
+                const expectedAtk = Math.floor(stats.baseAtk + stats.atkPerLevel * (level - 1));
+                const expectedDef = Math.floor(stats.baseDef + stats.defPerLevel * (level - 1));
+
+                // 正しい累積経験値
+                const correctExp = expTable[level] || 0;
+
+                // ステータスが低すぎる場合は修正
+                if (member.maxHp < expectedHp * 0.8) {
+                    const hpDiff = expectedHp - member.maxHp;
+                    member.maxHp = expectedHp;
+                    member.hp = Math.min(member.hp + hpDiff, member.maxHp);
+                }
+                if (member.maxMp < expectedMp * 0.8) {
+                    const mpDiff = expectedMp - member.maxMp;
+                    member.maxMp = expectedMp;
+                    member.mp = Math.min(member.mp + mpDiff, member.maxMp);
+                }
+                if (member.baseAtk < expectedAtk * 0.7) {
+                    member.baseAtk = expectedAtk;
+                }
+                if (member.baseDef < expectedDef * 0.7) {
+                    member.baseDef = expectedDef;
+                }
+
+                // 経験値が不足している場合は修正
+                if (member.exp < correctExp * 0.5) {
+                    member.exp = correctExp;
+                }
+
+                // 装備がない場合は初期装備を設定
+                if (member.id === 'seer_seren') {
+                    if (!member.equipment.weapon) member.equipment.weapon = 41;
+                    if (!member.equipment.armor) member.equipment.armor = 51;
+                }
+
+                // actualAtk/Defを再計算
+                const weapon = items[member.equipment?.weapon];
+                const armor = items[member.equipment?.armor];
+                member.actualAtk = member.baseAtk + (weapon ? weapon.value : 0);
+                member.actualDef = member.baseDef + (armor ? armor.value : 0);
+            });
+        }
+
         // パーティ配列（最大4人）
         const MAX_PARTY_SIZE = 4;
         const party = [];
@@ -3503,6 +3571,9 @@
                         member.actualAtk = member.baseAtk + (weapon ? weapon.value : 0);
                         member.actualDef = member.baseDef + (armor ? armor.value : 0);
                     });
+
+                    // 仲間キャラクターのステータス修正（既存セーブデータ対応）
+                    migratePartyMemberStats();
                 } else {
                     // 旧形式（単一プレイヤー）のロード
                     // 旧セーブデータとの互換性（atk/defをbaseAtk/baseDefに変換）
@@ -9719,17 +9790,17 @@
                 name: 'セレン',
                 job: 'seer',
                 sprite: '🔮',
-                hp: 35,
-                maxHp: 35,
-                mp: 60,
-                maxMp: 60,
-                baseAtk: 8,
-                baseDef: 6,
-                speed: 14,
+                hp: 75,
+                maxHp: 75,
+                mp: 85,
+                maxMp: 85,
+                baseAtk: 18,
+                baseDef: 16,
+                speed: 20,
                 level: 15,
-                exp: 3500,
+                exp: 9912,  // LV15の正しい累積経験値
                 spells: ['rukani', 'rariho', 'piorimu'],
-                equipment: { weapon: null, armor: null }
+                equipment: { weapon: 41, armor: 51 }  // まどうしのつえ、まほうのほうい
             });
 
             party.push(seren);
@@ -9750,15 +9821,15 @@
                 name: 'グラシオ',
                 job: 'iceKnight',
                 sprite: '🧊',
-                hp: 90,
-                maxHp: 90,
-                mp: 15,
-                maxMp: 15,
-                baseAtk: 45,
-                baseDef: 35,
-                speed: 5,
+                hp: 210,
+                maxHp: 210,
+                mp: 30,
+                maxMp: 30,
+                baseAtk: 68,
+                baseDef: 58,
+                speed: 14,
                 level: 38,
-                exp: 45000,
+                exp: 265187,  // LV38の正しい累積経験値
                 spells: ['iceSlash', 'frostArmor'],
                 equipment: { weapon: 74, armor: 81 }  // こおりのおおなた、ブリザードメイル
             });
