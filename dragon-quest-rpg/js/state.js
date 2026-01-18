@@ -73,7 +73,8 @@ export const partyData = {
     moving: false,
     moveDelay: 120,
     gold: 0,
-    inventory: []
+    inventory: [],
+    vehicle: 'none' // none, ship
 };
 
 // 互換性維持のためのプロキシ設定

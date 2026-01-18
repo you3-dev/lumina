@@ -5,9 +5,10 @@ import {
     player, setCurrentMap, setCurrentMapId, setCurrentMapPath,
     setCameraX, setCameraY, stepsSinceLastBattle, setStepsSinceLastBattle,
     pushedIceBlocks, dialog, titleMenuIndex, setTitleMenuIndex,
-    hasSaveData, setHasSaveData, gameProgress
+    pushedIceBlocks, dialog, titleMenuIndex, setTitleMenuIndex,
+    hasSaveData, setHasSaveData, gameProgress, hasItem, addItem
 } from './state.js';
-import { MODE, WALKABLE_TILES } from './constants.js';
+import { MODE, WALKABLE_TILES, TILE } from './constants.js';
 import { expTable, spells, items } from './data.js';
 import { SE, BGM } from './sound.js';
 
@@ -209,7 +210,13 @@ export function canMoveTo(x, y) {
         tile = currentMap.data[checkY * mapCols + checkX];
     }
 
-    if (!WALKABLE_TILES.includes(tile)) return false;
+    if (partyData.vehicle === 'ship') {
+        const shipWalkable = [TILE.SEA, TILE.SHALLOW, TILE.PORT];
+        if (!shipWalkable.includes(tile)) return false;
+    } else {
+        if (!WALKABLE_TILES.includes(tile)) return false;
+        if (tile === TILE.SEA) return false; // Can't walk on sea
+    }
 
     if (isNpcBlocking(checkX, checkY)) return false;
     if (isChestBlocking(checkX, checkY)) return false;
@@ -343,7 +350,16 @@ export function getChestAt(x, y) {
 
 export function interact() {
     // Basic interaction
-    const front = getFrontPosition();
+    let front = getFrontPosition();
+
+    // Normalize if looping
+    if (currentMap && currentMap.isLooping) {
+        const mapCols = currentMap.cols || currentMap.width || 0;
+        const mapRows = currentMap.rows || currentMap.height || 0;
+        front.x = (front.x % mapCols + mapCols) % mapCols;
+        front.y = (front.y % mapRows + mapRows) % mapRows;
+    }
+
     const npc = getNpcAt(front.x, front.y);
     if (npc) {
         startDialog(npc.messages);
@@ -354,8 +370,51 @@ export function interact() {
     if (chest && !chest.isOpened) {
         chest.isOpened = true;
         startDialog([`${chest.itemName}をみつけた！`]);
-        // add item to inventory...
+        addItem(chest.itemId);
+        SE.chest();
         return;
+    }
+
+    // Vehicle Interaction
+    if (currentMap) {
+        let tile;
+        const mapCols = currentMap.cols || currentMap.width || 0;
+        if (Array.isArray(currentMap.data[0])) {
+            tile = currentMap.data[front.y][front.x];
+        } else {
+            tile = currentMap.data[front.y * mapCols + front.x];
+        }
+
+        // Board Ship
+        if (partyData.vehicle === 'none') {
+            // Check tile type for boarding (SEA or PORT)
+            if (tile === TILE.SEA || tile === TILE.PORT) {
+                // Check if player has key or flag. Simplify for Phase 3 testing: always allow.
+                if (true) {
+                    SE.confirm();
+                    partyData.vehicle = 'ship';
+                    startDialog(["船に乗り込んだ！"]);
+
+                    player.x = front.x;
+                    player.y = front.y;
+                    updateCamera();
+                    return;
+                }
+            }
+        }
+        // Disembark Ship
+        else if (partyData.vehicle === 'ship') {
+            if (WALKABLE_TILES.includes(tile) && tile !== TILE.SEA) {
+                SE.confirm();
+                partyData.vehicle = 'none';
+                startDialog(["陸に上がった。"]);
+
+                player.x = front.x;
+                player.y = front.y;
+                updateCamera();
+                return;
+            }
+        }
     }
 }
 export function saveGame() {
