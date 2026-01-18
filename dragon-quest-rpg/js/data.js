@@ -1,0 +1,288 @@
+import { TILE } from './constants.js';
+
+export const expTable = [
+    0, 20, 50, 100, 200, 400, 800, 1500, 3000, 6000,
+    10000, 15000, 22000, 30000, 40000, 55000, 75000, 100000, 130000, 170000,
+    220000, 280000, 350000, 430000, 520000, 620000, 750000, 900000, 1100000, 1350000
+];
+
+export const MAP_TILE_COLORS = {
+    field: {
+        [TILE.GRASS]: '#2d5a27',
+        [TILE.MOUNTAIN]: '#6b4423',
+        [TILE.SEA]: '#1a4a7a',
+        [TILE.STAIRS]: '#4a4a4a'
+    },
+    dungeon: {
+        [TILE.FLOOR]: '#4a4a3a',
+        [TILE.WALL]: '#2a2a2a',
+        [TILE.STAIRS]: '#5a5a4a'
+    }
+};
+
+export const DEFAULT_TILE_COLORS = {
+    [TILE.GRASS]: '#2d5a27',
+    [TILE.MOUNTAIN]: '#6b4423',
+    [TILE.SEA]: '#1a4a7a',
+    [TILE.CASTLE]: '#2d5a27',
+    [TILE.TOWN]: '#2d5a27',
+    [TILE.STAIRS]: '#4a4a4a',
+    [TILE.FLOOR]: '#4a4a3a',
+    [TILE.WALL]: '#2a2a2a',
+    [TILE.PORTAL]: '#5a2a7a',
+    [TILE.POISON_SWAMP]: '#5a2a7a',
+    [TILE.BRIDGE]: '#8b4513',
+    [TILE.DESERT]: '#d2b48c',
+    [TILE.OASIS]: '#1a4a7a',
+    [TILE.QUICKSAND]: '#c2a47c',
+    [TILE.PYRAMID_WALL]: '#8b4513',
+    [TILE.ICE_FLOOR]: '#a8d8ea',
+    [TILE.ICE_WALL]: '#5a8aa8',
+    [TILE.ICE_HOLE]: '#1a3a5a',
+    [TILE.SNOW]: '#e8f0f8',
+    [TILE.ICE_CASTLE_FLOOR]: '#c8e0f0',
+    [TILE.TORCH]: '#c8e0f0',
+    [TILE.ICE_ALTAR]: '#88b8d8',
+    [TILE.ICE_SWITCH]: '#7898b8',
+    [TILE.ICE_BLOCK]: '#6888a8'
+};
+
+export const items = {
+    // 消費アイテム
+    1: { id: 1, name: '薬草', description: 'HPを30回復する', type: 'heal', value: 30, price: 8 },
+    2: { id: 2, name: '毒消し草', description: '毒を治療する', type: 'cure', price: 10 },
+    3: { id: 3, name: '聖水', description: '弱い敵を退ける', type: 'holy', price: 20 },
+    8: { id: 8, name: '魔法の鍵', description: '扉を開けることができる', type: 'key', price: 0 },
+    // 武器
+    10: { id: 10, name: 'こんぼう', type: 'weapon', value: 2, price: 10, equippable: ['hero', 'mage'] },
+    11: { id: 11, name: 'どうのつるぎ', type: 'weapon', value: 10, price: 100, equippable: ['hero'] },
+    12: { id: 12, name: 'てつのつるぎ', type: 'weapon', value: 20, price: 300, equippable: ['hero'] },
+    13: { id: 13, name: 'はがねのつるぎ', type: 'weapon', value: 35, price: 700, equippable: ['hero'] },
+    14: { id: 14, name: 'ほのおのつるぎ', type: 'weapon', value: 40, price: 0, equippable: ['hero'] },
+    // 防具
+    20: { id: 20, name: 'たびびとのふく', type: 'armor', value: 1, price: 10, equippable: ['hero', 'mage'] },
+    21: { id: 21, name: 'かわのよろい', type: 'armor', value: 5, price: 80, equippable: ['hero', 'mage'] },
+    22: { id: 22, name: 'くさりかたびら', type: 'armor', value: 12, price: 250, equippable: ['hero'], resistances: { lightning: 0.8 } },
+    23: { id: 23, name: 'てつのよろい', type: 'armor', value: 22, price: 600, equippable: ['hero'], resistances: { fire: 0.9, lightning: 1.2 } },
+    24: { id: 24, name: 'まほうのよろい', type: 'armor', value: 35, price: 1200, equippable: ['hero', 'mage'], resistances: { fire: 0.7, ice: 0.7 } },
+    // エリア2 武器・防具
+    15: { id: 15, name: 'さばくのつるぎ', type: 'weapon', value: 45, price: 1500, equippable: ['hero'] },
+    16: { id: 16, name: 'ファラオのつるぎ', type: 'weapon', value: 55, price: 3000, equippable: ['hero'] },
+    17: { id: 17, name: 'おうごんのつめ', type: 'weapon', value: 65, price: 0, equippable: ['hero'] },
+    25: { id: 25, name: 'さばくのよろい', type: 'armor', value: 40, price: 1800, equippable: ['hero'], resistances: { fire: 0.6, ice: 1.2 } },
+    26: { id: 26, name: 'ファラオのよろい', type: 'armor', value: 50, price: 3500, equippable: ['hero'], resistances: { fire: 0.5, light: 0.8 } },
+    40: { id: 40, name: 'まどうしの杖', type: 'weapon', value: 15, price: 800, equippable: ['mage'] },
+    41: { id: 41, name: 'ほのおの杖', type: 'weapon', value: 28, price: 2000, equippable: ['mage'] },
+    42: { id: 42, name: 'いかずちの杖', type: 'weapon', value: 40, price: 4000, equippable: ['mage'] },
+    43: { id: 43, name: 'けんじゃの杖', type: 'weapon', value: 55, price: 0, equippable: ['mage'] },
+    50: { id: 50, name: 'まどうしのローブ', type: 'armor', value: 18, price: 1000, equippable: ['mage'], resistances: { fire: 0.8, ice: 0.8 } },
+    51: { id: 51, name: 'ほしふるローブ', type: 'armor', value: 32, price: 2500, equippable: ['mage'], resistances: { light: 0.6, fire: 0.8, ice: 0.8 } },
+    52: { id: 52, name: 'だいまどうローブ', type: 'armor', value: 45, price: 5000, equippable: ['mage'], resistances: { fire: 0.6, ice: 0.6, lightning: 0.8 } },
+    // エリア3 武器・防具
+    18: { id: 18, name: 'やみのつるぎ', type: 'weapon', value: 75, price: 5000, equippable: ['hero'] },
+    19: { id: 19, name: 'ほしくずのつるぎ', type: 'weapon', value: 90, price: 8000, equippable: ['hero'] },
+    27: { id: 27, name: 'やみのよろい', type: 'armor', value: 60, price: 6000, equippable: ['hero'], resistances: { fire: 0.6, ice: 0.6, light: 1.3 } },
+    28: { id: 28, name: 'ほしくずのよろい', type: 'armor', value: 75, price: 10000, equippable: ['hero'], resistances: { fire: 0.5, ice: 0.5, lightning: 0.5, wind: 0.7, light: 0.7 } },
+    44: { id: 44, name: 'やみの杖', type: 'weapon', value: 50, price: 4500, equippable: ['mage'] },
+    45: { id: 45, name: 'ほしくずの杖', type: 'weapon', value: 70, price: 7500, equippable: ['mage'] },
+    53: { id: 53, name: 'やみのローブ', type: 'armor', value: 55, price: 5500, equippable: ['mage'], resistances: { fire: 0.5, ice: 0.5, light: 1.3 } },
+    54: { id: 54, name: 'ほしくずのローブ', type: 'armor', value: 70, price: 9000, equippable: ['mage'], resistances: { fire: 0.5, ice: 0.5, lightning: 0.5, wind: 0.6, light: 0.6 } },
+    // クエストアイテム
+    30: { id: 30, name: '清らかな水', description: 'オアシスの村を救う聖なる水', type: 'quest', price: 0 },
+    31: { id: 31, name: '王家の紋章', description: '太陽の城塞への入城許可証', type: 'quest', price: 0 },
+    32: { id: 32, name: '通行手形', description: 'バザールの町への通行許可証', type: 'quest', price: 0 },
+    33: { id: 33, name: '太陽の護符', description: '砂漠の守護者の力を封じた護符', type: 'quest', price: 0 },
+    // 回復アイテム
+    4: { id: 4, name: '上薬草', description: 'HPを100回復する', type: 'heal', value: 100, price: 50 },
+    5: { id: 5, name: '世界樹の葉', description: '戦闘不能を回復する', type: 'revive', price: 500 },
+    9: { id: 9, name: 'キメラのつばさ', description: '最後に訪れた町に戻る', type: 'escape', price: 25 },
+    // エリア4 アイテム
+    60: { id: 60, name: 'ほかほかスープ', description: '凍結状態を回復、3ターン凍結耐性', type: 'cure', price: 100 },
+    61: { id: 61, name: 'たいまつ', description: '暗所を照らす', type: 'tool', price: 50 },
+    62: { id: 62, name: 'ふぶきよけの薬', description: '氷属性ダメージ50%軽減（3ターン）', type: 'buff', price: 200 },
+    70: { id: 70, name: 'こおりのつるぎ', type: 'weapon', value: 55, price: 12000, equippable: ['hero'] },
+    71: { id: 71, name: 'ブリザードソード', type: 'weapon', value: 70, price: 0, equippable: ['hero'] },
+    72: { id: 72, name: 'こおりのつえ', type: 'weapon', value: 45, price: 10000, equippable: ['mage', 'seer'] },
+    73: { id: 73, name: 'ダイヤモンドロッド', type: 'weapon', value: 60, price: 0, equippable: ['mage', 'seer'] },
+    74: { id: 74, name: 'こおりのおおなた', type: 'weapon', value: 65, price: 0, equippable: ['iceKnight'] },
+    80: { id: 80, name: 'ふゆごもりのふく', type: 'armor', value: 45, price: 8000, equippable: ['hero', 'mage', 'seer', 'iceKnight'], resistances: { ice: 0.7 } },
+    81: { id: 81, name: 'ブリザードメイル', type: 'armor', value: 60, price: 0, equippable: ['hero', 'iceKnight'], resistances: { ice: 0.5 } },
+    82: { id: 82, name: 'ゆきのローブ', type: 'armor', value: 40, price: 7000, equippable: ['mage', 'seer'], resistances: { ice: 0.6 } },
+    83: { id: 83, name: 'クリスタルローブ', type: 'armor', value: 55, price: 0, equippable: ['mage', 'seer'], resistances: { ice: 0.4, fire: 0.8 } },
+    85: { id: 85, name: 'ひょうりゅうのきば', type: 'weapon', value: 85, price: 0, equippable: ['hero', 'iceKnight'], element: 'ice' },
+    90: { id: 90, name: 'こおりのゆびわ', type: 'accessory', value: 0, price: 5000, equippable: ['hero', 'mage', 'seer', 'iceKnight'], resistances: { ice: 0.75 } },
+    91: { id: 91, name: 'ほのおのペンダント', type: 'accessory', value: 0, price: 0, equippable: ['hero', 'mage', 'seer', 'iceKnight'], spellBoost: { fire: 1.2 } },
+    92: { id: 92, name: 'じょおうのティアラ', type: 'accessory', value: 0, price: 0, equippable: ['hero', 'mage', 'seer', 'iceKnight'], mpBoost: 30 },
+    95: { id: 95, name: '太陽の炎', description: '女王を救う力を持つ聖なる炎', type: 'quest', price: 0 },
+    96: { id: 96, name: '極光の宝珠', description: '海を渡る力を持つ宝珠', type: 'quest', price: 0 }
+};
+
+export const shopItemsByArea = {
+    default: [11, 12, 13, 21, 22, 23],
+    area2_shop: [12, 13, 14, 22, 23, 24, 1, 2, 3],
+    oasis_shop: [1, 2, 4, 9, 12, 13, 22, 23, 40, 50],
+    bazaar_shop: [1, 2, 4, 5, 9, 13, 15, 23, 25, 41, 51],
+    hidden_shop: [4, 5, 15, 16, 25, 26, 42, 52],
+    underworld_shop: [1, 4, 5, 9, 18, 19, 27, 28, 44, 45, 53, 54],
+    snow_village_weapon: [70, 72, 80, 82, 90],
+    snow_village_item: [1, 4, 5, 9, 60, 61, 62]
+};
+
+export const monsters = {
+    slime: { name: 'スライム', sprite: '🟢', level: 1, hp: 8, atk: 5, def: 2, speed: 3, exp: 2, gold: 2, resistances: { sleep: 1.0, blind: 1.0, poison: 1.0 } },
+    dracky: { name: 'ドラキー', sprite: '蝙', level: 2, hp: 10, atk: 7, def: 3, speed: 6, exp: 3, gold: 3, resistances: { sleep: 0.8, blind: 0.6, poison: 1.0 } },
+    bat: { name: 'おおこうもり', sprite: '蝙', hueRotate: 180, level: 3, hp: 14, atk: 9, def: 4, speed: 8, exp: 5, gold: 5, resistances: { sleep: 0.8, blind: 0.5, poison: 1.0 } },
+    ghost: { name: 'ゴースト', sprite: '👻', level: 4, hp: 18, atk: 12, def: 5, speed: 5, exp: 10, gold: 8, resistances: { sleep: 0.3, blind: 1.0, poison: 0, light: 1.5, fire: 1.5 } },
+    scorpion: { name: 'おおさそり', sprite: '🦂', level: 5, hp: 22, atk: 14, def: 8, speed: 7, exp: 15, gold: 12, resistances: { sleep: 0.7, blind: 0.8, poison: 0 } },
+    skeleton: { name: 'がいこつ', sprite: '💀', level: 6, hp: 28, atk: 18, def: 10, speed: 4, exp: 25, gold: 20, resistances: { sleep: 0, blind: 0.8, poison: 0, fire: 1.5, light: 1.5 } },
+    armoredKnight: { name: 'さまようよろい', sprite: '🛡️', level: 7, hp: 40, atk: 22, def: 18, speed: 3, exp: 35, gold: 30, resistances: { sleep: 0.2, blind: 0.5, poison: 0, lightning: 1.5, fire: 0.5 } },
+    deathKnight: { name: 'しりょうのきし', sprite: '🛡️', hueRotate: 270, level: 8, hp: 55, atk: 28, def: 22, speed: 5, exp: 50, gold: 45, resistances: { sleep: 0, blind: 0.3, poison: 0, light: 1.5, fire: 1.5 } },
+    midBoss: { name: '洞窟の番人', sprite: '🗿', level: 9, hp: 100, atk: 35, def: 18, speed: 6, exp: 80, gold: 100, isBoss: true, resistances: { sleep: 0.1, blind: 0.2, poison: 0.3 } },
+    sandSlime: { name: 'サンドスライム', sprite: '🟡', level: 10, hp: 35, atk: 22, def: 12, speed: 5, exp: 30, gold: 25, resistances: { sleep: 1.0, blind: 1.0, poison: 0.5 } },
+    desertScorpion: { name: 'サンドスコーピオン', sprite: '🦂', hueRotate: 30, level: 11, hp: 45, atk: 28, def: 18, speed: 9, exp: 40, gold: 35, canPoison: true, resistances: { sleep: 0.5, blind: 0.7, poison: 0 } },
+    cactusMan: { name: 'サボテンマン', sprite: '🌵', level: 11, hp: 40, atk: 25, def: 15, speed: 4, exp: 35, gold: 30, resistances: { sleep: 0.8, blind: 0.6, poison: 0, fire: 1.5, ice: 0.5 } },
+    desertVulture: { name: 'デザートバルチャー', sprite: '🦅', level: 12, hp: 38, atk: 30, def: 10, speed: 14, exp: 45, gold: 40, resistances: { sleep: 0.6, blind: 0.4, poison: 1.0 } },
+    desertMummy: { name: 'デザートミイラ', sprite: '🧟', level: 13, hp: 55, atk: 32, def: 20, speed: 4, exp: 55, gold: 50, resistances: { sleep: 0.2, blind: 0.8, poison: 0, fire: 2.0, ice: 0.5 } },
+    sandDevil: { name: 'すなじごく', sprite: '🌀', hueRotate: 40, level: 14, hp: 50, atk: 35, def: 16, speed: 8, exp: 60, gold: 55, resistances: { sleep: 0.3, blind: 0.5, poison: 0.5 } },
+    pyramidGuard: { name: 'ピラミッドガード', sprite: '🗿', hueRotate: 180, level: 15, hp: 70, atk: 38, def: 28, speed: 5, exp: 75, gold: 70, resistances: { sleep: 0, blind: 0.5, poison: 0, lightning: 1.5, fire: 0.5 } },
+    cursedPharaoh: { name: 'のろいのファラオ', sprite: '👑', hueRotate: 270, level: 15, hp: 65, atk: 35, def: 22, speed: 7, exp: 70, gold: 65, resistances: { sleep: 0, blind: 0.3, poison: 0, fire: 1.5, light: 1.5 } },
+    desertGolem: { name: 'デザートゴーレム', sprite: '🪨', level: 16, hp: 90, atk: 42, def: 35, speed: 3, exp: 90, gold: 85, resistances: { sleep: 0, blind: 0, poison: 0, lightning: 1.5, fire: 0.5, ice: 0.5 } },
+    sandWorm: { name: 'サンドワーム', sprite: '🐛', hueRotate: 40, level: 17, hp: 85, atk: 45, def: 25, speed: 6, exp: 100, gold: 95, resistances: { sleep: 0.4, blind: 0.6, poison: 0.3, ice: 1.5, fire: 0.5 } },
+    banditLeader: { name: 'とうぞくのかしら', sprite: '🥷', level: 17, hp: 75, atk: 48, def: 22, speed: 12, exp: 95, gold: 150, resistances: { sleep: 0.5, blind: 0.4, poison: 0.8 } },
+    ancientSoldier: { name: 'いにしえのへいし', sprite: '⚔️', level: 18, hp: 80, atk: 50, def: 30, speed: 7, exp: 110, gold: 100, resistances: { sleep: 0, blind: 0.5, poison: 0 } },
+    sphinxMinor: { name: 'スフィンクス', sprite: '🦁', level: 19, hp: 100, atk: 52, def: 32, speed: 10, exp: 130, gold: 120, resistances: { sleep: 0.2, blind: 0.3, poison: 0.5 } },
+    djinn: { name: 'ランプのまじん', sprite: '🧞', level: 20, hp: 95, atk: 55, def: 28, speed: 11, exp: 140, gold: 130, resistances: { sleep: 0.1, blind: 0.2, poison: 0.3 } },
+    mummyKing: { name: 'ミイラおとこ', sprite: '🧟', hueRotate: 180, level: 21, hp: 110, atk: 58, def: 35, speed: 5, exp: 160, gold: 150, weakToFire: true, resistances: { sleep: 0, blind: 0.5, poison: 0 } },
+    quicksandBoss: { name: '流砂の主', sprite: '🌊', hueRotate: 40, level: 18, hp: 180, atk: 45, def: 30, speed: 8, exp: 200, gold: 300, isBoss: true, resistances: { sleep: 0, blind: 0.2, poison: 0 } },
+    banditKing: { name: '盗賊王', sprite: '👤', level: 19, hp: 200, atk: 52, def: 28, speed: 14, exp: 250, gold: 500, isBoss: true, resistances: { sleep: 0.1, blind: 0.3, poison: 0.5 } },
+    pyramidGuardian: { name: 'ピラミッドの守護者', sprite: '🦅', hueRotate: 300, level: 22, hp: 280, atk: 60, def: 40, speed: 10, exp: 400, gold: 400, isBoss: true, resistances: { sleep: 0, blind: 0.1, poison: 0 } },
+    desertGuardian: { name: '砂漠の守護者', sprite: '🗿', hueRotate: 45, level: 25, hp: 400, atk: 70, def: 50, speed: 12, exp: 600, gold: 800, isBoss: true, actions: 2, resistances: { sleep: 0, blind: 0, poison: 0 } },
+    shadowSlime: { name: 'シャドースライム', sprite: '🟣', level: 18, hp: 70, atk: 40, def: 20, speed: 12, exp: 100, gold: 70, resistances: { sleep: 0.3, poison: 0.5, light: 1.5 } },
+    darkBat: { name: 'ダークバット', sprite: '蝙', level: 19, hp: 55, atk: 35, def: 15, speed: 25, exp: 90, gold: 55, resistances: { light: 1.5, wind: 1.5 } },
+    cursedTree: { name: 'じゅかい', sprite: '🌳', level: 20, hp: 100, atk: 45, def: 30, speed: 5, exp: 130, gold: 85, resistances: { fire: 2.0, ice: 0.5, lightning: 0.5 } },
+    ancientGolem: { name: 'いにしえゴーレム', sprite: '🗿', level: 22, hp: 150, atk: 55, def: 45, speed: 3, exp: 200, gold: 120, resistances: { sleep: 0, blind: 0, lightning: 1.5, fire: 0.5, ice: 0.5 } },
+    darkKnight: { name: 'ダークナイト', sprite: '🖤', level: 21, hp: 90, atk: 50, def: 35, speed: 15, exp: 150, gold: 100, resistances: { light: 1.5, fire: 0.5 } },
+    underworldBat: { name: 'ちていコウモリ', sprite: '蝙', level: 22, hp: 65, atk: 42, def: 18, speed: 28, exp: 110, gold: 65, resistances: { light: 1.5, wind: 1.5 } },
+    shadowDragon: { name: 'シャドードラゴン', sprite: '🐉', level: 25, hp: 180, atk: 70, def: 40, speed: 18, exp: 300, gold: 200, resistances: { light: 1.5, ice: 1.5, fire: 0.5 } },
+    deathWraith: { name: 'デスレイス', sprite: '👻', level: 24, hp: 85, atk: 55, def: 25, speed: 22, exp: 180, gold: 130, resistances: { sleep: 0, poison: 0, light: 2.0, fire: 1.5 } },
+    stoneGuardian: { name: 'いわのまもりて', sprite: '🪨', level: 23, hp: 130, atk: 48, def: 50, speed: 5, exp: 160, gold: 90, resistances: { lightning: 1.5, fire: 0.5, ice: 0.5 } },
+    wedgeGuardian: { name: 'くさびのしゅごしゃ', sprite: '⚔️', level: 28, hp: 350, atk: 80, def: 50, speed: 20, exp: 800, gold: 500, isBoss: true },
+    shadowGuardian: { name: 'やみのしゅごしゃ', sprite: '👁️', level: 38, hp: 2000, atk: 145, def: 75, speed: 28, exp: 3500, gold: 1800, isBoss: true, actions: 2, skills: ['attack', 'attack', 'giragura', 'hyados', 'strongAttack', 'behoma'], resistances: { sleep: 0, blind: 0.3, poison: 0 } },
+    wedgeGuardian_north: { name: 'こおりのしゅごしゃ', sprite: '❄️', level: 32, hp: 950, atk: 105, def: 60, speed: 20, exp: 1200, gold: 750, isBoss: true, skills: ['attack', 'attack', 'hyados', 'strongAttack'], resistances: { ice: 0, fire: 2.0, sleep: 0.3 } },
+    wedgeGuardian_east: { name: 'ほのおのしゅごしゃ', sprite: '🔥', level: 32, hp: 900, atk: 115, def: 50, speed: 24, exp: 1250, gold: 780, isBoss: true, skills: ['attack', 'attack', 'giragura', 'strongAttack'], resistances: { fire: 0, ice: 2.0, sleep: 0.3 } },
+    wedgeGuardian_south: { name: 'かぜのしゅごしゃ', sprite: '🌀', level: 32, hp: 850, atk: 95, def: 55, speed: 38, exp: 1150, gold: 720, isBoss: true, skills: ['attack', 'attack', 'bagigross', 'strongAttack'], resistances: { death: 0, sleep: 0.3 } },
+    wedgeGuardian_west: { name: 'いかずちのしゅごしゃ', sprite: '⚡', level: 33, hp: 1000, atk: 110, def: 65, speed: 22, exp: 1300, gold: 800, isBoss: true, skills: ['attack', 'attack', 'raiden', 'strongAttack'], resistances: { lightning: 0, paralysis: 0, sleep: 0.3 } },
+    libraryGuardian: { name: 'としょしつのばんにん', sprite: '📚', level: 34, hp: 700, atk: 95, def: 60, speed: 18, exp: 1500, gold: 900, isBoss: true, skills: ['attack', 'attack', 'strongAttack', 'mahoton'], resistances: { sleep: 0.5 } },
+    boneWarrior: { name: 'ほねせんし', sprite: '💀', level: 25, hp: 80, atk: 45, def: 30, speed: 12, exp: 140, gold: 90, resistances: { sleep: 0, poison: 0 } },
+    cursedMage: { name: 'のろいのまじゅつし', sprite: '🧙', hueRotate: 270, level: 27, hp: 70, atk: 30, def: 25, speed: 18, exp: 160, gold: 100, spells: ['gira', 'rariho'], resistances: { sleep: 0.3 } },
+    darkArmor: { name: 'ダークアーマー', sprite: '🛡️', hueRotate: 180, level: 28, hp: 130, atk: 60, def: 50, speed: 8, exp: 200, gold: 130, resistances: { sleep: 0.1, poison: 0 } },
+    deathMagician: { name: 'デスマジシャン', sprite: '🧙', hueRotate: 320, level: 29, hp: 90, atk: 40, def: 30, speed: 20, exp: 180, gold: 110, spells: ['giragura', 'mahoton'], resistances: { sleep: 0.2 } },
+    cursedKnight: { name: 'のろわれたきし', sprite: '⚔️', level: 30, hp: 160, atk: 70, def: 55, speed: 14, exp: 250, gold: 150, resistances: { sleep: 0, poison: 0, blind: 0.3 } },
+    dragon: { name: 'ドラゴン', sprite: '🐉', level: 10, hp: 80, atk: 35, def: 20, speed: 10, exp: 100, gold: 150, resistances: { sleep: 0.1, blind: 0.3, poison: 0.5 } },
+    maou: { name: '魔王', sprite: '👿', hp: 200, mp: 100, atk: 50, def: 30, speed: 15, exp: 500, gold: 0, isBoss: true, actions: 2, resistances: { sleep: 0, blind: 0, poison: 0 }, skills: ['attack', 'hageshiiHonoo', 'behoma', 'ionazun'] },
+    snowSlime: { name: 'ゆきスライム', sprite: '🧊', level: 35, hp: 120, atk: 55, def: 35, speed: 12, exp: 180, gold: 80, skills: ['attack', 'iceBreath'], resistances: { ice: 0, fire: 2.0 } },
+    iceBat: { name: 'アイスバット', sprite: '蝙', level: 36, hp: 90, atk: 60, def: 25, speed: 25, exp: 200, gold: 90, skills: ['attack', 'drain'], resistances: { ice: 0.5, fire: 1.5 } },
+    snowWolf: { name: 'スノーウルフ', sprite: '🐺', level: 37, hp: 140, atk: 70, def: 40, speed: 20, exp: 220, gold: 100, skills: ['attack', 'howl'], resistances: { ice: 0.5, fire: 1.5 } },
+    frozenKnight: { name: 'こおりのきし', sprite: '🗡️', level: 38, hp: 180, atk: 75, def: 55, speed: 10, exp: 280, gold: 150, skills: ['attack', 'strongAttack'], resistances: { ice: 0, fire: 1.5, lightning: 1.5 } },
+    iceElemental: { name: 'アイスエレメント', sprite: '💠', level: 40, hp: 160, atk: 65, def: 45, speed: 15, exp: 300, gold: 130, skills: ['attack', 'hyados'], resistances: { ice: 0, fire: 2.0, lightning: 0.5 } },
+    frostGiant: { name: 'フロストジャイアント', sprite: '👹', level: 42, hp: 250, atk: 90, def: 60, speed: 8, exp: 400, gold: 200, skills: ['attack', 'strongAttack'], resistances: { ice: 0, fire: 1.5 } },
+    crystalDragon: { name: 'クリスタルドラゴン', sprite: '🐲', level: 45, hp: 300, atk: 100, def: 70, speed: 18, exp: 500, gold: 300, skills: ['attack', 'iceBreath', 'hyados'], resistances: { ice: 0, fire: 1.5, light: 0.5 } },
+    iceGolem: { name: 'こおりのゴーレム', sprite: '🗿', level: 40, hp: 800, atk: 75, def: 60, speed: 8, exp: 1500, gold: 900, isBoss: true, skills: ['attack', 'iceBreath', 'strongAttack'], resistances: { ice: 0, fire: 2.0, lightning: 1.5, sleep: 0, poison: 0 } },
+    iceQueen: { name: 'こおりのじょおう', sprite: '👸', level: 48, hp: 1500, atk: 95, def: 70, speed: 20, exp: 3000, gold: 1500, isBoss: true, actions: 2, skills: ['attack', 'hyados', 'iceBreath', 'absoluteZero', 'behoma'], resistances: { ice: 0, fire: 2.0, light: 0.5, sleep: 0, poison: 0 } },
+    frostWyrm: { name: 'ひょうりゅうフロストヴルム', sprite: '🐲', level: 52, hp: 1800, atk: 140, def: 75, speed: 28, exp: 5000, gold: 3000, isBoss: true, actions: 2, skills: ['attack', 'strongAttack', 'absoluteZero', 'frostBite', 'iceBreath', 'behoma'], resistances: { ice: 0, fire: 2.0, light: 0.5, sleep: 0, poison: 0, blind: 0 } }
+};
+
+export const bossSkills = {
+    hageshiiHonoo: { name: 'はげしいほのお', type: 'attack', target: 'all', power: 45, element: 'fire', flashColor: 'rgba(255, 50, 0, 0.7)' },
+    ionazun: { name: 'イオナズン', type: 'attack', target: 'all', power: 55, element: 'lightning', flashColor: 'rgba(255, 255, 0, 0.7)' },
+    hyados: { name: 'ヒャダルコ', type: 'attack', target: 'all', power: 40, element: 'ice', flashColor: 'rgba(100, 200, 255, 0.7)' },
+    giragura: { name: 'ギラグレイド', type: 'attack', target: 'all', power: 50, element: 'fire', flashColor: 'rgba(255, 200, 50, 0.9)' },
+    bagigross: { name: 'バギクロス', type: 'attack', target: 'all', power: 45, element: 'wind', flashColor: 'rgba(200, 255, 200, 0.7)' },
+    raiden: { name: 'ライデイン', type: 'attack', target: 'all', power: 48, element: 'lightning', flashColor: 'rgba(255, 255, 100, 0.8)' },
+    strongAttack: { name: 'つよいこうげき', type: 'attack', target: 'single', power: 60, flashColor: 'rgba(255, 100, 100, 0.5)' },
+    iceSlash: { name: 'こおりのいちげき', type: 'attack', target: 'single', power: 55, element: 'ice', flashColor: 'rgba(150, 220, 255, 0.6)' },
+    behoma: { name: 'ベホマ', type: 'heal', power: 9999, flashColor: 'rgba(0, 255, 100, 0.5)' },
+    mahoton: { name: 'マホトーン', type: 'debuff', effect: 'silence', flashColor: 'rgba(128, 0, 128, 0.5)' },
+    iceBreath: { name: 'つめたいいき', type: 'attack', target: 'all', power: 35, element: 'ice', flashColor: 'rgba(150, 220, 255, 0.7)' },
+    absoluteZero: { name: 'ぜったいれいど', type: 'attack', target: 'all', power: 65, element: 'ice', flashColor: 'rgba(200, 240, 255, 0.9)' },
+    frostBite: { name: 'フロストバイト', type: 'attack', target: 'single', power: 80, element: 'ice', flashColor: 'rgba(180, 230, 255, 0.8)' },
+    drain: { name: 'HP吸収', type: 'drain', target: 'single', power: 20, flashColor: 'rgba(150, 50, 150, 0.5)' },
+    howl: { name: 'おたけび', type: 'debuff', effect: 'stun', flashColor: 'rgba(255, 200, 100, 0.5)' }
+};
+
+export const encounterTables = {
+    field: ['slime', 'slime', 'slime', 'dracky', 'dracky', 'bat'],
+    forest: ['dracky', 'bat', 'bat', 'ghost', 'scorpion'],
+    dungeon: ['ghost', 'scorpion', 'skeleton', 'skeleton', 'armoredKnight', 'deathKnight'],
+    desert_field: ['sandSlime', 'sandSlime', 'desertScorpion', 'cactusMan', 'desertVulture', 'desertMummy'],
+    desert_deep: ['desertMummy', 'sandDevil', 'sandDevil', 'pyramidGuard', 'cursedPharaoh', 'desertGolem'],
+    quicksand_cave: ['sandDevil', 'sandDevil', 'sandWorm', 'sandWorm', 'desertGolem'],
+    bandit_hideout: ['banditLeader', 'banditLeader', 'banditLeader', 'desertScorpion', 'cactusMan'],
+    pyramid: ['pyramidGuard', 'cursedPharaoh', 'desertMummy', 'ancientSoldier', 'mummyKing'],
+    pyramid_deep: ['ancientSoldier', 'mummyKing', 'sphinxMinor', 'djinn'],
+    desert_castle: ['sphinxMinor', 'djinn', 'mummyKing', 'ancientSoldier'],
+    area2_field: ['sandSlime', 'sandSlime', 'desertScorpion', 'cactusMan', 'desertVulture', 'desertMummy'],
+    area2_dungeon: ['pyramidGuard', 'cursedPharaoh', 'desertGolem', 'sandWorm'],
+    area3_surface: ['shadowSlime', 'darkBat', 'cursedTree', 'ancientGolem', 'darkKnight'],
+    area3_underworld: ['underworldBat', 'shadowDragon', 'deathWraith', 'stoneGuardian'],
+    area3_boss: ['wedgeGuardian'],
+    wedge_dungeon_b1: ['shadowSlime', 'darkBat', 'boneWarrior', 'boneWarrior'],
+    wedge_dungeon_b2: ['darkKnight', 'cursedMage', 'shadowDragon', 'boneWarrior'],
+    wedge_dungeon_b3: [],
+    castle_b2: ['ghost', 'ghost', 'skeleton', 'deathWraith'],
+    castle_b1: ['skeleton', 'skeleton', 'darkArmor', 'deathWraith'],
+    castle_1f: ['darkArmor', 'skeleton', 'deathMagician', 'cursedKnight'],
+    castle_2f: ['darkArmor', 'deathMagician', 'deathMagician', 'cursedKnight'],
+    castle_3f: ['cursedKnight', 'cursedKnight', 'deathMagician'],
+    area4_field: ['snowSlime', 'snowSlime', 'iceBat', 'snowWolf', 'snowWolf'],
+    area4_cave: ['snowSlime', 'frozenKnight', 'iceElemental', 'iceBat'],
+    area4_temple: ['iceElemental', 'iceElemental', 'frostGiant', 'frozenKnight'],
+    area4_castle: ['frozenKnight', 'frostGiant', 'crystalDragon', 'crystalDragon']
+};
+
+export const encounterTableFallback = {
+    field: 'field',
+    dungeon: 'dungeon'
+};
+
+export const spells = {
+    hoimi: { id: 'hoimi', name: 'ホイミ', mp: 3, type: 'heal', power: 30, learnLevel: 2, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(0, 255, 100, 0.5)' },
+    behoimi: { id: 'behoimi', name: 'ベホイミ', mp: 6, type: 'heal', power: 80, learnLevel: 12, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(0, 255, 100, 0.6)' },
+    behoma: { id: 'behoma', name: 'ベホマ', mp: 12, type: 'heal', power: 999, learnLevel: 32, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(0, 255, 100, 0.8)' },
+    behomazun: { id: 'behomazun', name: 'ベホマズン', mp: 40, type: 'heal', power: 999, learnLevel: 60, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(0, 255, 100, 1.0)' },
+    zaoraru: { id: 'zaoraru', name: 'ザオラル', mp: 10, type: 'revive', successRate: 0.5, learnLevel: 22, learnableBy: ['hero'], element: 'heal', flashColor: 'rgba(255, 255, 200, 0.7)' },
+    zaoriku: { id: 'zaoriku', name: 'ザオリク', mp: 20, type: 'revive', successRate: 1.0, learnLevel: 99, learnableBy: [], element: 'heal', flashColor: 'rgba(255, 255, 255, 1.0)' },
+    mera: { id: 'mera', name: 'メラ', mp: 2, type: 'attack', target: 'single', power: 15, learnLevel: 3, learnableBy: ['hero', 'mage'], element: 'fire', flashColor: 'rgba(255, 100, 0, 0.6)' },
+    merami: { id: 'merami', name: 'メラミ', mp: 8, type: 'attack', target: 'single', power: 80, learnLevel: 28, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 100, 0, 0.8)' },
+    merazoma: { id: 'merazoma', name: 'メラゾーマ', mp: 15, type: 'attack', target: 'single', power: 200, learnLevel: 45, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 50, 0, 1.0)' },
+    hyado: { id: 'hyado', name: 'ヒャド', mp: 4, type: 'attack', target: 'single', power: 25, learnLevel: 6, learnableBy: ['mage'], element: 'ice', flashColor: 'rgba(100, 200, 255, 0.6)' },
+    hyados: { id: 'hyados', name: 'ヒャダルコ', mp: 8, type: 'attack', target: 'all', power: 50, learnLevel: 20, learnableBy: ['mage'], element: 'ice', flashColor: 'rgba(100, 200, 255, 0.8)' },
+    gira: { id: 'gira', name: 'ギラ', mp: 5, type: 'attack', target: 'all', power: 35, learnLevel: 8, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 255, 100, 0.6)' },
+    giragura: { id: 'giragura', name: 'ギラグレイド', mp: 15, type: 'attack', target: 'all', power: 120, learnLevel: 35, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 200, 50, 0.9)' },
+    begirama: { id: 'begirama', name: 'ベギラマ', mp: 10, type: 'attack', target: 'all', power: 70, learnLevel: 18, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 200, 50, 0.8)' },
+    begiragon: { id: 'begiragon', name: 'ベギラゴン', mp: 20, type: 'attack', target: 'all', power: 150, learnLevel: 40, learnableBy: ['mage'], element: 'fire', flashColor: 'rgba(255, 150, 0, 1.0)' },
+    gigadein: { id: 'gigadein', name: 'ギガデイン', mp: 30, type: 'attack', target: 'all', power: 300, learnLevel: 50, learnableBy: ['hero'], element: 'light', flashColor: 'rgba(255, 255, 100, 1.0)' },
+    minadein: { id: 'minadein', name: 'ミナデイン', mp: 50, type: 'attack', target: 'all', power: 1000, learnLevel: 99, learnableBy: ['hero'], element: 'light', flashColor: 'rgba(255, 255, 255, 1.0)' },
+    bagi: { id: 'bagi', name: 'バギ', mp: 4, type: 'attack', target: 'all', power: 20, learnLevel: 10, learnableBy: ['seer'], element: 'wind', flashColor: 'rgba(150, 255, 150, 0.6)' },
+    bagima: { id: 'bagima', name: 'バギマ', mp: 8, type: 'attack', target: 'all', power: 60, learnLevel: 22, learnableBy: ['seer'], element: 'wind', flashColor: 'rgba(150, 255, 150, 0.8)' },
+    dein: { id: 'dein', name: 'デイン', mp: 6, type: 'attack', target: 'single', power: 40, learnLevel: 15, learnableBy: ['hero'], element: 'lightning', flashColor: 'rgba(255, 255, 0, 0.7)' },
+    raiden: { id: 'raiden', name: 'ライデイン', mp: 12, type: 'attack', target: 'all', power: 100, learnLevel: 30, learnableBy: ['hero'], element: 'lightning', flashColor: 'rgba(255, 255, 0, 0.9)' },
+    rariho: { id: 'rariho', name: 'ラリホー', mp: 3, type: 'status', statusEffect: 'sleep', successRate: 0.7, learnLevel: 5, learnableBy: ['mage', 'seer'], element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
+    manusa: { id: 'manusa', name: 'マヌーサ', mp: 4, type: 'status', statusEffect: 'blind', successRate: 0.6, learnLevel: 9, learnableBy: ['mage'], element: 'status', flashColor: 'rgba(150, 100, 200, 0.5)' },
+    mahoton: { id: 'mahoton', name: 'マホトーン', mp: 4, type: 'status', statusEffect: 'silence', successRate: 0.6, learnLevel: 12, learnableBy: ['mage'], element: 'status', flashColor: 'rgba(100, 100, 150, 0.5)' },
+    rukani: { id: 'rukani', name: 'ルカニ', mp: 3, type: 'debuff', debuffType: 'defense', debuffRate: 0.5, successRate: 0.75, learnLevel: 3, learnableBy: ['seer'], element: 'status', flashColor: 'rgba(100, 50, 150, 0.5)' },
+    sukuruto: { id: 'sukuruto', name: 'スクルト', mp: 4, type: 'buff', buffType: 'defense', buffRate: 1.5, learnLevel: 25, learnableBy: ['hero'], element: 'buff', flashColor: 'rgba(100, 200, 255, 0.5)' },
+    baikiruto: { id: 'baikiruto', name: 'バイキルト', mp: 6, type: 'buff', buffType: 'attack', buffRate: 2.0, learnLevel: 35, learnableBy: ['mage'], element: 'buff', flashColor: 'rgba(255, 100, 100, 0.6)' },
+    piorimu: { id: 'piorimu', name: 'ピオリム', mp: 4, type: 'buff', buffType: 'speed', buffRate: 2.0, duration: 99, learnLevel: 8, learnableBy: ['seer'], element: 'buff', flashColor: 'rgba(150, 255, 150, 0.5)' },
+    riremito: { id: 'riremito', name: 'リレミト', mp: 4, type: 'escape', learnLevel: 12, learnableBy: ['hero', 'mage'], element: 'move', flashColor: 'rgba(200, 200, 255, 0.5)' },
+    rura: { id: 'rura', name: 'ルーラ', mp: 8, type: 'warp', learnLevel: 15, learnableBy: ['hero'], element: 'move', flashColor: 'rgba(100, 200, 255, 0.7)' },
+    iceSlash: { id: 'iceSlash', name: 'こおりのいちげき', mp: 6, type: 'attack', target: 'single', power: 55, learnLevel: 1, learnableBy: ['iceKnight'], element: 'ice', flashColor: 'rgba(150, 220, 255, 0.6)' },
+    frostArmor: { id: 'frostArmor', name: 'フロストアーマー', mp: 8, type: 'buff', buffType: 'defense', buffRate: 1.8, learnLevel: 40, learnableBy: ['iceKnight'], element: 'ice', flashColor: 'rgba(180, 230, 255, 0.6)' }
+};
+
+export const STATUS_EFFECTS = {
+    sleep: { name: '眠り', icon: '💤', badge: '眠', duration: { min: 2, max: 3 } },
+    poison: { name: '毒', icon: '☠️', badge: '毒', damageRate: 0.1 },
+    blind: { name: '幻惑', icon: '💫', badge: '幻', hitRateModifier: 0.5 },
+    silence: { name: '沈黙', icon: '🔇', badge: '黙', duration: { min: 3, max: 5 } }
+};
