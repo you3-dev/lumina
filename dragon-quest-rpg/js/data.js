@@ -130,7 +130,9 @@ export const items = {
     130: { id: 130, name: 'トライデント', type: 'weapon', value: 95, price: 15000, equippable: ['hero', 'iceKnight'], element: 'ice' },
     300: { id: 300, name: 'ほかほかスープ', description: 'HPを150回復し、寒さを防ぐ', type: 'heal', value: 150, price: 200 },
     301: { id: 301, name: '酸素缶', description: '水中での酸素を50回復する', type: 'oxygen', value: 50, price: 500 },
-    302: { id: 302, name: '海の香草', description: '全状態異常を治療する', type: 'cure_all', price: 150 }
+    302: { id: 302, name: '海の香草', description: '全状態異常を治療する', type: 'cure_all', price: 150 },
+    400: { id: 400, name: '守りの種', description: '最大守備力を3上昇させる', type: 'stat_boost', stat: 'def', value: 3, price: 0 },
+    401: { id: 401, name: '100ゴールド', description: '金貨の入った袋', type: 'gold', value: 100, price: 0 }
 };
 
 export const shopItemsByArea = {

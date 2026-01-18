@@ -190,6 +190,11 @@ export function addItem(itemId, quantity = 1) {
     const item = items[itemId];
     if (!item) return false;
 
+    if (item.type === 'gold') {
+        partyData.gold += item.value;
+        return true;
+    }
+
     if (isStackable(itemId)) {
         const existing = partyData.inventory.find(slot => slot.id === itemId);
         if (existing) {
