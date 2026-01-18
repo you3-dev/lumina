@@ -119,6 +119,20 @@ export function drawMap() {
         ctx.fill();
         ctx.globalCompositeOperation = 'source-over';
     }
+
+    // Underwater effect
+    if (currentMap.isUnderwater) {
+        ctx.fillStyle = 'rgba(0, 50, 150, 0.4)';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // Caustics / Ripple effect (Simplified)
+        ctx.save();
+        ctx.globalAlpha = 0.1 + Math.sin(Date.now() / 1000) * 0.05;
+        ctx.fillStyle = '#88ccff';
+        // Draw some random wave lines or just overlay
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        ctx.restore();
+    }
 }
 
 function getLoopAdjustedScreenPos(mapX, mapY, mapCols, mapRows) {

@@ -261,9 +261,23 @@ export function updatePlayerMovement(delta) {
         partyData.moveProgress = 0;
 
         checkWarp(player.x, player.y);
+        checkOxygen();
         // checkEncounters...
     }
     updateCamera();
+}
+
+function checkOxygen() {
+    if (currentMap.isUnderwater) {
+        partyData.oxygen = Math.max(0, partyData.oxygen - 1);
+        if (partyData.oxygen === 0) {
+            // Damage
+            player.hp = Math.max(1, player.hp - Math.floor(player.maxHp * 0.1)); // 10% damage
+            SE.damage();
+        }
+    } else {
+        partyData.oxygen = 100;
+    }
 }
 
 export function checkWarp(x, y) {
@@ -433,7 +447,9 @@ export function saveGame() {
             x: player.x,
             y: player.y,
             gold: partyData.gold,
-            inventory: partyData.inventory
+            inventory: partyData.inventory,
+            vehicle: partyData.vehicle,
+            oxygen: partyData.oxygen
         },
         currentMapId,
         gameProgress
@@ -446,10 +462,45 @@ export function loadGame() {
     if (!json) return false;
     try {
         const data = JSON.parse(json);
-        // ... restore state ...
-        // For now, just return true as placeholder
+
+        // Restore Player
+        Object.assign(player, data.player);
+
+        // Restore Party Data
+        Object.assign(partyData, data.partyData);
+        // Ensure default values if old save
+        if (!partyData.vehicle) partyData.vehicle = 'none';
+        if (typeof partyData.oxygen === 'undefined') partyData.oxygen = 100;
+
+        // Restore Map Info
+        setCurrentMapId(data.currentMapId || 'field');
+
+        // Restore Progress
+        if (data.gameProgress) {
+            Object.assign(gameProgress, data.gameProgress);
+        }
+
+        // Fix player position assignment
+        if (data.partyData) {
+            player.x = data.partyData.x;
+            player.y = data.partyData.y;
+        }
+
+        setHasSaveData(true);
+        setGameMode(MODE.FIELD);
+
+        // We need to load the map data properly. 
+        // performWarp handles loading, but loadGame is synchronous (mostly).
+        // For now, we rely on the caller to start the game loop or scene.
+        // In selectTitleMenuItem, we call loadGame() then startNewGame-like logic?
+        // Actually selectTitleMenuItem calls loadGame(), if true, we need to transition.
+        // Let's call performWarp to load map and place player.
+
+        performWarp(currentMapId, player.x, player.y);
+
         return true;
     } catch (e) {
+        console.error("Load failed", e);
         return false;
     }
 }

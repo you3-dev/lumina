@@ -74,7 +74,8 @@ export const partyData = {
     moveDelay: 120,
     gold: 0,
     inventory: [],
-    vehicle: 'none' // none, ship
+    vehicle: 'none', // none, ship
+    oxygen: 100
 };
 
 // 互換性維持のためのプロキシ設定
