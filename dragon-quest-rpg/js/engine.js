@@ -5,7 +5,8 @@ import {
     player, setCurrentMap, setCurrentMapId, setCurrentMapPath,
     setCameraX, setCameraY, stepsSinceLastBattle, setStepsSinceLastBattle,
     pushedIceBlocks, dialog, titleMenuIndex, setTitleMenuIndex,
-    hasSaveData, setHasSaveData, gameProgress, hasItem, addItem, getStoryFlag
+    hasSaveData, setHasSaveData, gameProgress, hasItem, addItem, getStoryFlag,
+    inn, church, shop
 } from './state.js';
 import { MODE, WALKABLE_TILES, TILE } from './constants.js';
 import { expTable, spells, items } from './data.js';
@@ -469,15 +470,44 @@ export function advanceDialog() {
 
 export function closeDialog() {
     const pendingBossId = dialog.pendingBattleMonsterId;
+    const pendingAction = dialog.pendingAction;
     dialog.active = false;
     dialog.messages = [];
     dialog.currentIndex = 0;
     dialog.displayedText = '';
     dialog.pendingBattleMonsterId = null;
+    dialog.pendingAction = null;
 
     if (pendingBossId) {
         startBattle(pendingBossId);
+    } else if (pendingAction) {
+        if (pendingAction.type === 'shop') {
+            openShop(pendingAction.id);
+        } else if (pendingAction.type === 'inn') {
+            openInn(pendingAction.cost || 10);
+        } else if (pendingAction.type === 'church') {
+            openChurch();
+        }
     }
+}
+
+export function openShop(shopId) {
+    shop.active = true;
+    shop.id = shopId;
+    shop.phase = 'buy';
+    setGameMode(MODE.SHOP);
+}
+
+export function openInn(cost) {
+    inn.active = true;
+    inn.cost = cost;
+    setGameMode(MODE.INN);
+}
+
+export function openChurch() {
+    church.active = true;
+    church.phase = 'menu';
+    setGameMode(MODE.CHURCH);
 }
 
 export function getFrontPosition() {
@@ -550,6 +580,14 @@ export function interact() {
 
         if ((npc.isBoss || npc.type === 'boss') && npc.bossId) {
             dialog.pendingBattleMonsterId = npc.bossId;
+        }
+
+        if (npc.type === 'shop') {
+            dialog.pendingAction = { type: 'shop', id: npc.shopId };
+        } else if (npc.type === 'inn') {
+            dialog.pendingAction = { type: 'inn', cost: npc.innCost || 10 };
+        } else if (npc.type === 'church') {
+            dialog.pendingAction = { type: 'church' };
         }
 
         startDialog(messages);
@@ -636,7 +674,8 @@ export function saveGame() {
             gold: partyData.gold,
             inventory: partyData.inventory,
             vehicle: partyData.vehicle,
-            oxygen: partyData.oxygen
+            oxygen: partyData.oxygen,
+            totalSteps: partyData.totalSteps
         },
         currentMapId,
         gameProgress
@@ -658,6 +697,7 @@ export function loadGame() {
         // Ensure default values if old save
         if (!partyData.vehicle) partyData.vehicle = 'none';
         if (typeof partyData.oxygen === 'undefined') partyData.oxygen = 100;
+        if (typeof partyData.totalSteps === 'undefined') partyData.totalSteps = 0;
 
         // Restore Map Info
         setCurrentMapId(data.currentMapId || 'field');

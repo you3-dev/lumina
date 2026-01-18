@@ -4,7 +4,8 @@
 import { MODE } from './constants.js';
 import {
     gameMode, setGameMode, isTransitioning, menu, dialog, battle,
-    inn, church, shop, partyData, player, party, currentMap
+    inn, church, shop, partyData, player, party, currentMap,
+    titleMenuIndex, setTitleMenuIndex
 } from './state.js';
 import { SE, initAudio } from './sound.js';
 import {
@@ -47,10 +48,10 @@ function handleKeyDown(e) {
 
     if (gameMode === MODE.TITLE) {
         if (e.key === 'ArrowUp' || e.key === 'w') {
-            setTitleMenuIndex(Math.max(0, titleMenuIndex - 1));
+            setTitleMenuIndex(Math.max(0, (titleMenuIndex || 0) - 1));
             updateTitleMenuSelection();
         } else if (e.key === 'ArrowDown' || e.key === 's') {
-            setTitleMenuIndex(Math.min(1, titleMenuIndex + 1));
+            setTitleMenuIndex(Math.min(1, (titleMenuIndex || 0) + 1));
             updateTitleMenuSelection();
         } else if (e.key === 'Enter' || e.key === ' ') {
             selectTitleMenuItem();
@@ -70,6 +71,14 @@ function handleKeyDown(e) {
             } else if (e.key === 'm') {
                 setGameMode(MODE.MAP_VIEW);
             }
+        }
+    } else if (gameMode === MODE.SHOP || gameMode === MODE.INN || gameMode === MODE.CHURCH) {
+        if (e.key === 'x' || e.key === 'Escape') {
+            shop.active = false;
+            inn.active = false;
+            church.active = false;
+            setGameMode(MODE.FIELD);
+            SE.cancel();
         }
     }
 }

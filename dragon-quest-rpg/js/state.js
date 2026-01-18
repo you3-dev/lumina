@@ -75,7 +75,8 @@ export const partyData = {
     gold: 0,
     inventory: [],
     vehicle: 'none', // none, ship
-    oxygen: 100
+    oxygen: 100,
+    totalSteps: 0
 };
 
 // 互換性維持のためのプロキシ設定
