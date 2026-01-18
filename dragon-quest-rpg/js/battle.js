@@ -1,7 +1,7 @@
 /**
  * Battle System
  */
-import { battle, party, gameMode, setGameMode } from './state.js';
+import { battle, party, partyData, gameMode, setGameMode, gameProgress } from './state.js';
 import { MODE } from './constants.js';
 import { monsters, encounterTables, encounterTableFallback } from './data.js';
 import { SE, BGM } from './sound.js';
@@ -63,9 +63,35 @@ export function checkBattleEnd() {
 
 export function battleWin() {
     battle.phase = 'result';
-    // ... rewards ...
+
+    // Check for boss defeat
+    const boss = battle.enemies.find(e => e.isBoss);
+    if (boss && boss.name === 'リヴァイアサン') { // Check by name or add ID to monster data
+        gameProgress.bossDefeated.leviathan = true;
+        // saveGame(); // call save via engine or app? For now just set flag.
+    }
+
+    // Calc Exp & Gold
+    let totalExp = 0;
+    let totalGold = 0;
+    battle.enemies.forEach(e => {
+        totalExp += e.exp;
+        totalGold += e.gold;
+    });
+
+    party.forEach(member => {
+        if (member.hp > 0) {
+            member.exp += totalExp;
+            checkLevelUp(member);
+        }
+    });
+    partyData.gold += totalGold;
+
+    battle.messages.push(`魔物たちをやっつけた！`);
+    battle.messages.push(`${totalExp} ポイントの経験値をかくとく！`);
+    battle.messages.push(`${totalGold} ゴールドをてにいれた！`);
+
     BGM.play('victory');
-    // ... level up check ...
 }
 
 export function battleLose() {

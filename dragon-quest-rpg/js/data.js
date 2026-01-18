@@ -114,7 +114,11 @@ export const items = {
     91: { id: 91, name: 'ほのおのペンダント', type: 'accessory', value: 0, price: 0, equippable: ['hero', 'mage', 'seer', 'iceKnight'], spellBoost: { fire: 1.2 } },
     92: { id: 92, name: 'じょおうのティアラ', type: 'accessory', value: 0, price: 0, equippable: ['hero', 'mage', 'seer', 'iceKnight'], mpBoost: 30 },
     95: { id: 95, name: '太陽の炎', description: '女王を救う力を持つ聖なる炎', type: 'quest', price: 0 },
-    96: { id: 96, name: '極光の宝珠', description: '海を渡る力を持つ宝珠', type: 'quest', price: 0 }
+    96: { id: 96, name: '極光の宝珠', description: '海を渡る力を持つ宝珠', type: 'quest', price: 0 },
+    // Area 5 Items
+    120: { id: 120, name: '人魚の鱗', description: '水中で呼吸できるようになる', type: 'quest', price: 0 },
+    121: { id: 121, name: '船の呼び笛', description: '海に向かって吹くと船が現れる', type: 'quest', price: 0 },
+    130: { id: 130, name: 'トライデント', type: 'weapon', value: 95, price: 15000, equippable: ['hero', 'iceKnight'], element: 'ice' }
 };
 
 export const shopItemsByArea = {
@@ -189,7 +193,13 @@ export const monsters = {
     crystalDragon: { name: 'クリスタルドラゴン', sprite: '🐲', level: 45, hp: 300, atk: 100, def: 70, speed: 18, exp: 500, gold: 300, skills: ['attack', 'iceBreath', 'hyados'], resistances: { ice: 0, fire: 1.5, light: 0.5 } },
     iceGolem: { name: 'こおりのゴーレム', sprite: '🗿', level: 40, hp: 800, atk: 75, def: 60, speed: 8, exp: 1500, gold: 900, isBoss: true, skills: ['attack', 'iceBreath', 'strongAttack'], resistances: { ice: 0, fire: 2.0, lightning: 1.5, sleep: 0, poison: 0 } },
     iceQueen: { name: 'こおりのじょおう', sprite: '👸', level: 48, hp: 1500, atk: 95, def: 70, speed: 20, exp: 3000, gold: 1500, isBoss: true, actions: 2, skills: ['attack', 'hyados', 'iceBreath', 'absoluteZero', 'behoma'], resistances: { ice: 0, fire: 2.0, light: 0.5, sleep: 0, poison: 0 } },
-    frostWyrm: { name: 'ひょうりゅうフロストヴルム', sprite: '🐲', level: 52, hp: 1800, atk: 140, def: 75, speed: 28, exp: 5000, gold: 3000, isBoss: true, actions: 2, skills: ['attack', 'strongAttack', 'absoluteZero', 'frostBite', 'iceBreath', 'behoma'], resistances: { ice: 0, fire: 2.0, light: 0.5, sleep: 0, poison: 0, blind: 0 } }
+    frostWyrm: { name: 'ひょうりゅうフロストヴルム', sprite: '🐲', level: 52, hp: 1800, atk: 140, def: 75, speed: 28, exp: 5000, gold: 3000, isBoss: true, actions: 2, skills: ['attack', 'strongAttack', 'absoluteZero', 'frostBite', 'iceBreath', 'behoma'], resistances: { ice: 0, fire: 2.0, light: 0.5, sleep: 0, poison: 0, blind: 0 } },
+    // Area 5 Monsters
+    siren: { name: 'セイレーン', sprite: '🧜‍♀️', level: 40, hp: 400, atk: 60, def: 40, speed: 20, exp: 800, gold: 400, skills: ['attack', 'hyado', 'rariho'], resistances: { fire: 0.5, ice: 0.5 } },
+    seaSerpent: { name: 'シーサーペント', sprite: '🐍', level: 42, hp: 600, atk: 80, def: 50, speed: 18, exp: 1200, gold: 600, skills: ['attack', 'strongAttack'], resistances: { ice: 0.5 } },
+    deepDiver: { name: 'ディープダイバー', sprite: '🤿', level: 45, hp: 550, atk: 85, def: 60, speed: 15, exp: 1100, gold: 500, skills: ['attack', 'iceSlash'], resistances: { ice: 1.5, fire: 0.5 } },
+    kraken: { name: 'クラーケン', sprite: '🦑', level: 50, hp: 1200, atk: 110, def: 70, speed: 10, exp: 2500, gold: 1200, skills: ['attack', 'strongAttack', 'howl'], resistances: { water: 0, fire: 1.5, ice: 1.5 } },
+    leviathan: { name: 'リヴァイアサン', sprite: '🐋', level: 60, hp: 3000, atk: 150, def: 90, speed: 25, exp: 8000, gold: 5000, isBoss: true, actions: 2, skills: ['attack', 'absoluteZero', 'strongAttack', 'behoma', 'howl'], resistances: { ice: 0, water: 0, fire: 1.5, light: 0.8, sleep: 0, poison: 0, blind: 0 } }
 };
 
 export const bossSkills = {
@@ -237,7 +247,10 @@ export const encounterTables = {
     area4_field: ['snowSlime', 'snowSlime', 'iceBat', 'snowWolf', 'snowWolf'],
     area4_cave: ['snowSlime', 'frozenKnight', 'iceElemental', 'iceBat'],
     area4_temple: ['iceElemental', 'iceElemental', 'frostGiant', 'frozenKnight'],
-    area4_castle: ['frozenKnight', 'frostGiant', 'crystalDragon', 'crystalDragon']
+    area4_castle: ['frozenKnight', 'frostGiant', 'crystalDragon', 'crystalDragon'],
+    area5_ocean: ['siren', 'seaSerpent', 'siren', 'kraken'],
+    area5_underwater: ['deepDiver', 'seaSerpent', 'kraken', 'kraken'],
+    area5_boss: ['leviathan']
 };
 
 export const encounterTableFallback = {
