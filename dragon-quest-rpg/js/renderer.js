@@ -258,6 +258,17 @@ export function drawTileDecoration(tile, x, y, col, row) {
         ctx.strokeStyle = isPressed ? '#4a8' : '#888';
         ctx.lineWidth = 2;
         ctx.stroke();
+    } else if (tile === TILE.BUBBLE) {
+        ctx.font = `${tileSize * 0.6}px serif`;
+        ctx.fillText('🫧', x + tileSize / 2, y + tileSize / 2);
+    } else if (tile === TILE.CURRENT_UP || tile === TILE.CURRENT_DOWN || tile === TILE.CURRENT_LEFT || tile === TILE.CURRENT_RIGHT) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.font = `${tileSize * 0.5}px serif`;
+        let arrow = '↑';
+        if (tile === TILE.CURRENT_DOWN) arrow = '↓';
+        if (tile === TILE.CURRENT_LEFT) arrow = '←';
+        if (tile === TILE.CURRENT_RIGHT) arrow = '→';
+        ctx.fillText(arrow, x + tileSize / 2, y + tileSize / 2);
     }
     ctx.restore();
 }

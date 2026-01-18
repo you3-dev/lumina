@@ -24,6 +24,15 @@ data[107 * cols + 100] = 30; // Port tile at South Edge (100, 107)
 drawIsland(43, 28, 6, 6);
 data[33 * cols + 45] = 30; // Port at South Edge (45, 33)
 
+// Add Currents around Coral Island to make it a puzzle
+for (let x = 40; x < 52; x++) {
+    data[35 * cols + x] = 34; // CURRENT_DOWN: push south, away from island
+}
+for (let y = 25; y < 35; y++) {
+    data[y * cols + 40] = 35; // CURRENT_LEFT: push west
+    data[y * cols + 52] = 36; // CURRENT_RIGHT: push east
+}
+
 // 3. Prison Isle (South East)
 // Range: y=165..170 (height 6)
 drawIsland(158, 165, 6, 6);
@@ -71,4 +80,4 @@ const map = {
 };
 
 fs.writeFileSync('maps/area5_ocean.json', JSON.stringify(map));
-console.log('Regenerated maps/area5_ocean.json');
+console.log('Regenerated maps/area5_ocean.json with currents');

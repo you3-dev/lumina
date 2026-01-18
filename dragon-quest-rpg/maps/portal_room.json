@@ -151,9 +151,9 @@
     {
       "x": 7,
       "y": 4,
-      "targetMap": "maps/area5_ocean.json",
-      "targetX": 100,
-      "targetY": 100,
+      "targetMap": "maps/town_portia.json",
+      "targetX": 15,
+      "targetY": 29,
       "requiresFlag": "area4Completed"
     }
   ],

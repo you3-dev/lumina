@@ -1,7 +1,7 @@
 /**
  * Battle System
  */
-import { battle, party, partyData, gameMode, setGameMode, gameProgress } from './state.js';
+import { battle, party, partyData, gameMode, setGameMode, gameProgress, currentMap } from './state.js';
 import { MODE } from './constants.js';
 import { monsters, encounterTables, encounterTableFallback } from './data.js';
 import { SE, BGM } from './sound.js';
@@ -106,4 +106,12 @@ export function endBattle(result) {
     setGameMode(MODE.FIELD);
     // ... reset state ...
     BGM.play('field'); // simplified
+}
+
+export function canUseSpellsInCurrentMap() {
+    if (!currentMap) return true;
+    if (currentMap.mapId === 'prison_isle' || currentMap.sealSpells) {
+        return false;
+    }
+    return true;
 }

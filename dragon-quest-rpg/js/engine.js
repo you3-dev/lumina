@@ -243,7 +243,8 @@ export function isIceBlockBlocking(x, y) {
 export function updatePlayerMovement(delta) {
     if (!partyData.moving) return;
 
-    partyData.moveProgress += delta * 0.01; // speed
+    const speedMultiplier = partyData.vehicle === 'ship' ? 1.5 : 1.0;
+    partyData.moveProgress += delta * 0.01 * speedMultiplier; // speed
     if (partyData.moveProgress >= 1) {
         // Normalize coordinates if looping
         const mapCols = currentMap.cols || currentMap.width || 0;
@@ -262,12 +263,20 @@ export function updatePlayerMovement(delta) {
 
         checkWarp(player.x, player.y);
         checkOxygen();
+        checkCurrent();
         // checkEncounters...
     }
     updateCamera();
 }
 
 function checkOxygen() {
+    const tile = getTileAt(player.x, player.y);
+    if (tile === TILE.BUBBLE) {
+        partyData.oxygen = 100;
+        SE.confirm(); // Recovery sound
+        return;
+    }
+
     if (currentMap.isUnderwater) {
         partyData.oxygen = Math.max(0, partyData.oxygen - 1);
         if (partyData.oxygen === 0) {
@@ -297,6 +306,40 @@ export function checkWarp(x, y) {
 
         performWarp(warp.targetMap, warp.targetX, warp.targetY);
     }
+}
+
+export function checkCurrent() {
+    const tile = getTileAt(player.x, player.y);
+    let dx = 0, dy = 0;
+    if (tile === TILE.CURRENT_UP) dy = -1;
+    else if (tile === TILE.CURRENT_DOWN) dy = 1;
+    else if (tile === TILE.CURRENT_LEFT) dx = -1;
+    else if (tile === TILE.CURRENT_RIGHT) dx = 1;
+
+    if (dx !== 0 || dy !== 0) {
+        const nextX = player.x + dx;
+        const nextY = player.y + dy;
+        if (canMoveTo(nextX, nextY)) {
+            // Automatic movement like ice floor
+            partyData.moving = true;
+            partyData.nextX = nextX;
+            partyData.nextY = nextY;
+            partyData.moveProgress = 0;
+        }
+    }
+}
+
+export function getTileAt(x, y) {
+    if (!currentMap) return null;
+    const mapCols = currentMap.cols || currentMap.width || 0;
+    const mapRows = currentMap.rows || currentMap.height || 0;
+    let cx = x, cy = y;
+    if (currentMap.isLooping) {
+        cx = (x % mapCols + mapCols) % mapCols;
+        cy = (y % mapRows + mapRows) % mapRows;
+    }
+    if (Array.isArray(currentMap.data[0])) return currentMap.data[cy][cx];
+    return currentMap.data[cy * mapCols + cx];
 }
 
 export function checkInteractionWarp(x, y) {
@@ -432,15 +475,27 @@ export function interact() {
 
         // Area 5 Transition Event (Snow Elder)
         if (npc.id === 'snow_elder' && gameProgress.bossDefeated.iceQueen) {
+            messages = [
+                "氷の女王を倒したか！実に見事な戦いぶりであった。",
+                "しかし、世界にはまだ未知なる脅威がある。",
+                "城の「時空の間」から、北の海へと繋がる扉が開かれた。",
+                "まずはそこへ向かい、「港町ポルティア」を目指すのじゃ。"
+            ];
+            gameProgress.storyFlags.area4Completed = true;
+        }
+
+        // Area 5 Ship Event (Portia Mayor)
+        if (npc.id === 'portia_mayor') {
             if (!hasItem(121)) { // ship_key
                 addItem(121);
                 messages = [
-                    "氷の女王を倒したか！実に見事な戦いぶりであった。",
-                    "お主のような勇者にこそ、これを託すべきかもしれん。",
-                    "『船の呼び笛』をさずけよう。海に向かって吹けば、船を呼ぶことができる。",
-                    "時空の間から、次なる大陸『蒼茫の海』へ渡る道が開かれたはずじゃ。"
+                    "おお、旅の方か。",
+                    "世界を救うために旅をしておるとな？感心なことじゃ。",
+                    "それなら、わしの船「リヴァイアサン号」を使うといい。",
+                    "この『船の呼び笛』を持っていれば、外海からいつでも船を呼べるぞ。",
+                    "北の桟橋から海へ出られるはずじゃ。"
                 ];
-                gameProgress.storyFlags.area4Completed = true;
+                SE.fanfare();
             }
         }
 

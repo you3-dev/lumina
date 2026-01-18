@@ -49,7 +49,12 @@ export const TILE = {
     ICE_SWITCH: 28,       // 圧力スイッチ
     ICE_BLOCK: 29,        // 押せる氷ブロック
     PORT: 30,             // 港
-    SHALLOW: 31           // 浅瀬
+    SHALLOW: 31,          // 浅瀬
+    BUBBLE: 32,           // 酸素回復
+    CURRENT_UP: 33,       // 潮流（北）
+    CURRENT_DOWN: 34,     // 潮流（南）
+    CURRENT_LEFT: 35,     // 潮流（西）
+    CURRENT_RIGHT: 36     // 潮流（東）
 };
 
 export const MAP_TILE_COLORS = {
@@ -112,7 +117,12 @@ export const DEFAULT_TILE_COLORS = {
     [TILE.ICE_SWITCH]: '#7898b8',      // スイッチ（やや暗い水色）
     [TILE.ICE_BLOCK]: '#6888a8',       // 氷ブロック（暗めの水色）
     [TILE.PORT]: '#8b4513',            // 港（茶色）
-    [TILE.SHALLOW]: '#4a90e2'          // 浅瀬（明るい青）
+    [TILE.SHALLOW]: '#4a90e2',         // 浅瀬（明るい青）
+    [TILE.BUBBLE]: '#e0ffff',          // 酸素回復（シアン白）
+    [TILE.CURRENT_UP]: '#1a4a7a',      // 潮流
+    [TILE.CURRENT_DOWN]: '#1a4a7a',
+    [TILE.CURRENT_LEFT]: '#1a4a7a',
+    [TILE.CURRENT_RIGHT]: '#1a4a7a'
 };
 
 export const WALKABLE_TILES = [
@@ -121,7 +131,8 @@ export const WALKABLE_TILES = [
     TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND, TILE.UNDERWORLD_FLOOR,
     TILE.WEDGE_ALTAR, TILE.UNDERWORLD_TOWN, TILE.ICE_FLOOR, TILE.SNOW,
     TILE.ICE_CASTLE_FLOOR, TILE.TORCH, TILE.ICE_ALTAR, TILE.ICE_SWITCH, TILE.ICE_HOLE,
-    TILE.PORT, TILE.SHALLOW
+    TILE.PORT, TILE.SHALLOW, TILE.BUBBLE,
+    TILE.CURRENT_UP, TILE.CURRENT_DOWN, TILE.CURRENT_LEFT, TILE.CURRENT_RIGHT
 ];
 
 export const ENCOUNTER_TILES = [
