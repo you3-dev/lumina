@@ -146,10 +146,42 @@ for (let i = 0; i < 10; i++) {
     atlantis.data[ry * 40 + rx] = 32; // TILE.BUBBLE
 }
 
+// --- 5. Gigant Interior ---
+const gigant = {
+    mapId: "gigant_interior",
+    name: "巨獣ギガントの体内",
+    cols: 25,
+    rows: 25,
+    tileSize: 32,
+    isOutdoor: false,
+    type: "dungeon",
+    data: new Array(625).fill(6), // Floor
+    warps: [
+        { x: 12, y: 24, targetMap: "maps/area5_ocean.json", targetX: 20, targetY: 100, type: "embark" }
+    ],
+    npcs: [
+        { id: "gigant_spirit", x: 12, y: 5, sprite: "👁️", type: "villager", messages: ["ここはギガントの腹の中さ。お前さんも飲み込まれたのかい？"] }
+    ],
+    chests: [
+        { id: "gigant_chest1", x: 22, y: 2, itemId: 124, itemName: "緑の涙", isOpened: false }
+    ],
+    encounterTable: "area5_underwater",
+    encounterRate: 0.12
+};
+// Add walls/obstacles to look like a beast's guts
+for (let i = 0; i < gigant.data.length; i++) {
+    const x = i % 25;
+    const y = Math.floor(i / 25);
+    if (x === 0 || x === 24 || y === 0 || y === 24) gigant.data[i] = 7;
+    // Random "flesh" walls
+    if ((x + y) % 7 === 0 && x > 5 && x < 20) gigant.data[i] = 7;
+}
+
 // Write Files
 fs.writeFileSync('maps/coral_village.json', JSON.stringify(coralVillage));
 fs.writeFileSync('maps/coral_maze.json', JSON.stringify(coralMaze));
 fs.writeFileSync('maps/prison_isle.json', JSON.stringify(prisonIsle));
 fs.writeFileSync('maps/atlantis_ruins.json', JSON.stringify(atlantis));
+fs.writeFileSync('maps/gigant_interior.json', JSON.stringify(gigant));
 
 console.log('Regenerated sub-area maps with encounters.');

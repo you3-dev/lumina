@@ -15,12 +15,10 @@ function drawIsland(cx, cy, w, h) {
 }
 
 // 1. Portia Island (Center)
-// Range: y=103..107 (height 5)
 drawIsland(98, 103, 5, 5);
 data[107 * cols + 100] = 30; // Port tile at South Edge (100, 107)
 
 // 2. Coral Island (North West)
-// Range: y=28..33 (height 6)
 drawIsland(43, 28, 6, 6);
 data[33 * cols + 45] = 30; // Port at South Edge (45, 33)
 
@@ -34,11 +32,14 @@ for (let y = 25; y < 35; y++) {
 }
 
 // 3. Prison Isle (South East)
-// Range: y=165..170 (height 6)
 drawIsland(158, 165, 6, 6);
 data[170 * cols + 160] = 30; // Port at South Edge (160, 170)
 
-// 4. Atlantis (Center)
+// 4. Gigant Island (West)
+drawIsland(10, 95, 8, 8);
+data[103 * cols + 14] = 30; // Port at (14, 103)
+
+// 5. Atlantis (Center Whirlpool)
 data[100 * cols + 100] = 14;
 
 const map = {
@@ -53,7 +54,7 @@ const map = {
     npcs: [],
     chests: [],
     warps: [
-        // Landing at Portia (at Port Tile)
+        // Landing at Portia
         {
             x: 100, y: 107,
             targetMap: "maps/town_portia.json",
@@ -71,13 +72,29 @@ const map = {
         {
             x: 160, y: 170,
             targetMap: "maps/prison_isle.json",
-            targetX: 20, targetY: 40,
+            targetX: 15, targetY: 28,
             type: "landing"
+        },
+        // Landing at Gigant
+        {
+            x: 14, y: 103,
+            targetMap: "maps/gigant_interior.json",
+            targetX: 12, targetY: 23,
+            type: "landing"
+        },
+        // Entering Atlantis (Whirlpool)
+        {
+            x: 100, y: 100,
+            targetMap: "maps/atlantis_ruins.json",
+            targetX: 20, targetY: 37,
+            type: "landing",
+            requiresFlag: "allTearsObtained" // Special logic in engine for this
         }
     ],
+    encounterTable: "area5_ocean",
     encounterRate: 0.05,
     bgm: "field"
 };
 
 fs.writeFileSync('maps/area5_ocean.json', JSON.stringify(map));
-console.log('Regenerated maps/area5_ocean.json with currents');
+console.log('Regenerated maps/area5_ocean.json with Gigant and Atlantis');

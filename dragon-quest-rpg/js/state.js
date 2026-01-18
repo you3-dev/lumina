@@ -126,7 +126,10 @@ export const gameProgress = {
         wedgeGuardian_west: false,
         libraryGuardian: false,
         iceGolem: false,
-        iceQueen: false
+        iceQueen: false,
+        siren: false,
+        kraken: false,
+        leviathan: false
     },
     storyFlags: {
         reportedMidBossDefeat: false,
@@ -153,7 +156,11 @@ export const gameProgress = {
         iceQueenDefeated: false,
         frostWyrmDefeated: false,
         area4Completed: false,
-        auroraOrbObtained: false
+        auroraOrbObtained: false,
+        tearOfBlueObtained: false,
+        tearOfRedObtained: false,
+        tearOfGreenObtained: false,
+        atlantisBarrierCleared: false
     },
     quests: {
         waterShortage: { started: false, bossDefeated: false, itemObtained: false, completed: false },
@@ -330,7 +337,14 @@ export const ruraSelection = {
     locations: []
 };
 
-export function getStoryFlag(flag) { return gameProgress.storyFlags[flag]; }
+export function getStoryFlag(flag) {
+    if (flag === 'allTearsObtained') {
+        return gameProgress.storyFlags.tearOfBlueObtained &&
+            gameProgress.storyFlags.tearOfRedObtained &&
+            gameProgress.storyFlags.tearOfGreenObtained;
+    }
+    return gameProgress.storyFlags[flag];
+}
 export function isBossDefeated(boss) { return gameProgress.bossDefeated[boss]; }
 
 setupPlayerProxy();

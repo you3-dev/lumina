@@ -5,7 +5,7 @@ import {
     player, setCurrentMap, setCurrentMapId, setCurrentMapPath,
     setCameraX, setCameraY, stepsSinceLastBattle, setStepsSinceLastBattle,
     pushedIceBlocks, dialog, titleMenuIndex, setTitleMenuIndex,
-    hasSaveData, setHasSaveData, gameProgress, hasItem, addItem
+    hasSaveData, setHasSaveData, gameProgress, hasItem, addItem, getStoryFlag
 } from './state.js';
 import { MODE, WALKABLE_TILES, TILE } from './constants.js';
 import { expTable, spells, items } from './data.js';
@@ -264,7 +264,7 @@ export function updatePlayerMovement(delta) {
         checkWarp(player.x, player.y);
         checkOxygen();
         checkCurrent();
-        // checkEncounters...
+        updateGigant();
     }
     updateCamera();
 }
@@ -294,13 +294,8 @@ export function checkWarp(x, y) {
     const warp = currentMap.warps.find(w => w.x === x && w.y === y);
     // Standard step warps (no type or type='step')
     if (warp && (!warp.type || warp.type === 'step')) {
-        // Existing check for flags if any
-        if (warp.requiresFlag && !gameProgress.bossDefeated[warp.requiresFlag] && !gameProgress.storyFlags[warp.requiresFlag]) {
-            // Block specific warps if flag missing (optional)
-            return;
-        }
-        // Area 5 check: if requiresFlag 'area4Completed'
-        if (warp.requiresFlag === 'area4Completed' && !gameProgress.storyFlags.area4Completed) {
+        // Check for Flag Requirement
+        if (warp.requiresFlag && !getStoryFlag(warp.requiresFlag)) {
             return;
         }
 
@@ -350,9 +345,18 @@ export function checkInteractionWarp(x, y) {
         // Landing: Ship -> Land Map
         if (warp.type === 'landing') {
             if (partyData.vehicle === 'ship') {
+                // Check for Flag Requirement
+                if (warp.requiresFlag && !getStoryFlag(warp.requiresFlag)) {
+                    if (warp.requiresFlag === 'allTearsObtained') {
+                        startDialog([
+                            "渦の中へ入ろうとしたが、強力な結界に弾き返された！",
+                            "３つの「海神の涙」が必要なようだ……。"
+                        ]);
+                    }
+                    return false;
+                }
                 SE.confirm();
                 partyData.vehicle = 'none';
-                // startDialog(["上陸した！"]); // Dialog might be skipped by warp redraw, rely on SE
                 performWarp(warp.targetMap, warp.targetX, warp.targetY);
                 return true;
             }
@@ -370,6 +374,51 @@ export function checkInteractionWarp(x, y) {
         }
     }
     return false;
+}
+
+export function updateGigant() {
+    if (!currentMap || currentMap.mapId !== 'area5_ocean') return;
+
+    // Gigant moves every 50 steps
+    // Total steps can be estimated from state.
+    const steps = stepsSinceLastBattle; // This resets on battle, let's use something more persistent?
+    // Actually, let's use a simpler heuristic: frame-based or just persistent steps.
+    // For now, let's just use gameProgress.storyFlags.gigantPos or similar.
+
+    // Simple implementation: Change Gigant warp location based on steps
+    const gigantWarp = currentMap.warps.find(w => w.targetMap === 'maps/gigant_interior.json');
+    if (!gigantWarp) return;
+
+    // Positions: (14, 103), (180, 20), (50, 150)
+    const positions = [
+        { x: 14, y: 103 },
+        { x: 180, y: 20 },
+        { x: 50, y: 150 }
+    ];
+
+    // We need a persistent step counter. Let's add one to partyData if not exists.
+    if (partyData.totalSteps === undefined) partyData.totalSteps = 0;
+    partyData.totalSteps++;
+
+    const posIndex = Math.floor(partyData.totalSteps / 100) % positions.length;
+    const targetPos = positions[posIndex];
+
+    if (gigantWarp.x !== targetPos.x || gigantWarp.y !== targetPos.y) {
+        // Remove old port tile, add new one
+        const oldX = gigantWarp.x;
+        const oldY = gigantWarp.y;
+
+        // Find 1D index
+        const cols = currentMap.cols;
+        currentMap.data[oldY * cols + oldX] = 5; // SEA
+
+        // Update warp
+        gigantWarp.x = targetPos.x;
+        gigantWarp.y = targetPos.y;
+
+        // Set new port tile
+        currentMap.data[targetPos.y * cols + targetPos.x] = 30; // PORT
+    }
 }
 
 export function updateNPCs(delta) {

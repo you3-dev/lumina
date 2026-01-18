@@ -1,7 +1,7 @@
 /**
  * Battle System
  */
-import { battle, party, partyData, gameMode, setGameMode, gameProgress, currentMap } from './state.js';
+import { battle, party, partyData, gameMode, setGameMode, gameProgress, currentMap, addItem } from './state.js';
 import { MODE } from './constants.js';
 import { monsters, encounterTables, encounterTableFallback } from './data.js';
 import { SE, BGM } from './sound.js';
@@ -70,6 +70,16 @@ export function battleWin() {
     const boss = battle.enemies.find(e => e.isBoss);
     if (boss && boss.id && gameProgress.bossDefeated.hasOwnProperty(boss.id)) {
         gameProgress.bossDefeated[boss.id] = true;
+        // Area 5 Specific Drops
+        if (boss.id === 'siren') {
+            addItem(122);
+            gameProgress.storyFlags.tearOfBlueObtained = true;
+            battle.messages.push('青の涙をてにいれた！');
+        } else if (boss.id === 'kraken') {
+            addItem(123);
+            gameProgress.storyFlags.tearOfRedObtained = true;
+            battle.messages.push('赤の涙をてにいれた！');
+        }
     }
 
     // Calc Exp & Gold
