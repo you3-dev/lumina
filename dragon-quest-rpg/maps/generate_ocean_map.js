@@ -42,6 +42,10 @@ data[103 * cols + 14] = 30; // Port at (14, 103)
 // 5. Atlantis (Center Whirlpool)
 data[100 * cols + 100] = 14;
 
+// 6. Sea God's Altar (North of Portia)
+drawIsland(97, 75, 7, 7);
+data[82 * cols + 100] = 30; // Port at (100, 82)
+
 const map = {
     mapId: "area5_ocean",
     name: "広大なる外海",
@@ -89,6 +93,13 @@ const map = {
             targetX: 20, targetY: 37,
             type: "landing",
             requiresFlag: "allTearsObtained" // Special logic in engine for this
+        },
+        // Landing at Sea God's Altar
+        {
+            x: 100, y: 82,
+            targetMap: "maps/sea_god_altar.json",
+            targetX: 7, targetY: 13,
+            type: "landing"
         }
     ],
     encounterTable: "area5_ocean",

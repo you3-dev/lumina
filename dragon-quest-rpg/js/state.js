@@ -130,7 +130,8 @@ export const gameProgress = {
         iceQueen: false,
         siren: false,
         kraken: false,
-        leviathan: false
+        leviathan: false,
+        albida: false
     },
     storyFlags: {
         reportedMidBossDefeat: false,
@@ -161,7 +162,9 @@ export const gameProgress = {
         tearOfBlueObtained: false,
         tearOfRedObtained: false,
         tearOfGreenObtained: false,
-        atlantisBarrierCleared: false
+        atlantisBarrierCleared: false,
+        allTearsObtained: false,
+        area5Completed: false
     },
     quests: {
         waterShortage: { started: false, bossDefeated: false, itemObtained: false, completed: false },

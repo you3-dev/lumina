@@ -54,7 +54,8 @@ export const TILE = {
     CURRENT_UP: 33,       // 潮流（北）
     CURRENT_DOWN: 34,     // 潮流（南）
     CURRENT_LEFT: 35,     // 潮流（西）
-    CURRENT_RIGHT: 36     // 潮流（東）
+    CURRENT_RIGHT: 36,    // 潮流（東）
+    ACID: 37              // 胃液（酸）
 };
 
 export const MAP_TILE_COLORS = {
@@ -122,7 +123,8 @@ export const DEFAULT_TILE_COLORS = {
     [TILE.CURRENT_UP]: '#1a4a7a',      // 潮流
     [TILE.CURRENT_DOWN]: '#1a4a7a',
     [TILE.CURRENT_LEFT]: '#1a4a7a',
-    [TILE.CURRENT_RIGHT]: '#1a4a7a'
+    [TILE.CURRENT_RIGHT]: '#1a4a7a',
+    [TILE.ACID]: '#7a1a4a'
 };
 
 export const WALKABLE_TILES = [
@@ -132,7 +134,8 @@ export const WALKABLE_TILES = [
     TILE.WEDGE_ALTAR, TILE.UNDERWORLD_TOWN, TILE.ICE_FLOOR, TILE.SNOW,
     TILE.ICE_CASTLE_FLOOR, TILE.TORCH, TILE.ICE_ALTAR, TILE.ICE_SWITCH, TILE.ICE_HOLE,
     TILE.PORT, TILE.SHALLOW, TILE.BUBBLE,
-    TILE.CURRENT_UP, TILE.CURRENT_DOWN, TILE.CURRENT_LEFT, TILE.CURRENT_RIGHT
+    TILE.CURRENT_UP, TILE.CURRENT_DOWN, TILE.CURRENT_LEFT, TILE.CURRENT_RIGHT,
+    TILE.ACID
 ];
 
 export const ENCOUNTER_TILES = [

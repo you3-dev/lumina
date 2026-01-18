@@ -13,6 +13,7 @@ import { setupInputs, handleInput } from './input.js';
 import { performWarp, updateCamera, updatePlayerMovement, updateNPCs } from './engine.js';
 import * as renderer from './renderer.js';
 import { updateSoundToggleIcon } from './sound.js';
+import { updateBattle } from './battle.js';
 
 import {
     setCanvasWidth, setCanvasHeight, setTileSize, setCameraX, setCameraY,
@@ -62,6 +63,8 @@ function update(deltaTime) {
         handleInput();
         updatePlayerMovement(deltaTime);
         updateNPCs(deltaTime);
+    } else if (gameMode === MODE.BATTLE) {
+        updateBattle(deltaTime);
     }
     // Battle update, transition update, etc.
 }

@@ -132,7 +132,8 @@ export const items = {
     301: { id: 301, name: '酸素缶', description: '水中での酸素を50回復する', type: 'oxygen', value: 50, price: 500 },
     302: { id: 302, name: '海の香草', description: '全状態異常を治療する', type: 'cure_all', price: 150 },
     400: { id: 400, name: '守りの種', description: '最大守備力を3上昇させる', type: 'stat_boost', stat: 'def', value: 3, price: 0 },
-    401: { id: 401, name: '100ゴールド', description: '金貨の入った袋', type: 'gold', value: 100, price: 0 }
+    401: { id: 401, name: '100ゴールド', description: '金貨の入った袋', type: 'gold', value: 100, price: 0 },
+    125: { id: 125, name: '天空の海図', description: '未知なる海域への道を示す図', type: 'quest', price: 0 }
 };
 
 export const shopItemsByArea = {
@@ -223,7 +224,9 @@ export const monsters = {
     siren: { name: 'セイレーン', sprite: '🧜‍♀️', level: 40, hp: 400, atk: 60, def: 40, speed: 20, exp: 800, gold: 400, skills: ['attack', 'hyado', 'rariho'], resistances: { fire: 0.5, ice: 0.5 } },
     deepDiver: { name: 'ディープダイバー', sprite: '🤿', level: 45, hp: 550, atk: 85, def: 60, speed: 15, exp: 1100, gold: 500, skills: ['attack', 'iceSlash'], resistances: { ice: 1.5, fire: 0.5 } },
     kraken: { name: 'クラーケン', sprite: '🦑', level: 50, hp: 1200, atk: 110, def: 70, speed: 10, exp: 2500, gold: 1200, skills: ['attack', 'strongAttack', 'howl', 'actions_2'], resistances: { fire: 1.5, ice: 1.5 }, isBoss: true },
-    leviathan: { name: 'リヴァイアサン', sprite: '🐋', level: 60, hp: 3000, atk: 150, def: 90, speed: 25, exp: 8000, gold: 5000, isBoss: true, actions: 2, skills: ['attack', 'absoluteZero', 'strongAttack', 'behoma', 'howl'], resistances: { ice: 0, water: 0, fire: 1.5, light: 0.8, sleep: 0, poison: 0, blind: 0 } }
+    leviathan: { name: 'リヴァイアサン', sprite: '🐋', level: 60, hp: 3000, atk: 150, def: 90, speed: 25, exp: 8000, gold: 5000, isBoss: true, actions: 2, skills: ['attack', 'absoluteZero', 'strongAttack', 'behoma', 'howl'], resistances: { ice: 0, water: 0, fire: 1.5, light: 0.8, sleep: 0, poison: 0, blind: 0 } },
+    albida: { name: '海賊貴族アルビダ', sprite: '🏴‍☠️', level: 50, hp: 2500, atk: 120, def: 80, speed: 45, exp: 2000, gold: 1000, isBoss: true, skills: ['attack', 'strongAttack', 'mahoton'], resistances: { fire: 0.8, ice: 1.2 } },
+    pirate_soldier: { name: '海賊兵', sprite: '⚔️', level: 45, hp: 400, atk: 85, def: 70, speed: 35, exp: 500, gold: 200 }
 };
 
 export const bossSkills = {

@@ -179,6 +179,8 @@ export function movePlayer(dir) {
     const nextY = player.y + dy;
 
     if (canMoveTo(nextX, nextY)) {
+        partyData.prevX = player.x;
+        partyData.prevY = player.y;
         partyData.moving = true;
         partyData.moveDir = dir;
         partyData.moveProgress = 0;
@@ -265,7 +267,11 @@ export function updatePlayerMovement(delta) {
         checkWarp(player.x, player.y);
         checkOxygen();
         checkCurrent();
+        checkAcidDamage();
+        checkCoralMazeSound();
+        checkGuardCollision();
         updateGigant();
+        partyData.totalSteps++;
     }
     updateCamera();
 }
@@ -325,6 +331,36 @@ export function checkCurrent() {
     }
 }
 
+function checkAcidDamage() {
+    const tile = getTileAt(player.x, player.y);
+    if (tile === TILE.ACID) {
+        player.hp = Math.max(1, player.hp - 15);
+        SE.damage();
+    }
+}
+
+function checkCoralMazeSound() {
+    if (currentMapId !== 'coral_maze') return;
+
+    // Example: Siren at (10, 5)
+    const goalX = 10, goalY = 5;
+    const prevDist = Math.abs(partyData.prevX - goalX) + Math.abs(partyData.prevY - goalY);
+    const currDist = Math.abs(player.x - goalX) + Math.abs(player.y - goalY);
+
+    if (currDist < prevDist) {
+        SE.confirm(); // High pitch/Confirm
+    } else if (currDist > prevDist) {
+        SE.cancel(); // Low pitch/Cancel
+    }
+}
+
+function checkGuardCollision() {
+    const npc = getNpcAt(player.x, player.y);
+    if (npc && npc.type === 'guard') {
+        startBattle('prison_guard');
+    }
+}
+
 export function getTileAt(x, y) {
     if (!currentMap) return null;
     const mapCols = currentMap.cols || currentMap.width || 0;
@@ -368,8 +404,19 @@ export function checkInteractionWarp(x, y) {
             if (partyData.vehicle === 'none' && hasItem(121)) {
                 SE.confirm();
                 partyData.vehicle = 'ship';
-                startDialog(["船を出した！"]);
                 performWarp(warp.targetMap, warp.targetX, warp.targetY);
+
+                // Albida Event Trigger
+                if (currentMapId === 'town_portia' && !gameProgress.bossDefeated.albida) {
+                    dialog.pendingBattleMonsterId = 'albida';
+                    startDialog([
+                        "船を出した！",
+                        "……む？！ 前方に海賊船が現れた！",
+                        "アルビダ「ヒャッハー！ この海を通したくば、身ぐるみを置いていきな！」"
+                    ]);
+                } else {
+                    startDialog(["船を出した！"]);
+                }
                 return true;
             }
         }
@@ -582,6 +629,22 @@ export function interact() {
             dialog.pendingBattleMonsterId = npc.bossId;
         }
 
+        // Altar Event
+        if (npc.isAltar) {
+            if (getStoryFlag('tearOfBlueObtained') && getStoryFlag('tearOfRedObtained') && getStoryFlag('tearOfGreenObtained')) {
+                startDialog([
+                    "3つの涙を祭壇に捧げた！",
+                    "不思議な光が天に向かって立ち昇る……！",
+                    "遥か彼方の海で、巨大な渦を覆っていた結界が消滅した！"
+                ]);
+                gameProgress.storyFlags.allTearsObtained = true;
+                SE.fanfare();
+            } else {
+                startDialog(["3つの大粒の涙を揃えて捧げねばならぬ..."]);
+            }
+            return;
+        }
+
         if (npc.type === 'shop') {
             dialog.pendingAction = { type: 'shop', id: npc.shopId };
         } else if (npc.type === 'inn') {
@@ -599,6 +662,10 @@ export function interact() {
         chest.isOpened = true;
         startDialog([`${chest.itemName}をみつけた！`]);
         addItem(chest.itemId);
+        // Special quest item flags
+        if (chest.itemId === 124) {
+            gameProgress.storyFlags.tearOfGreenObtained = true;
+        }
         SE.chest();
         return;
     }

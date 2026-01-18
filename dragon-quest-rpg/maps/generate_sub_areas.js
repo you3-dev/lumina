@@ -90,7 +90,10 @@ const prisonIsle = {
             bossId: "kraken",
             messages: ["グルルル...", "海を汚す者は許さん！"],
             isBoss: true
-        }
+        },
+        { id: "guard_1", x: 10, y: 15, sprite: "🛡️", type: "guard", messages: ["侵入者発見！"] },
+        { id: "guard_2", x: 20, y: 20, sprite: "🛡️", type: "guard", messages: ["逃がさんぞ！"] },
+        { id: "guard_3", x: 15, y: 25, sprite: "🛡️", type: "guard", messages: ["ここで朽ち果てるがいい。"] }
     ],
     chests: [],
     encounterTable: "area5_prison",
@@ -175,6 +178,41 @@ for (let i = 0; i < gigant.data.length; i++) {
     if (x === 0 || x === 24 || y === 0 || y === 24) gigant.data[i] = 7;
     // Random "flesh" walls
     if ((x + y) % 7 === 0 && x > 5 && x < 20) gigant.data[i] = 7;
+    // Acid pools (Poison Swamp -> ACID)
+    if (Math.random() < 0.1 && gigant.data[i] === 6) gigant.data[i] = 37;
+}
+
+// --- 6. Sea God's Altar ---
+const seaGodAltar = {
+    mapId: "sea_god_altar",
+    name: "海神の祭壇",
+    cols: 15,
+    rows: 15,
+    tileSize: 32,
+    isOutdoor: true,
+    data: new Array(15 * 15).fill(6), // Floor
+    warps: [
+        { x: 7, y: 14, targetMap: "maps/area5_ocean.json", targetX: 45, targetY: 20, type: "embark" }
+    ],
+    npcs: [
+        {
+            id: "altar_statue",
+            x: 7, y: 4,
+            sprite: "💎",
+            type: "object",
+            messages: ["3つの涙を捧げよ..."],
+            isAltar: true
+        }
+    ],
+    chests: [],
+    encounterTable: "field",
+    encounterRate: 0
+};
+// Add walls
+for (let i = 0; i < seaGodAltar.data.length; i++) {
+    const x = i % 15;
+    const y = Math.floor(i / 15);
+    if (x === 0 || x === 14 || y === 0 || y === 14) seaGodAltar.data[i] = 7;
 }
 
 // Write Files
@@ -183,5 +221,6 @@ fs.writeFileSync('maps/coral_maze.json', JSON.stringify(coralMaze));
 fs.writeFileSync('maps/prison_isle.json', JSON.stringify(prisonIsle));
 fs.writeFileSync('maps/atlantis_ruins.json', JSON.stringify(atlantis));
 fs.writeFileSync('maps/gigant_interior.json', JSON.stringify(gigant));
+fs.writeFileSync('maps/sea_god_altar.json', JSON.stringify(seaGodAltar));
 
 console.log('Regenerated sub-area maps with encounters.');

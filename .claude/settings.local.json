@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git pull:*)",
+      "Bash(cd:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(git -C c:worklumina_logic add dragon-quest-rpg/maps/pyramid_f3.json)",
+      "Bash(git -C c:worklumina_logic commit -m \"Add hidden wall to pyramid F3 boss room\n\nピラミッド最上階のボスエリアが壁で完全に囲まれてアクセス不可だった問題を修正。\n座標\\(7,9\\)に隠し壁を追加し、調べると通路が開くようにした。\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\")",
+      "Bash(git -C /c/work/lumina_logic pull)",
+      "Bash(git -C /c/work/lumina_logic status)",
+      "Bash(git -C /c/work/lumina_logic diff dragon-quest-rpg/maps/underworld_3.json)",
+      "Bash(git -C /c/work/lumina_logic add dragon-quest-rpg/maps/underworld_3.json)",
+      "Bash(git -C /c/work/lumina_logic commit -m \"$\\(cat <<''EOF''\nFix underworld village display on world map\n\n地底マップ上の村入口の表示を修正:\n- 座標\\(50,77\\)のタイルを地底床\\(17\\)から町タイル\\(4\\)に変更し、\n  ワールドマップで白い建物として表示されるように修正\n- 村入口のNPCアイコンを💂から🏠に変更\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /c/work/lumina_logic push)",
+      "Bash(git -C /c/work/lumina_logic diff --stat dragon-quest-rpg/index.html dragon-quest-rpg/maps/underworld_village.json)",
+      "Bash(git -C /c/work/lumina_logic add dragon-quest-rpg/index.html dragon-quest-rpg/maps/underworld_village.json)",
+      "Bash(git -C /c/work/lumina_logic commit -m \"$\\(cat <<''EOF''\nAdd area 3 equipment and remove inn from underworld village\n\n- エリア3用の新装備を追加:\n  - 勇者: やみのつるぎ/よろい、ほしくずのつるぎ/よろい\n  - 魔法使い: やみの杖/ローブ、ほしくずの杖/ローブ\n- 地底の村の装備屋ラインナップを新装備に更新\n- 宿屋を削除（ヒーラーがいるため不要）\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /c/work/lumina_logic commit -m \"$\\(cat <<''EOF''\nMove village entrance warp to NPC position\n\n村入口のワープ座標を\\(50,77\\)から\\(50,78\\)に変更し、\n🏠アイコン（NPC）の位置と一致させた。\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /c/work/lumina_logic add dragon-quest-rpg/index.html)",
+      "Bash(git -C /c/work/lumina_logic commit -m \"$\\(cat <<''EOF''\nAdd inventory organize feature\n\nアイテムメニューに「せいとん」機能を追加。\n選択するとインベントリがアイテムID順に並び替わる。\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /c/work/lumina_logic commit -m \"$\\(cat <<''EOF''\nFix item action submenu for 4 options\n\nアイテムアクションサブメニューを4項目対応に修正:\n- サブメニューの高さを拡張\n- キーボード・タッチ操作のカーソル制限を4に変更\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /c/work/lumina_logic add:*)",
+      "Bash(git -C /c/work/lumina_logic commit -m \"$\\(cat <<''EOF''\nAdd UNDERWORLD_TOWN tile for dark background village icon\n\n地底用の街タイル\\(UNDERWORLD_TOWN=20\\)を追加:\n- 地底床と同じ暗い背景色で🏘️アイコンを表示\n- ワールドマップでは白く表示される\n- 地底の村入口\\(50,77\\)をこのタイルに変更\n- 村入口のNPCを削除しシンプルなワープポイントに\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(node -e:*)",
+      "Bash(cat:*)",
+      "Bash(git -C /c/work/lumina_logic commit -m \"$\\(cat <<''EOF''\nFix warp coordinates to match portal tile positions\n\nワープ座標をポータルタイル\\(TILE.PORTAL=8\\)の実際の位置に修正:\n- \\(75,25\\) → \\(70,25\\)\n- \\(25,70\\) → \\(25,75\\)\n- \\(65,85\\) → \\(85,65\\)\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /c/work/lumina_logic status dragon-quest-rpg/stories/)",
+      "Bash(git -C /c/work/lumina_logic commit -m \"$\\(cat <<''EOF''\nAdd Area 3 story design document\n\nエリア3のストーリー設計書を追加:\n- マップ構成と正しいストーリーフロー\n- 楔のダンジョン設計（地下3階構造、4属性ボス）\n- 古城セレスティア拡張設計（5フロア構成）\n- ボスステータス（楔守護者HP550-700、闇の守護者HP1000）\n- NPC一覧とストーリーフラグ\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /c/work/lumina_logic log --oneline -5)",
+      "Bash(git -C /c/work/lumina_logic status dragon-quest-rpg/se/)",
+      "Bash(git -C /c/work/lumina_logic commit -m \"$\\(cat <<''EOF''\nAdd sound effects and BGM files\n\n効果音・BGMファイルを追加:\n- BGM: title, field, town, castle, dungeon, boss-dungeon, battle, boss-battle, victory, ending, inn\n- SE: attack, critical, damage, escape, spell-attack, spell-cure, encounter, levelup\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /c/work/lumina_logic pull --rebase)",
+      "Bash(git -C /c/work/lumina_logic stash:*)",
+      "Bash(git -C /c/work/lumina_logic stash pop)"
+    ]
+  }
+}
