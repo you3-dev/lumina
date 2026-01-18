@@ -1,37 +1,74 @@
 const fs = require('fs');
 
-const mapData = {
-    "mapId": "area5_ocean",
-    "name": "広大なる外海",
-    "cols": 200,
-    "rows": 200,
-    "tileSize": 32,
-    "isLooping": true,
-    "defaultTile": 5, // TILE.SEA
-    "data": new Array(200 * 200).fill(5), // Fill with sea
-    "npcs": [],
-    "chests": [],
-    "warps": [
-        { "x": 100, "y": 105, "targetMap": "town_portia", "targetX": 15, "targetY": 29 }
-    ],
-    "encounterRate": 0.05,
-    "bgm": "field"
-};
+const cols = 200;
+const rows = 200;
+const data = new Array(cols * rows).fill(5); // 5 = SEA
 
-// Add some islands for visual verification
-function addIsland(x, y, w, h) {
-    for (let r = y; r < y + h; r++) {
-        for (let c = x; c < x + w; c++) {
-            if (r >= 0 && r < 200 && c >= 0 && c < 200) {
-                mapData.data[r * 200 + c] = 1; // TILE.GRASS
+function drawIsland(cx, cy, w, h) {
+    for (let y = cy; y < cy + h; y++) {
+        for (let x = cx; x < cx + w; x++) {
+            if (y >= 0 && y < rows && x >= 0 && x < cols) {
+                data[y * cols + x] = 1; // Grass
             }
         }
     }
 }
 
-addIsland(10, 10, 5, 5); // Northwest
-addIsland(180, 180, 8, 8); // Southeast (Wrap check target)
-addIsland(95, 95, 10, 10); // Center
+// 1. Portia Island (Center)
+// Range: y=103..107 (height 5)
+drawIsland(98, 103, 5, 5);
+data[107 * cols + 100] = 30; // Port tile at South Edge (100, 107)
 
-fs.writeFileSync('area5_ocean.json', JSON.stringify(mapData));
-console.log('Generated area5_ocean.json');
+// 2. Coral Island (North West)
+// Range: y=28..33 (height 6)
+drawIsland(43, 28, 6, 6);
+data[33 * cols + 45] = 30; // Port at South Edge (45, 33)
+
+// 3. Prison Isle (South East)
+// Range: y=165..170 (height 6)
+drawIsland(158, 165, 6, 6);
+data[170 * cols + 160] = 30; // Port at South Edge (160, 170)
+
+// 4. Atlantis (Center)
+data[100 * cols + 100] = 14;
+
+const map = {
+    mapId: "area5_ocean",
+    name: "広大なる外海",
+    cols: cols,
+    rows: rows,
+    tileSize: 32,
+    isLooping: true,
+    defaultTile: 5,
+    data: data,
+    npcs: [],
+    chests: [],
+    warps: [
+        // Landing at Portia (at Port Tile)
+        {
+            x: 100, y: 107,
+            targetMap: "maps/town_portia.json",
+            targetX: 15, targetY: 1,
+            type: "landing"
+        },
+        // Landing at Coral Village
+        {
+            x: 45, y: 33,
+            targetMap: "maps/coral_village.json",
+            targetX: 10, targetY: 18,
+            type: "landing"
+        },
+        // Landing at Prison Isle
+        {
+            x: 160, y: 170,
+            targetMap: "maps/prison_isle.json",
+            targetX: 20, targetY: 40,
+            type: "landing"
+        }
+    ],
+    encounterRate: 0.05,
+    bgm: "field"
+};
+
+fs.writeFileSync('maps/area5_ocean.json', JSON.stringify(map));
+console.log('Regenerated maps/area5_ocean.json');

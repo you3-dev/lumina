@@ -5,11 +5,11 @@ import {
     player, setCurrentMap, setCurrentMapId, setCurrentMapPath,
     setCameraX, setCameraY, stepsSinceLastBattle, setStepsSinceLastBattle,
     pushedIceBlocks, dialog, titleMenuIndex, setTitleMenuIndex,
-    pushedIceBlocks, dialog, titleMenuIndex, setTitleMenuIndex,
     hasSaveData, setHasSaveData, gameProgress, hasItem, addItem
 } from './state.js';
 import { MODE, WALKABLE_TILES, TILE } from './constants.js';
 import { expTable, spells, items } from './data.js';
+import { startBattle } from './battle.js';
 import { SE, BGM } from './sound.js';
 
 export function getReviveCost(member) {
@@ -283,9 +283,50 @@ function checkOxygen() {
 export function checkWarp(x, y) {
     if (!currentMap || !currentMap.warps) return;
     const warp = currentMap.warps.find(w => w.x === x && w.y === y);
-    if (warp) {
+    // Standard step warps (no type or type='step')
+    if (warp && (!warp.type || warp.type === 'step')) {
+        // Existing check for flags if any
+        if (warp.requiresFlag && !gameProgress.bossDefeated[warp.requiresFlag] && !gameProgress.storyFlags[warp.requiresFlag]) {
+            // Block specific warps if flag missing (optional)
+            return;
+        }
+        // Area 5 check: if requiresFlag 'area4Completed'
+        if (warp.requiresFlag === 'area4Completed' && !gameProgress.storyFlags.area4Completed) {
+            return;
+        }
+
         performWarp(warp.targetMap, warp.targetX, warp.targetY);
     }
+}
+
+export function checkInteractionWarp(x, y) {
+    if (!currentMap || !currentMap.warps) return false;
+    const warp = currentMap.warps.find(w => w.x === x && w.y === y);
+
+    if (warp) {
+        // Landing: Ship -> Land Map
+        if (warp.type === 'landing') {
+            if (partyData.vehicle === 'ship') {
+                SE.confirm();
+                partyData.vehicle = 'none';
+                // startDialog(["上陸した！"]); // Dialog might be skipped by warp redraw, rely on SE
+                performWarp(warp.targetMap, warp.targetX, warp.targetY);
+                return true;
+            }
+        }
+        // Embarking: Land -> Ship Map
+        else if (warp.type === 'embark') {
+            // Must have ship key/whistle
+            if (partyData.vehicle === 'none' && hasItem(121)) {
+                SE.confirm();
+                partyData.vehicle = 'ship';
+                startDialog(["船を出した！"]);
+                performWarp(warp.targetMap, warp.targetX, warp.targetY);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 export function updateNPCs(delta) {
@@ -335,10 +376,16 @@ export function advanceDialog() {
 }
 
 export function closeDialog() {
+    const pendingBossId = dialog.pendingBattleMonsterId;
     dialog.active = false;
     dialog.messages = [];
     dialog.currentIndex = 0;
     dialog.displayedText = '';
+    dialog.pendingBattleMonsterId = null;
+
+    if (pendingBossId) {
+        startBattle(pendingBossId);
+    }
 }
 
 export function getFrontPosition() {
@@ -376,7 +423,32 @@ export function interact() {
 
     const npc = getNpcAt(front.x, front.y);
     if (npc) {
-        startDialog(npc.messages);
+        let messages = npc.messages;
+
+        // Handle bosses or special NPC clearing messages
+        if (npc.defeatFlag && gameProgress.bossDefeated[npc.defeatFlag]) {
+            messages = npc.clearedMessages || messages;
+        }
+
+        // Area 5 Transition Event (Snow Elder)
+        if (npc.id === 'snow_elder' && gameProgress.bossDefeated.iceQueen) {
+            if (!hasItem(121)) { // ship_key
+                addItem(121);
+                messages = [
+                    "氷の女王を倒したか！実に見事な戦いぶりであった。",
+                    "お主のような勇者にこそ、これを託すべきかもしれん。",
+                    "『船の呼び笛』をさずけよう。海に向かって吹けば、船を呼ぶことができる。",
+                    "時空の間から、次なる大陸『蒼茫の海』へ渡る道が開かれたはずじゃ。"
+                ];
+                gameProgress.storyFlags.area4Completed = true;
+            }
+        }
+
+        if ((npc.isBoss || npc.type === 'boss') && npc.bossId) {
+            dialog.pendingBattleMonsterId = npc.bossId;
+        }
+
+        startDialog(messages);
         return;
     }
 
@@ -391,6 +463,11 @@ export function interact() {
 
     // Vehicle Interaction
     if (currentMap) {
+        // Check for Interaction Warps (Landing/Embarking) first
+        if (checkInteractionWarp(front.x, front.y)) {
+            return;
+        }
+
         let tile;
         const mapCols = currentMap.cols || currentMap.width || 0;
         if (Array.isArray(currentMap.data[0])) {
@@ -403,15 +480,21 @@ export function interact() {
         if (partyData.vehicle === 'none') {
             // Check tile type for boarding (SEA or PORT)
             if (tile === TILE.SEA || tile === TILE.PORT) {
-                // Check if player has key or flag. Simplify for Phase 3 testing: always allow.
-                if (true) {
+                if (hasItem(121)) { // ship_key
                     SE.confirm();
                     partyData.vehicle = 'ship';
-                    startDialog(["船に乗り込んだ！"]);
+                    startDialog([
+                        "船の呼び笛を吹いた！",
+                        "どこからともなく船が流れてきた。",
+                        "船に乗り込んだ！"
+                    ]);
 
                     player.x = front.x;
                     player.y = front.y;
                     updateCamera();
+                    return;
+                } else {
+                    startDialog(["船が必要だが、持っていない。"]);
                     return;
                 }
             }

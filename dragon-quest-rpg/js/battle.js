@@ -32,7 +32,9 @@ export function startBattle(monsterTypeOrTable) {
 
     if (monsters[monsterTypeOrTable]) {
         // Single designated monster
-        battle.enemies = [JSON.parse(JSON.stringify(monsters[monsterTypeOrTable]))];
+        const m = JSON.parse(JSON.stringify(monsters[monsterTypeOrTable]));
+        m.id = monsterTypeOrTable;
+        battle.enemies = [m];
     } else {
         // Table based
         battle.enemies = generateEnemyGroup(monsterTypeOrTable);
@@ -66,9 +68,8 @@ export function battleWin() {
 
     // Check for boss defeat
     const boss = battle.enemies.find(e => e.isBoss);
-    if (boss && boss.name === 'リヴァイアサン') { // Check by name or add ID to monster data
-        gameProgress.bossDefeated.leviathan = true;
-        // saveGame(); // call save via engine or app? For now just set flag.
+    if (boss && boss.id && gameProgress.bossDefeated.hasOwnProperty(boss.id)) {
+        gameProgress.bossDefeated[boss.id] = true;
     }
 
     // Calc Exp & Gold
