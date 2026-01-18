@@ -116,9 +116,18 @@ export const items = {
     95: { id: 95, name: '太陽の炎', description: '女王を救う力を持つ聖なる炎', type: 'quest', price: 0 },
     96: { id: 96, name: '極光の宝珠', description: '海を渡る力を持つ宝珠', type: 'quest', price: 0 },
     // Area 5 Items
+    100: { id: 100, name: 'ポセイドンブレード', type: 'weapon', value: 85, price: 12000, equippable: ['hero'], traits: { waterBoost: 1.5 } },
+    101: { id: 101, name: 'シェルスタッフ', type: 'weapon', value: 65, price: 8500, equippable: ['mage', 'seer'], spellEffect: 'sukuruto' },
+    102: { id: 102, name: '珊瑚の弓', type: 'weapon', value: 72, price: 9000, equippable: ['seer'], traits: { flyerBoost: 1.5 } },
+    200: { id: 200, name: '碧海のローブ', type: 'armor', value: 45, price: 11000, equippable: ['mage', 'seer'], resistances: { ice: 0.5, water: 0.5 } },
+    201: { id: 201, name: '竜鱗の鎧', type: 'armor', value: 62, price: 15000, equippable: ['hero', 'iceKnight'], resistances: { fire: 0.7 } },
+    202: { id: 202, name: '泡の盾', type: 'armor', value: 28, price: 7500, equippable: ['hero', 'iceKnight'], evasion: 0.05 },
     120: { id: 120, name: '人魚の鱗', description: '水中で呼吸できるようになる', type: 'quest', price: 0 },
     121: { id: 121, name: '船の呼び笛', description: '海に向かって吹くと船が現れる', type: 'quest', price: 0 },
-    130: { id: 130, name: 'トライデント', type: 'weapon', value: 95, price: 15000, equippable: ['hero', 'iceKnight'], element: 'ice' }
+    130: { id: 130, name: 'トライデント', type: 'weapon', value: 95, price: 15000, equippable: ['hero', 'iceKnight'], element: 'ice' },
+    300: { id: 300, name: 'ほかほかスープ', description: 'HPを150回復し、寒さを防ぐ', type: 'heal', value: 150, price: 200 },
+    301: { id: 301, name: '酸素缶', description: '水中での酸素を50回復する', type: 'oxygen', value: 50, price: 500 },
+    302: { id: 302, name: '海の香草', description: '全状態異常を治療する', type: 'cure_all', price: 150 }
 };
 
 export const shopItemsByArea = {
@@ -129,7 +138,9 @@ export const shopItemsByArea = {
     hidden_shop: [4, 5, 15, 16, 25, 26, 42, 52],
     underworld_shop: [1, 4, 5, 9, 18, 19, 27, 28, 44, 45, 53, 54],
     snow_village_weapon: [70, 72, 80, 82, 90],
-    snow_village_item: [1, 4, 5, 9, 60, 61, 62]
+    snow_village_item: [1, 4, 5, 9, 60, 61, 62],
+    portia_weapon: [100, 101, 102, 201, 202],
+    portia_item: [4, 5, 9, 300, 301, 302]
 };
 
 export const monsters = {
@@ -195,10 +206,18 @@ export const monsters = {
     iceQueen: { name: 'こおりのじょおう', sprite: '👸', level: 48, hp: 1500, atk: 95, def: 70, speed: 20, exp: 3000, gold: 1500, isBoss: true, actions: 2, skills: ['attack', 'hyados', 'iceBreath', 'absoluteZero', 'behoma'], resistances: { ice: 0, fire: 2.0, light: 0.5, sleep: 0, poison: 0 } },
     frostWyrm: { name: 'ひょうりゅうフロストヴルム', sprite: '🐲', level: 52, hp: 1800, atk: 140, def: 75, speed: 28, exp: 5000, gold: 3000, isBoss: true, actions: 2, skills: ['attack', 'strongAttack', 'absoluteZero', 'frostBite', 'iceBreath', 'behoma'], resistances: { ice: 0, fire: 2.0, light: 0.5, sleep: 0, poison: 0, blind: 0 } },
     // Area 5 Monsters
+    sea_slime: { name: 'ウミスライム', sprite: '💧', level: 40, hp: 120, atk: 55, def: 60, speed: 35, exp: 400, gold: 100, resistances: { fire: 2.0, ice: 0.5 } },
+    man_o_war: { name: 'しびれクラゲ', sprite: '👾', level: 41, hp: 110, atk: 62, def: 50, speed: 45, exp: 450, gold: 120, resistances: { lightning: 0.5, ice: 1.5 }, skills: ['attack', 'paralyze'] },
+    great_shark: { name: 'グレートシャーク', sprite: '🦈', level: 45, hp: 350, atk: 95, def: 75, speed: 55, exp: 1200, gold: 300, resistances: { wind: 2.0, ice: 0.5 }, skills: ['attack', 'strongAttack'] },
+    coral_magician: { name: '珊瑚の魔術師', sprite: '🧙‍♂️', level: 42, hp: 180, atk: 70, def: 65, speed: 40, exp: 600, gold: 150, resistances: { fire: 2.0, ice: 0 }, skills: ['attack', 'rariho', 'hyados'] },
+    sea_serpent: { name: 'シーサーペント', sprite: '🐍', level: 45, hp: 450, atk: 110, def: 90, speed: 50, exp: 1500, gold: 400, resistances: { lightning: 2.0, fire: 0.8 }, skills: ['attack', 'iceBreath'] },
+    prison_guard: { name: '監獄の看守', sprite: '👮', level: 44, hp: 280, atk: 105, def: 110, speed: 30, exp: 900, gold: 250, resistances: { sleep: 0.5, blind: 0.5 }, skills: ['attack', 'strongAttack'] },
+    iron_shell: { name: 'アイアンタートル', sprite: '🐢', level: 43, hp: 200, atk: 65, def: 200, speed: 15, exp: 700, gold: 180, resistances: { lightning: 2.0, ice: 0.2 }, skills: ['attack', 'defend'] },
+    ancient_gear: { name: '古代の歯車', sprite: '⚙️', level: 46, hp: 220, atk: 85, def: 120, speed: 60, exp: 1000, gold: 350, resistances: { lightning: 2.5, water: 0 }, skills: ['attack', 'raiden'] },
+    ghost_pirate: { name: 'キャプテン・ゴースト', sprite: '👻', level: 48, hp: 300, atk: 90, def: 80, speed: 48, exp: 1500, gold: 500, resistances: { light: 2.0, dark: 0 }, skills: ['attack', 'mahoton'] },
     siren: { name: 'セイレーン', sprite: '🧜‍♀️', level: 40, hp: 400, atk: 60, def: 40, speed: 20, exp: 800, gold: 400, skills: ['attack', 'hyado', 'rariho'], resistances: { fire: 0.5, ice: 0.5 } },
-    seaSerpent: { name: 'シーサーペント', sprite: '🐍', level: 42, hp: 600, atk: 80, def: 50, speed: 18, exp: 1200, gold: 600, skills: ['attack', 'strongAttack'], resistances: { ice: 0.5 } },
     deepDiver: { name: 'ディープダイバー', sprite: '🤿', level: 45, hp: 550, atk: 85, def: 60, speed: 15, exp: 1100, gold: 500, skills: ['attack', 'iceSlash'], resistances: { ice: 1.5, fire: 0.5 } },
-    kraken: { name: 'クラーケン', sprite: '🦑', level: 50, hp: 1200, atk: 110, def: 70, speed: 10, exp: 2500, gold: 1200, skills: ['attack', 'strongAttack', 'howl'], resistances: { water: 0, fire: 1.5, ice: 1.5 } },
+    kraken: { name: 'クラーケン', sprite: '🦑', level: 50, hp: 1200, atk: 110, def: 70, speed: 10, exp: 2500, gold: 1200, skills: ['attack', 'strongAttack', 'howl', 'actions_2'], resistances: { fire: 1.5, ice: 1.5 }, isBoss: true },
     leviathan: { name: 'リヴァイアサン', sprite: '🐋', level: 60, hp: 3000, atk: 150, def: 90, speed: 25, exp: 8000, gold: 5000, isBoss: true, actions: 2, skills: ['attack', 'absoluteZero', 'strongAttack', 'behoma', 'howl'], resistances: { ice: 0, water: 0, fire: 1.5, light: 0.8, sleep: 0, poison: 0, blind: 0 } }
 };
 
@@ -248,8 +267,11 @@ export const encounterTables = {
     area4_cave: ['snowSlime', 'frozenKnight', 'iceElemental', 'iceBat'],
     area4_temple: ['iceElemental', 'iceElemental', 'frostGiant', 'frozenKnight'],
     area4_castle: ['frozenKnight', 'frostGiant', 'crystalDragon', 'crystalDragon'],
-    area5_ocean: ['siren', 'seaSerpent', 'siren', 'kraken'],
-    area5_underwater: ['deepDiver', 'seaSerpent', 'kraken', 'kraken'],
+    area5_ocean: ['sea_slime', 'sea_slime', 'man_o_war', 'great_shark', 'sea_serpent'],
+    area5_underwater: ['deepDiver', 'deepDiver', 'sea_serpent', 'iron_shell', 'kraken'],
+    area5_coral_maze: ['coral_magician', 'sea_slime', 'siren'],
+    area5_prison: ['prison_guard', 'ghost_pirate', 'iron_shell'],
+    area5_atlantis: ['ancient_gear', 'deepDiver', 'iron_shell'],
     area5_boss: ['leviathan']
 };
 

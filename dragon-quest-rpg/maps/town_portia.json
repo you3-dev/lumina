@@ -946,6 +946,40 @@
             "messages": [
                 "海へ出るなら、十分な準備をするんだな。"
             ]
+        },
+        {
+            "id": "portia_weapon_shop",
+            "x": 10,
+            "y": 10,
+            "sprite": "⚒️",
+            "type": "shop",
+            "shopId": "portia_weapon",
+            "messages": [
+                "武器屋へようこそ！ポセイドンの加護を売っておりますぞ。"
+            ]
+        },
+        {
+            "id": "portia_item_shop",
+            "x": 20,
+            "y": 10,
+            "sprite": "🛍️",
+            "type": "shop",
+            "shopId": "portia_item",
+            "messages": [
+                "道具屋です。酸素缶は足りてますか？"
+            ]
+        },
+        {
+            "id": "npc_shipwright",
+            "x": 25,
+            "y": 5,
+            "sprite": "🧔",
+            "type": "villager",
+            "messages": [
+                "ドックにあるのはただのガラクタさ。動くはずがねぇ。",
+                "……お前さん、その『船の呼び笛』を持ってるのか！？",
+                "いいか、外海は危険だ。もし『重い錨』が見つかったら持考な。補強してやる。"
+            ]
         }
     ],
     "chests": []

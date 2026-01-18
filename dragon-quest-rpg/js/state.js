@@ -255,7 +255,8 @@ export const dialog = {
     charIndex: 0,
     isTyping: false,
     typingSpeed: 50,
-    pendingBattleMonsterId: null
+    pendingBattleMonsterId: null,
+    pendingAction: null
 };
 
 export const inn = {

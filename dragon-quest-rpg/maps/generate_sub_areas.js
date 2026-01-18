@@ -19,7 +19,9 @@ const coralVillage = {
         { id: "coral_singer", x: 10, y: 10, sprite: "🧜‍♀️", type: "villager", messages: ["北の迷宮にはセイレーン様がいるわ。"] },
         { id: "coral_fish", x: 5, y: 15, sprite: "🐠", type: "villager", messages: ["ぷくぷく..."] }
     ],
-    chests: []
+    chests: [],
+    encounterTable: "area5_ocean",
+    encounterRate: 0.02
 };
 // Add some water decoration
 for (let i = 0; i < 400; i++) {
@@ -53,7 +55,9 @@ const coralMaze = {
     ],
     chests: [
         { id: "coral_chest1", x: 2, y: 2, itemId: 120, itemName: "人魚の鱗", isOpened: false }
-    ]
+    ],
+    encounterTable: "area5_coral_maze",
+    encounterRate: 0.08
 };
 // Simple walls
 for (let i = 0; i < coralMaze.data.length; i++) {
@@ -88,7 +92,9 @@ const prisonIsle = {
             isBoss: true
         }
     ],
-    chests: []
+    chests: [],
+    encounterTable: "area5_prison",
+    encounterRate: 0.1
 };
 // Carve rooms
 function carveRect(map, x, y, w, h, tile) {
@@ -128,13 +134,15 @@ const atlantis = {
             isBoss: true
         }
     ],
-    chests: []
+    chests: [],
+    encounterTable: "area5_atlantis",
+    encounterRate: 0.1
 };
 
 // Add some bubble tiles in Atlantis
-for (let i = 0; i < 5; i++) {
-    const rx = 10 + Math.floor(Math.random() * 20);
-    const ry = 10 + Math.floor(Math.random() * 20);
+for (let i = 0; i < 10; i++) {
+    const rx = 5 + Math.floor(Math.random() * 30);
+    const ry = 5 + Math.floor(Math.random() * 30);
     atlantis.data[ry * 40 + rx] = 32; // TILE.BUBBLE
 }
 
@@ -144,4 +152,4 @@ fs.writeFileSync('maps/coral_maze.json', JSON.stringify(coralMaze));
 fs.writeFileSync('maps/prison_isle.json', JSON.stringify(prisonIsle));
 fs.writeFileSync('maps/atlantis_ruins.json', JSON.stringify(atlantis));
 
-console.log('Generated sub-area maps.');
+console.log('Regenerated sub-area maps with encounters.');
