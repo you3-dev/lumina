@@ -1,6 +1,6 @@
 import {
     party, partyData, currentMap, currentMapId, currentMapPath, maps,
-    setGameMode, saveGame as stateSaveGame, isTransitioning, setIsTransitioning,
+    setGameMode, isTransitioning, setIsTransitioning,
     mapLoadState, SAVE_KEY, tileSize, canvasWidth, canvasHeight,
     player, setCurrentMap, setCurrentMapId, setCurrentMapPath,
     setCameraX, setCameraY, stepsSinceLastBattle, setStepsSinceLastBattle,
@@ -824,4 +824,109 @@ export function startNewGame() {
     if (titleScreen) titleScreen.classList.add('hidden');
     setGameMode(MODE.FIELD);
     performWarp('field', 3, 3); // initial pos
+}
+
+export function createDebugSave() {
+    console.log("Creating Debug Save Data...");
+
+    // 1. Reset Game Progress & Flags
+    // We want to be post-Area 4 (Ice Queen defeated), pre-Elder talk.
+    gameProgress.bossDefeated.midBoss = true;
+    gameProgress.bossDefeated.maou = true;
+    gameProgress.bossDefeated.quicksandBoss = true;
+    gameProgress.bossDefeated.banditKing = true;
+    gameProgress.bossDefeated.pyramidGuardian = true;
+    gameProgress.bossDefeated.desertGuardian = true;
+    gameProgress.bossDefeated.shadowGuardian = true;
+    gameProgress.bossDefeated.wedgeGuardian_north = true;
+    gameProgress.bossDefeated.wedgeGuardian_east = true;
+    gameProgress.bossDefeated.wedgeGuardian_south = true;
+    gameProgress.bossDefeated.wedgeGuardian_west = true;
+    gameProgress.bossDefeated.libraryGuardian = true;
+    gameProgress.bossDefeated.iceGolem = true;
+    gameProgress.bossDefeated.iceQueen = true;
+    // frostWyrm is often optional or post, but let's assume defeated for "cleared" feel or leave false if strict.
+    // User said "Area 4 cleared". Usually Ice Queen is the main boss.
+    gameProgress.bossDefeated.frostWyrm = true;
+
+    // Story Flags
+    gameProgress.storyFlags.reportedMidBossDefeat = true;
+    gameProgress.storyFlags.portalRoomUnlocked = true;
+    gameProgress.storyFlags.bazaarUnlocked = true;
+    gameProgress.storyFlags.desertPortalUnlocked = true;
+    gameProgress.storyFlags.desertCastleUnlocked = true;
+    gameProgress.storyFlags.mageJoined = true;
+    gameProgress.storyFlags.serenJoined = true;
+    gameProgress.storyFlags.ancientCastleUnlocked = true;
+    gameProgress.storyFlags.area3Entered = true;
+    gameProgress.storyFlags.area3SealActivated = true;
+    gameProgress.storyFlags.shadowGuardianDefeated = true;
+    gameProgress.storyFlags.area3Completed = true;
+    gameProgress.storyFlags.ancientSpellReceived = true;
+    gameProgress.storyFlags.northPathOpened = true;
+    gameProgress.storyFlags.area4Entered = true;
+    gameProgress.storyFlags.iceGolemDefeated = true;
+    gameProgress.storyFlags.frozenLakeCleared = true;
+    gameProgress.storyFlags.torchPuzzleCleared = true;
+    gameProgress.storyFlags.memoryPuzzleCleared = true;
+    gameProgress.storyFlags.sunFlameObtained = true;
+    gameProgress.storyFlags.glacioJoined = true;
+    gameProgress.storyFlags.iceQueenDefeated = true;
+    // Not yet spoken to elder for Area 5 transition
+    gameProgress.storyFlags.area4Completed = false;
+
+    // 2. Setup Party
+    party.length = 0; // Clear existing
+
+    // Helper to create member
+    const createMember = (id, name, job, sprite, lv, hp, mp, atk, def, spd, spellsList, equip) => ({
+        id, name, job, sprite,
+        level: lv, exp: expTable[lv],
+        hp, maxHp: hp, mp, maxMp: mp,
+        baseAtk: atk, baseDef: def, speed: spd,
+        spells: spellsList,
+        equipment: equip,
+        actualAtk: atk + 50, // simplified calc
+        actualDef: def + 40,
+        status: { sleep: 0, poison: 0, blind: 0 },
+        isAlive: true
+    });
+
+    // Hero Lv 40
+    party.push(createMember('hero', 'ゆうしゃ', 'hero', '🦸', 40, 280, 120, 140, 100, 90,
+        ['hoimi', 'mera', 'behoimi', 'gira', 'rukani', 'raiden', 'behomazun'],
+        { weapon: 71, armor: 81 })); // Blizzard Sword, Blizzard Mail
+
+    // Mage Lv 38
+    party.push(createMember('mage', '魔法使い', 'mage', '🧙', 38, 200, 220, 80, 70, 85,
+        ['mera', 'hyado', 'gira', 'manusa', 'mahoton', 'begirama', 'hyados', 'merami', 'baikiruto'],
+        { weapon: 73, armor: 83 })); // Diamond Rod, Crystal Robe
+
+    // Seren Lv 36
+    party.push(createMember('seren', 'セレン', 'seer', '🔮', 36, 180, 180, 70, 65, 110,
+        ['bagi', 'rukani', 'piorimu', 'hoimi', 'bagima', 'rariho'],
+        { weapon: 73, armor: 82 })); // Diamond Rod, Snow Robe
+
+    // Glacio Lv 40
+    party.push(createMember('glacio', 'グラシオ', 'iceKnight', '⚔️', 40, 320, 60, 160, 140, 70,
+        ['iceSlash', 'frostArmor'],
+        { weapon: 130, armor: 201 })); // Trident, Dragon Scale Armor (Area 5 item? Maybe simplify to Area 4 gear: 74, 81)
+
+    // Fix Glacio gear to Area 4 high end
+    party[3].equipment = { weapon: 74, armor: 81 }; // Ice Halberd, Blizzard Mail
+
+    // 3. Set Location (Snow Village, in front of Elder)
+    setCurrentMapId('snow_village');
+    setCurrentMapPath('maps/snow_village.json');
+    player.x = 10;
+    player.y = 6;
+    player.direction = 'up';
+    partyData.x = 10;
+    partyData.y = 6;
+    partyData.vehicle = 'none';
+
+    // 4. Save and Reload
+    saveGame();
+    alert("デバッグセーブデータを作成しました。\n雪原の村の村長前から開始します。");
+    location.reload();
 }

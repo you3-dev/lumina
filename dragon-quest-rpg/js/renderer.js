@@ -1,12 +1,12 @@
 /**
  * Rendering Engine
  */
-import { TILE, MAP_TILE_COLORS, DEFAULT_TILE_COLORS } from './constants.js';
+import { TILE, MAP_TILE_COLORS, DEFAULT_TILE_COLORS, MODE } from './constants.js';
 import {
     currentMap, cameraX, cameraY, tileSize, canvasWidth, canvasHeight,
     player, party, partyData, dialog, menu, inn, church, shop, battle,
     partyJoinConfirm, ruraSelection, endingState,
-    switchStates, pushedIceBlocks, gameMode, MODE
+    switchStates, pushedIceBlocks, gameMode
 } from './state.js';
 import { items, spells, expTable } from './data.js';
 import { getStoryFlag, isBossDefeated } from './state.js';

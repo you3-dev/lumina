@@ -10,9 +10,9 @@ import {
 } from './state.js';
 import { MODE, VISIBLE_TILES } from './constants.js';
 import { setupInputs, handleInput } from './input.js';
-import { performWarp, updateCamera, updatePlayerMovement, updateNPCs } from './engine.js';
+import { performWarp, updateCamera, updatePlayerMovement, updateNPCs, createDebugSave } from './engine.js';
 import * as renderer from './renderer.js';
-import { updateSoundToggleIcon } from './sound.js';
+import { updateSoundToggleIcon, toggleSound } from './sound.js';
 import { updateBattle } from './battle.js';
 
 import {
@@ -35,6 +35,21 @@ async function init() {
 
     // Initial state
     updateSoundToggleIcon();
+
+    // Debug Save Trigger (Sound Toggle x20)
+    let debugCount = 0;
+    const soundBtn = document.getElementById('soundToggle');
+    if (soundBtn) {
+        soundBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleSound();
+            debugCount++;
+            if (debugCount >= 20) {
+                debugCount = 0;
+                createDebugSave();
+            }
+        });
+    }
 
     // Start with title or field
     if (gameMode === MODE.TITLE) {
