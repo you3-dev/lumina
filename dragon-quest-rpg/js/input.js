@@ -16,7 +16,8 @@ import {
     cancelTargetSelection, cancelAllySelection, handleShopInput,
     startDialog,
     confirmEquipMember, confirmItemMember, executeItemAction,
-    useSpellInField, executeFieldSpellOnTarget
+    useSpellInField, executeFieldSpellOnTarget,
+    confirmInn, selectChurchMenu, confirmChurchMember, confirmChurchAction
 } from './engine.js';
 import { openWorldMap } from './map.js';
 import { items } from './data.js';
@@ -443,6 +444,104 @@ function handleKeyDown(e) {
                 setGameMode(MODE.MAP_VIEW);
             }
         }
+    } else if (gameMode === MODE.SHOP || inn.active || church.active) {
+        // ショップ
+        if (shop.active) {
+            switch (e.key) {
+                case 'ArrowUp': case 'w': case 'W':
+                    handleShopInput('up');
+                    break;
+                case 'ArrowDown': case 's': case 'S':
+                    handleShopInput('down');
+                    break;
+                case 'ArrowLeft': case 'a': case 'A':
+                    handleShopInput('left');
+                    break;
+                case 'ArrowRight': case 'd': case 'D':
+                    handleShopInput('right');
+                    break;
+                case 'Enter': case ' ': case 'z': case 'Z':
+                    handleShopInput('confirm');
+                    break;
+                case 'Escape': case 'x': case 'b': case 'B':
+                    handleShopInput('cancel');
+                    break;
+            }
+            e.preventDefault();
+            return;
+        }
+
+        // 宿屋
+        if (inn.active) {
+            switch (e.key) {
+                case 'ArrowLeft': case 'a': case 'A':
+                    inn.selectedIndex = 0;
+                    break;
+                case 'ArrowRight': case 'd': case 'D':
+                    inn.selectedIndex = 1;
+                    break;
+                case 'Enter': case ' ': case 'z': case 'Z':
+                    confirmInn();
+                    break;
+                case 'Escape': case 'x': case 'b': case 'B':
+                    closeInn();
+                    startDialog(['またのお越しを おまちしております。']);
+                    break;
+            }
+            e.preventDefault();
+            return;
+        }
+
+        // 教会
+        if (church.active) {
+            switch (e.key) {
+                case 'ArrowUp': case 'w': case 'W':
+                    if (church.phase === 'menu') {
+                        church.menuIndex = (church.menuIndex - 1 + 4) % 4;
+                    } else if (church.phase === 'selectMember') {
+                        church.selectedMember = (church.selectedMember - 1 + party.length) % party.length;
+                    }
+                    break;
+                case 'ArrowDown': case 's': case 'S':
+                    if (church.phase === 'menu') {
+                        church.menuIndex = (church.menuIndex + 1) % 4;
+                    } else if (church.phase === 'selectMember') {
+                        church.selectedMember = (church.selectedMember + 1) % party.length;
+                    }
+                    break;
+                case 'ArrowLeft': case 'a': case 'A':
+                    if (church.phase === 'confirm') {
+                        church.confirmIndex = 0;
+                    }
+                    break;
+                case 'ArrowRight': case 'd': case 'D':
+                    if (church.phase === 'confirm') {
+                        church.confirmIndex = 1;
+                    }
+                    break;
+                case 'Enter': case ' ': case 'z': case 'Z':
+                    if (church.phase === 'menu') {
+                        selectChurchMenu();
+                    } else if (church.phase === 'selectMember') {
+                        confirmChurchMember();
+                    } else if (church.phase === 'confirm') {
+                        confirmChurchAction();
+                    }
+                    break;
+                case 'Escape': case 'x': case 'b': case 'B':
+                    if (church.phase === 'confirm') {
+                        church.phase = 'selectMember';
+                    } else if (church.phase === 'selectMember') {
+                        church.phase = 'menu';
+                    } else {
+                        closeChurch();
+                        startDialog(['また いつでも おこしください。']);
+                    }
+                    break;
+            }
+            e.preventDefault();
+            return;
+        }
     } else if (gameMode === MODE.BATTLE) {
         if (battle.phase === 'command') {
             // コマンド選択フェーズ
@@ -462,14 +561,6 @@ function handleKeyDown(e) {
             if (e.key === 'z' || e.key === 'Enter' || e.key === ' ') {
                 handleButton('A');
             }
-        }
-    } else if (gameMode === MODE.SHOP || gameMode === MODE.INN || gameMode === MODE.CHURCH) {
-        if (e.key === 'x' || e.key === 'Escape') {
-            shop.active = false;
-            inn.active = false;
-            church.active = false;
-            setGameMode(MODE.FIELD);
-            SE.cancel();
         }
     }
 }
