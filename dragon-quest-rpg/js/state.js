@@ -249,6 +249,93 @@ export function setTitleMenuIndex(index) { titleMenuIndex = index; }
 export function setTitleMenuActive(active) { titleMenuActive = active; }
 export function setHasSaveData(has) { hasSaveData = has; }
 
+export function createPartyMember(config) {
+    return {
+        id: config.id || 'hero',
+        name: config.name || 'ゆうしゃ',
+        job: config.job || 'hero',
+        sprite: config.sprite || '🧙',
+        hp: config.hp || 50,
+        maxHp: config.maxHp || 50,
+        mp: config.mp || 20,
+        maxMp: config.maxMp || 20,
+        baseAtk: config.baseAtk || 10,
+        baseDef: config.baseDef || 5,
+        speed: config.speed || 6,
+        level: config.level || 1,
+        exp: config.exp || 0,
+        spells: config.spells || [],
+        equipment: config.equipment || { weapon: null, armor: null },
+        actualAtk: config.baseAtk || 10,
+        actualDef: config.baseDef || 5,
+        status: { sleep: 0, poison: 0, blind: 0 },
+        isAlive: true
+    };
+}
+
+export function updateMemberActualStats(member) {
+    const weapon = items[member.equipment?.weapon];
+    const armor = items[member.equipment?.armor];
+    member.actualAtk = member.baseAtk + (weapon ? weapon.value : 0);
+    member.actualDef = member.baseDef + (armor ? armor.value : 0);
+}
+
+export function updateActualStats(member = null) {
+    if (member) {
+        updateMemberActualStats(member);
+    } else {
+        party.forEach(m => updateMemberActualStats(m));
+    }
+}
+
+export function resetGameProgress() {
+    gameProgress.bossDefeated.midBoss = false;
+    gameProgress.bossDefeated.maou = false;
+    gameProgress.bossDefeated.quicksandBoss = false;
+    gameProgress.bossDefeated.banditKing = false;
+    gameProgress.bossDefeated.pyramidGuardian = false;
+    gameProgress.bossDefeated.desertGuardian = false;
+    gameProgress.bossDefeated.shadowGuardian = false;
+    gameProgress.bossDefeated.wedgeGuardian_north = false;
+    gameProgress.bossDefeated.wedgeGuardian_east = false;
+    gameProgress.bossDefeated.wedgeGuardian_south = false;
+    gameProgress.bossDefeated.wedgeGuardian_west = false;
+    gameProgress.bossDefeated.libraryGuardian = false;
+    gameProgress.storyFlags.reportedMidBossDefeat = false;
+    gameProgress.storyFlags.portalRoomUnlocked = false;
+    gameProgress.storyFlags.mageJoined = false;
+    gameProgress.storyFlags.ancientCastleUnlocked = false;
+    gameProgress.storyFlags.area3Entered = false;
+    gameProgress.storyFlags.area3SealActivated = false;
+    gameProgress.storyFlags.shadowGuardianDefeated = false;
+    gameProgress.storyFlags.area3Completed = false;
+    gameProgress.storyFlags.ancientSpellReceived = false;
+    gameProgress.bossDefeated.iceGolem = false;
+    gameProgress.bossDefeated.iceQueen = false;
+    gameProgress.storyFlags.northPathOpened = false;
+    gameProgress.storyFlags.area4Entered = false;
+    gameProgress.storyFlags.iceGolemDefeated = false;
+    gameProgress.storyFlags.frozenLakeCleared = false;
+    gameProgress.storyFlags.torchPuzzleCleared = false;
+    gameProgress.storyFlags.memoryPuzzleCleared = false;
+    gameProgress.storyFlags.sunFlameObtained = false;
+    gameProgress.storyFlags.glacioJoined = false;
+    gameProgress.storyFlags.iceQueenDefeated = false;
+    gameProgress.storyFlags.frostWyrmDefeated = false;
+    gameProgress.storyFlags.area4Completed = false;
+    gameProgress.storyFlags.auroraOrbObtained = false;
+    Object.keys(gameProgress.quests).forEach(questName => {
+        Object.keys(gameProgress.quests[questName]).forEach(flag => {
+            gameProgress.quests[questName][flag] = false;
+        });
+    });
+    gameProgress.areas = {};
+    gameProgress.openedPassages = {};
+    gameProgress.visitedLocations = [];
+}
+
+
+
 export const menu = {
     active: false,
     mode: 'status', // status, spells, items, map

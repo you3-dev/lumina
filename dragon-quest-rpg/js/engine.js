@@ -1,17 +1,17 @@
 import {
-    party, partyData, currentMap, currentMapId, currentMapPath, maps,
+    gameMode, party, partyData, currentMap, currentMapId, currentMapPath, maps,
     setGameMode, isTransitioning, setIsTransitioning,
     mapLoadState, tileSize, canvasWidth, canvasHeight,
     player, setCurrentMap, setCurrentMapId, setCurrentMapPath,
     setCameraX, setCameraY, stepsSinceLastBattle, setStepsSinceLastBattle,
-    pushedIceBlocks, dialog, titleMenuIndex, setTitleMenuIndex,
+    pushedIceBlocks, dialog, titleMenuIndex, setTitleMenuIndex, titleMenuActive, setTitleMenuActive,
     hasSaveData, setHasSaveData, gameProgress, hasItem, addItem, getStoryFlag,
-    inn, church, shop
+    inn, church, shop, createPartyMember, updateActualStats, resetGameProgress, setupPlayerProxy
 } from './state.js';
 import { MODE, WALKABLE_TILES, TILE, SAVE_KEY } from './constants.js';
 import { expTable, spells, items } from './data.js';
 import { startBattle } from './battle.js';
-import { SE, BGM } from './sound.js';
+import { SE, BGM, initAudio, toggleSound } from './sound.js';
 
 export function getReviveCost(member) {
     return member.level * 20;
@@ -76,8 +76,8 @@ export function getMapIdFromPath(mapPath) {
     return mapPath;
 }
 
-export async function performWarp(targetMap, targetX, targetY) {
-    if (isTransitioning) return;
+export async function performWarp(targetMap, targetX, targetY, force = false) {
+    if (isTransitioning && !force) return;
 
     const isNew = isMapPath(targetMap);
     const targetPath = isNew ? targetMap : getMapPathFromId(targetMap);
@@ -725,16 +725,7 @@ export function interact() {
 }
 export function saveGame() {
     const saveData = {
-        player: {
-            level: player.level,
-            exp: player.exp,
-            hp: player.hp,
-            maxHp: player.maxHp,
-            mp: player.mp,
-            maxMp: player.maxMp,
-            spells: player.spells,
-            equipment: player.equipment
-        },
+        party: party, // Save full party array
         partyData: {
             x: player.x,
             y: player.y,
@@ -742,55 +733,82 @@ export function saveGame() {
             inventory: partyData.inventory,
             vehicle: partyData.vehicle,
             oxygen: partyData.oxygen,
-            totalSteps: partyData.totalSteps
+            totalSteps: partyData.totalSteps,
+            direction: player.direction // Save direction
         },
         currentMapId,
+        currentMapPath, // Save map path for external maps
         gameProgress
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
 }
 
-export function loadGame() {
+export async function loadGame() {
     const json = localStorage.getItem(SAVE_KEY);
     if (!json) return false;
     try {
         const data = JSON.parse(json);
 
-        // Restore Player
-        Object.assign(player, data.player);
+        // 1. Restore Party
+        if (data.party && Array.isArray(data.party)) {
+            party.length = 0;
+            // Re-assign party members. Note: Classes/Methods if any are lost, but current implementation uses plain objects mostly.
+            // If we had classes, we would need hydration.
+            data.party.forEach(m => party.push(m));
+            Object.assign(player, party[0]);
 
-        // Restore Party Data
+            // Re-setup proxy if needed (setupPlayerProxy is in state.js but not exported or used in app.js init?)
+            // engine.js imports player from state.js. state.js exports player.
+            // app.js sets up proxy. app.js needs to know player changed? 
+            // Actually Object.assign updates the properties of the existing player object, so proxy should still work if it wraps the same object.
+        } else if (data.player) {
+            // Fallback for old save
+            Object.assign(player, data.player);
+        }
+
+        // 2. Restore Party Data
         Object.assign(partyData, data.partyData);
-        // Ensure default values if old save
         if (!partyData.vehicle) partyData.vehicle = 'none';
         if (typeof partyData.oxygen === 'undefined') partyData.oxygen = 100;
         if (typeof partyData.totalSteps === 'undefined') partyData.totalSteps = 0;
+        if (data.partyData && data.partyData.direction) player.direction = data.partyData.direction;
 
-        // Restore Map Info
-        setCurrentMapId(data.currentMapId || 'field');
-
-        // Restore Progress
+        // 3. Restore Progress
         if (data.gameProgress) {
+            // Recursive merge or just valid assignment
+            // Deep merge might be safer for nested objects if structure changed, but assignment is usually ok for simple structure
             Object.assign(gameProgress, data.gameProgress);
+            // Specifically for sub-objects if they are missing in default but present in save
+            if (data.gameProgress.bossDefeated) gameProgress.bossDefeated = data.gameProgress.bossDefeated;
+            if (data.gameProgress.storyFlags) gameProgress.storyFlags = data.gameProgress.storyFlags;
+            if (data.gameProgress.quests) gameProgress.quests = data.gameProgress.quests;
         }
 
-        // Fix player position assignment
-        if (data.partyData) {
-            player.x = data.partyData.x;
-            player.y = data.partyData.y;
+        // 4. Restore Map
+        // Update current map path first so performWarp knows what to load
+        if (data.currentMapPath) {
+            setCurrentMapPath(data.currentMapPath);
         }
+
+        const mapId = data.currentMapId || 'field';
+        setCurrentMapId(mapId);
 
         setHasSaveData(true);
+
+        // Restore Player Proxy to ensure x,y sync works after property updates
+        setupPlayerProxy();
+
+        // Wait for warp to finish (loading map, placing player)
+        // Pass force=true to bypass the guard since we are already in a transition flow
+        await performWarp(mapId, player.x, player.y, true);
+
+        // NOW we can switch mode
         setGameMode(MODE.FIELD);
 
-        // We need to load the map data properly. 
-        // performWarp handles loading, but loadGame is synchronous (mostly).
-        // For now, we rely on the caller to start the game loop or scene.
-        // In selectTitleMenuItem, we call loadGame() then startNewGame-like logic?
-        // Actually selectTitleMenuItem calls loadGame(), if true, we need to transition.
-        // Let's call performWarp to load map and place player.
-
-        performWarp(currentMapId, player.x, player.y);
+        // Force update of direction after warp (warp might reset it)
+        if (data.partyData && data.partyData.direction) {
+            player.direction = data.partyData.direction;
+        }
 
         return true;
     } catch (e) {
@@ -804,26 +822,116 @@ export function resetGame() {
     window.location.reload();
 }
 
-export function updateTitleMenuSelection() {
-    const items = document.querySelectorAll('.title-menu .menu-item');
-    items.forEach((item, i) => {
-        item.classList.toggle('selected', i === titleMenuIndex);
-    });
+export async function selectTitleMenuItem() {
+    // Already in transition?
+    if (isTransitioning) return;
+
+    if (!titleMenuActive) {
+        // This shouldn't really happen if listeners are correct, but safe guard
+        const titleScreen = document.getElementById('titleScreen');
+        if (titleScreen) titleScreen.click();
+        return;
+    }
+
+    // Start transition
+    setIsTransitioning(true);
+
+    // Fade out
+    const fadeOverlay = document.getElementById('fadeOverlay');
+    if (fadeOverlay) fadeOverlay.classList.add('active');
+
+    // Wait for fade
+    await new Promise(resolve => setTimeout(resolve, 400));
+
+    // Hide title screen DOM
+    const titleScreen = document.getElementById('titleScreen');
+    if (titleScreen) titleScreen.classList.add('hidden');
+
+    // Load or Reset
+    if (hasSaveData && titleMenuIndex === 0) {
+        // Continue
+        await loadGame();
+    } else {
+        // New Game
+        localStorage.removeItem(SAVE_KEY);
+        await resetGameState();
+    }
+
+    // Refresh HUD info
+    const mapNameEl = document.getElementById('mapName');
+    if (mapNameEl) mapNameEl.textContent = currentMap?.name || 'フィールド';
+
+    // Start BGM
+    if (BGM.getBgmTypeForMap) {
+        BGM.play(BGM.getBgmTypeForMap(currentMap));
+    }
+
+    // Ensure camera and size are correct
+    updateCamera();
+
+    // Small delay before fade in
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Fade in
+    if (fadeOverlay) fadeOverlay.classList.remove('active');
+    setIsTransitioning(false);
 }
 
-export function selectTitleMenuItem() {
-    if (titleMenuIndex === 0 && hasSaveData) {
-        loadGame();
-    } else {
-        startNewGame();
-    }
+export async function resetGameState() {
+    // 1. Reset Party (Hero only)
+    party.length = 0;
+    const hero = createPartyMember({
+        id: 'hero',
+        name: 'ゆうしゃ',
+        job: 'hero',
+        sprite: '🦸',
+        hp: 50,
+        maxHp: 50,
+        mp: 20,
+        maxMp: 20,
+        baseAtk: 10,
+        baseDef: 5,
+        speed: 6,
+        level: 1,
+        exp: 0,
+        spells: ['hoimi', 'mera'],
+        equipment: {
+            weapon: 10,  // こんぼう
+            armor: 20    // たびびとのふく
+        }
+    });
+    party.push(hero);
+    // Note: player in state.js should point to party[0]. 
+    // We already have Object.assign/reference logic in state.js usually.
+    // Let's ensure the local reference is correct if we had one, but we use 'player' from state.js.
+    setupPlayerProxy();
+
+    // 2. Reset Party Data
+    partyData.x = 3;
+    partyData.y = 3;
+    partyData.direction = 'down';
+    partyData.moving = false;
+    partyData.gold = 50;
+    partyData.inventory = [{ id: 1, quantity: 3 }]; // Start with 3 herbs
+
+    // 3. Reset progress
+    resetGameProgress();
+    updateActualStats();
+
+    // 4. Set Initial Map
+    setCurrentMapId('field');
+    setCurrentMapPath('maps/field.json');
+
+    // 5. Load the map
+    setGameMode(MODE.FIELD);
+    // Use force=true to bypass transition guard during initial game start
+    await performWarp('field', 3, 3, true);
 }
 
 export function startNewGame() {
-    const titleScreen = document.getElementById('titleScreen');
-    if (titleScreen) titleScreen.classList.add('hidden');
-    setGameMode(MODE.FIELD);
-    performWarp('field', 3, 3); // initial pos
+    // This is now effectively replaced by selectTitleMenuItem calling resetGameState.
+    // For compatibility if called elsewhere:
+    resetGameState();
 }
 
 export function createDebugSave() {
@@ -915,18 +1023,143 @@ export function createDebugSave() {
     // Fix Glacio gear to Area 4 high end
     party[3].equipment = { weapon: 74, armor: 81 }; // Ice Halberd, Blizzard Mail
 
-    // 3. Set Location (Snow Village, in front of Elder)
-    setCurrentMapId('snow_village');
-    setCurrentMapPath('maps/snow_village.json');
-    player.x = 10;
-    player.y = 6;
-    player.direction = 'up';
-    partyData.x = 10;
-    partyData.y = 6;
-    partyData.vehicle = 'none';
 
-    // 4. Save and Reload
-    saveGame();
+    // 3. Set Location & Party Data
+    const startX = 10;
+    const startY = 6;
+    const startDir = 'up';
+    const startMapId = 'snow_village';
+    const startMapPath = 'maps/snow_village.json';
+
+    setCurrentMapId(startMapId);
+    setCurrentMapPath(startMapPath);
+    player.x = startX;
+    player.y = startY;
+    player.direction = startDir;
+    partyData.x = startX;
+    partyData.y = startY;
+    partyData.vehicle = 'none';
+    partyData.gold = 10000;
+    partyData.inventory = [
+        { id: 1, quantity: 10 },
+        { id: 4, quantity: 5 },
+        { id: 9, quantity: 5 }
+    ];
+
+    // Construct save data explicitly to ensure correct format
+    const saveData = {
+        party: party,
+        partyData: {
+            x: startX,
+            y: startY,
+            direction: startDir,
+            gold: partyData.gold,
+            inventory: partyData.inventory,
+            vehicle: partyData.vehicle,
+            oxygen: 100,
+            totalSteps: 0
+        },
+        currentMapId: startMapId,
+        currentMapPath: startMapPath,
+        gameProgress: gameProgress
+    };
+
+    localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
     alert("デバッグセーブデータを作成しました。\n雪原の村の村長前から開始します。");
     location.reload();
+}
+
+/**
+ * Check if save data exists in localStorage
+ */
+export function checkSaveData() {
+    const savedData = localStorage.getItem(SAVE_KEY);
+    const exists = savedData !== null;
+    setHasSaveData(exists);
+    return exists;
+}
+
+/**
+ * Update the visual selection state of title menu items
+ */
+export function updateTitleMenuSelection() {
+    const titleMenu = document.querySelector('.title-menu');
+    if (!titleMenu) return;
+
+    const items = titleMenu.querySelectorAll('.menu-item');
+    items.forEach((item, index) => {
+        if (item.style.display !== 'none') {
+            // Logic to determine if this item corresponds to the current titleMenuIndex
+            // If hasSaveData is false, the first visible item (New Game) is at index 1, but should match titleMenuIndex 0
+            const actualIndex = hasSaveData ? index : index - 1;
+            item.classList.toggle('selected', actualIndex === titleMenuIndex);
+        }
+    });
+}
+
+/**
+ * Initialize Title Screen
+ */
+export function initTitleScreen() {
+    checkSaveData();
+
+    const menuContinue = document.getElementById('menu-continue');
+    const menuNewGame = document.getElementById('menu-newgame');
+    const pressStart = document.getElementById('pressStart');
+    const titleScreen = document.getElementById('titleScreen');
+    const titleMenu = document.querySelector('.title-menu');
+
+    // Show/Hide "Continue"
+    if (menuContinue) {
+        menuContinue.style.display = (hasSaveData) ? 'flex' : 'none';
+
+        // Add Listener (if not already added via some global logic, but here for restoration)
+        // We use onclick to avoid multiple bindings if initTitleScreen is called multiple times
+        menuContinue.onclick = (e) => {
+            e.stopPropagation();
+            initAudio();
+            if (gameMode === MODE.TITLE) {
+                setTitleMenuIndex(0);
+                updateTitleMenuSelection();
+                selectTitleMenuItem();
+            }
+        };
+    }
+
+    if (menuNewGame) {
+        menuNewGame.style.display = 'flex';
+        menuNewGame.onclick = (e) => {
+            e.stopPropagation();
+            initAudio();
+            if (gameMode === MODE.TITLE) {
+                setTitleMenuIndex(hasSaveData ? 1 : 0);
+                updateTitleMenuSelection();
+                selectTitleMenuItem();
+            }
+        };
+    }
+
+    if (titleScreen) {
+        titleScreen.onclick = (e) => {
+            initAudio();
+            if (gameMode === MODE.TITLE && !titleMenuActive) {
+                // Activate Menu (Remove "Press Start")
+                setTitleMenuActive(true);
+                if (pressStart) pressStart.style.display = 'none';
+                if (titleMenu) titleMenu.classList.add('active');
+                updateTitleMenuSelection();
+                // Play title BGM
+                BGM.play('title');
+            }
+        };
+    }
+
+    // Reset Menu State
+    setTitleMenuIndex(0);
+    setTitleMenuActive(false);
+
+    if (pressStart) pressStart.style.display = 'block';
+    if (titleMenu) titleMenu.classList.remove('active');
+
+    updateTitleMenuSelection();
 }

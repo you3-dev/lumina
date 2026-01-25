@@ -31,7 +31,8 @@ export function getNpcEffectivePosition(npc) {
 }
 
 export function drawIceBlocks() {
-    const blocks = pushedIceBlocks[currentMap?.id];
+    if (!currentMap) return;
+    const blocks = pushedIceBlocks[currentMap.id];
     if (!blocks) return;
     const mapCols = currentMap.cols || currentMap.width || 0;
     const mapRows = currentMap.rows || currentMap.height || 0;
@@ -157,6 +158,7 @@ function getLoopAdjustedScreenPos(mapX, mapY, mapCols, mapRows) {
 
 
 export function getTileColor(tile) {
+    if (!currentMap) return DEFAULT_TILE_COLORS[tile] || '#000';
     const mapColors = MAP_TILE_COLORS[currentMap.type];
     if (mapColors && mapColors[tile] !== undefined) return mapColors[tile];
     return DEFAULT_TILE_COLORS[tile] || '#000';
@@ -274,7 +276,7 @@ export function drawTileDecoration(tile, x, y, col, row) {
 }
 
 export function drawChests() {
-    if (!currentMap.chests) return;
+    if (!currentMap || !currentMap.chests) return;
     const mapCols = currentMap.cols || currentMap.width || 0;
     const mapRows = currentMap.rows || currentMap.height || 0;
 
@@ -292,7 +294,7 @@ export function drawChests() {
 }
 
 export function drawNPCs() {
-    if (!currentMap.npcs) return;
+    if (!currentMap || !currentMap.npcs) return;
     const mapCols = currentMap.cols || currentMap.width || 0;
     const mapRows = currentMap.rows || currentMap.height || 0;
 

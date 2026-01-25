@@ -10,7 +10,7 @@ import {
 } from './state.js';
 import { MODE, VISIBLE_TILES, SAVE_KEY } from './constants.js';
 import { setupInputs, handleInput } from './input.js';
-import { performWarp, updateCamera, updatePlayerMovement, updateNPCs, createDebugSave } from './engine.js';
+import { performWarp, updateCamera, updatePlayerMovement, updateNPCs, createDebugSave, initTitleScreen } from './engine.js';
 import * as renderer from './renderer.js';
 import { updateSoundToggleIcon, toggleSound } from './sound.js';
 import { updateBattle } from './battle.js';
@@ -53,7 +53,7 @@ async function init() {
 
     // Start with title or field
     if (gameMode === MODE.TITLE) {
-        // title screen logic
+        initTitleScreen();
     } else {
         // Load initial map
         await performWarp(currentMapId, player.x, player.y);
