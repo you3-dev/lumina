@@ -20,11 +20,14 @@
 |-------|------|--------|--------|----------|
 | `town_portia` | 港町ポルティア | 30x30 | Town | - |
 | `area5_ocean` | 広大なる外海 | 200x200 | Field | `isLoopMap: true` |
+| `coral_beach` | 珊瑚の浜辺 | 40x40 | Field | - |
 | `coral_village` | 珊瑚の村 | 20x20 | Town | - |
 | `coral_maze` | 珊瑚の迷宮 | 40x40 | Dungeon | - |
+| `prison_exterior` | 監獄島外壁 | 35x35 | Field | - |
 | `prison_isle` | 灰色の監獄島 | 30x30 | Dungeon | `sealSpells: true` |
 | `gigant_interior` | 巨獣ギガントの体内 | 25x25 | Dungeon | `isLowOxygen: true` |
 | `sea_god_altar` | 海神の祭壇 | 15x15 | Event | - |
+| `ocean_floor` | 海底の道 | 50x30 | Field | `isUnderwater: true` |
 | `atlantis_ruins` | 海底都市アトランティア | 40x40 | Dungeon | `isUnderwater: true` |
 
 ### 2.2 ワープ接続
@@ -33,12 +36,108 @@
 |------|------|------|------|------|--------|
 | portal_room | (指定位置) | town_portia | (15,28) | area4クリア | 通常ワープ |
 | town_portia | (15,1) | area5_ocean | (100,105) | `shipObtained` | embark |
-| area5_ocean | (45,30) | coral_village | (10,18) | - | landing |
-| area5_ocean | (160,170) | prison_isle | (15,28) | - | landing |
+| area5_ocean | (45,30) | coral_beach | (20,38) | - | landing |
+| area5_ocean | (160,170) | prison_exterior | (17,33) | - | landing |
 | area5_ocean | (ギガント位置) | gigant_interior | (12,24) | `gigantAppeared` | landing |
 | area5_ocean | (100,100) | sea_god_altar | (7,14) | - | landing |
-| sea_god_altar | (7,7) | atlantis_ruins | (20,38) | `allTearsCollected` | 渦潮ワープ |
-| coral_village | (10,1) | coral_maze | (20,38) | - | 通常ワープ |
+| sea_god_altar | (7,7) | ocean_floor | (25,28) | `allTearsCollected` | 渦潮ワープ |
+| coral_beach | (20,5) | coral_village | (10,18) | - | 通常ワープ |
+| coral_beach | (35,20) | coral_maze | (20,38) | - | 通常ワープ |
+| prison_exterior | (17,5) | prison_isle | (15,28) | `hasPrisonKey` | 正門 |
+| prison_exterior | (5,25) | prison_isle | (3,25) | - | 下水道（裏口） |
+| ocean_floor | (25,3) | atlantis_ruins | (20,38) | - | 通常ワープ |
+
+### 2.3 フィールドマップ詳細
+
+#### 珊瑚の浜辺（coral_beach）
+
+美しいサンゴ礁と白い砂浜が広がる楽園のような島。
+
+| 項目 | 内容 |
+|------|------|
+| サイズ | 40x40 |
+| 地形 | 砂浜、浅瀬、サンゴ礁、ヤシの木 |
+| エンカウント | `area5_coral_beach` |
+| BGM | 明るい南国風 |
+
+**配置ポイント**:
+| 座標 | 内容 |
+|------|------|
+| (20,38) | 船着き場（外海からの到着地点） |
+| (20,5) | 珊瑚の村への入口（北） |
+| (35,20) | 珊瑚の迷宮への入口（東の洞窟） |
+| (8,15) | 釣り人NPC（ヒント：迷宮の音） |
+| (30,30) | 隠し宝箱（砂浜）：`まもりのたね` |
+| (5,8) | 難破船：宝箱 `2000G` |
+
+**NPC**:
+- `npc_fisherman`: 「迷宮では耳を澄ませな。高い音が正解の道だ。」
+- `npc_beach_child`: 「きれいな貝殻がいっぱい！」
+- `npc_shipwreck_ghost`: 難破船の幽霊「この船は…アルビダに沈められた…」
+
+---
+
+#### 監獄島外壁（prison_exterior）
+
+荒涼とした岩場に囲まれた陰鬱な島。監視塔が各所にそびえる。
+
+| 項目 | 内容 |
+|------|------|
+| サイズ | 35x35 |
+| 地形 | 岩場、荒れ地、監視塔、鉄条網 |
+| エンカウント | `area5_prison_exterior` |
+| BGM | 不穏なアンビエント |
+
+**配置ポイント**:
+| 座標 | 内容 |
+|------|------|
+| (17,33) | 船着き場（外海からの到着地点） |
+| (17,5) | 正門（鍵が必要：`prison_key`） |
+| (5,25) | 下水道入口（裏口、鍵不要） |
+| (30,10) | 監視塔（望遠鏡で内部を覗ける） |
+| (10,28) | 囚人の墓：石碑「ここに眠る者に安らぎを」 |
+| (25,20) | 隠し宝箱（岩陰）：`鉄格子の鍵`（正門用） |
+
+**NPC**:
+- `npc_escaped_prisoner`: 「正門は見張りが厳しい…下水道なら入れるかも…」
+- `npc_guard_tower`: 監視塔の兵士（近づくと警告、戦闘にはならない）
+
+**ルート分岐**:
+- **正門ルート**: 鍵を見つけて正面から突入。監獄1Fから開始。
+- **下水道ルート**: 裏口から潜入。監獄B1（地下牢）から開始。より難しいが宝箱が多い。
+
+---
+
+#### 海底の道（ocean_floor）
+
+渦潮に飲み込まれた先に広がる神秘的な海底遺跡への道。
+
+| 項目 | 内容 |
+|------|------|
+| サイズ | 50x30 |
+| 地形 | 海底、古代遺跡の残骸、光る海藻、泡 |
+| エンカウント | `area5_ocean_floor` |
+| BGM | 神秘的なアンビエント |
+| 特殊 | `isUnderwater: true`（酸素消費あり） |
+
+**配置ポイント**:
+| 座標 | 内容 |
+|------|------|
+| (25,28) | 渦潮到着地点（海神の祭壇から） |
+| (25,3) | アトランティア正門 |
+| (10,15) | 古代の石碑：「光を求める者よ、この先に眠る都を目覚めさせるな」 |
+| (40,20) | 壊れた機械：調べると `古代のパーツ`（売却用） |
+| (15,25) | 空気の泡タイル（酸素全回復） |
+| (35,10) | 空気の泡タイル（酸素全回復） |
+| (5,5) | 隠しエリア：宝箱 `碧海のローブ` |
+
+**NPC**:
+- `npc_ancient_hologram`: 古代人のホログラム「アトランティアは…海神の怒りで…沈んだ…」
+- `npc_lost_diver`: 迷子のダイバー「酸素が…助けて…」→ 助けると `酸素缶x3` をもらえる
+
+**ギミック**:
+- 酸素管理が必要。空気の泡タイルを経由しながら進む。
+- 最短ルートは酸素がギリギリ。探索するには酸素缶が必要。
 
 ---
 
@@ -50,12 +149,14 @@ storyFlags: {
     shipObtained: false,        // 船入手済み
     gigantAppeared: false,      // ギガント出現済み
     albidaDefeated: false,      // アルビダ撃破
+    hasPrisonKey: false,        // 監獄の鍵入手済み（正門用）
     tearBlueObtained: false,    // 青の涙入手（珊瑚の迷宮）
     tearRedObtained: false,     // 赤の涙入手（監獄島）
     tearGreenObtained: false,   // 緑の涙入手（ギガント）
     allTearsCollected: false,   // 三至宝を祭壇に捧げた
     leviathanDefeated: false,   // リヴァイアサン撃破
-    skyMapObtained: false       // 天空の海図入手
+    skyMapObtained: false,      // 天空の海図入手
+    helpedLostDiver: false      // 迷子のダイバーを助けた（海底の道）
 }
 ```
 
@@ -499,19 +600,28 @@ const area5Monsters = {
 ```javascript
 // encounterTables に追加
 const area5EncounterTables = {
-    // 外海
+    // 外海（船での移動中）
     area5_ocean: ['seaSlime', 'seaSlime', 'manOWar', 'manOWar', 'greatShark'],
 
-    // 珊瑚の迷宮
-    area5_coral: ['seaSlime', 'coralMagician', 'coralMagician', 'seaSerpent'],
+    // 珊瑚の浜辺（フィールド）- やや弱め、探索向け
+    area5_coral_beach: ['seaSlime', 'seaSlime', 'manOWar', 'coralMagician'],
 
-    // 監獄島
+    // 珊瑚の迷宮（ダンジョン）
+    area5_coral: ['coralMagician', 'coralMagician', 'seaSerpent', 'seaSerpent'],
+
+    // 監獄島外壁（フィールド）- 看守が巡回
+    area5_prison_exterior: ['prisonGuard', 'ghostPirate', 'ghostPirate'],
+
+    // 監獄島内部（ダンジョン）
     area5_prison: ['prisonGuard', 'prisonGuard', 'ghostPirate', 'ghostPirate'],
 
-    // ギガント体内
+    // ギガント体内（ダンジョン）
     area5_gigant: ['seaSlime', 'manOWar', 'ironShell', 'ironShell'],
 
-    // アトランティア
+    // 海底の道（フィールド）- アトランティア前哨
+    area5_ocean_floor: ['ancientGear', 'seaSerpent', 'ghostPirate', 'manOWar'],
+
+    // アトランティア（ダンジョン）
     area5_atlantis: ['ancientGear', 'ancientGear', 'seaSerpent', 'ghostPirate']
 };
 ```
@@ -1026,13 +1136,46 @@ function updatePatrolNpcs() {
 - [ ] 胃液タイル処理
 - [ ] 魔法封印エリア判定
 - [ ] ギガント移動処理
+- [ ] 巡回兵システム（監獄島外壁）
 
-### Phase 3: マップ接続
+### Phase 3: マップ作成・接続
 
-- [ ] portal_room → town_portia ワープ追加
-- [ ] town_portia ⇔ area5_ocean 接続
-- [ ] area5_ocean → 各島への上陸ワープ
-- [ ] sea_god_altar → atlantis_ruins 渦潮ワープ
+#### 3.1 フィールドマップ作成（新規）
+- [ ] `coral_beach.json`（珊瑚の浜辺）40x40
+  - [ ] 地形配置（砂浜、浅瀬、サンゴ礁、ヤシの木）
+  - [ ] NPC配置（釣り人、子供、難破船の幽霊）
+  - [ ] 宝箱配置（まもりのたね、2000G）
+  - [ ] ワープ設定（→村、→迷宮）
+- [ ] `prison_exterior.json`（監獄島外壁）35x35
+  - [ ] 地形配置（岩場、荒れ地、監視塔、鉄条網）
+  - [ ] NPC配置（脱獄囚、監視塔の兵士）
+  - [ ] 宝箱配置（鉄格子の鍵）
+  - [ ] ワープ設定（→正門、→下水道）
+- [ ] `ocean_floor.json`（海底の道）50x30
+  - [ ] 地形配置（海底、古代遺跡、光る海藻、泡）
+  - [ ] NPC配置（ホログラム、迷子ダイバー）
+  - [ ] 空気の泡タイル配置
+  - [ ] 宝箱配置（碧海のローブ）
+  - [ ] ワープ設定（→アトランティア）
+
+#### 3.2 既存マップ修正
+- [ ] `town_portia.json` 施設・NPC追加
+- [ ] `coral_village.json` → `coral_beach` からの接続に変更
+- [ ] `coral_maze.json` → `coral_beach` からの接続に変更
+- [ ] `prison_isle.json` → `prison_exterior` からの接続に変更
+- [ ] `atlantis_ruins.json` → `ocean_floor` からの接続に変更
+
+#### 3.3 ワープ接続
+- [ ] portal_room → town_portia
+- [ ] town_portia ⇔ area5_ocean
+- [ ] area5_ocean → coral_beach（上陸）
+- [ ] area5_ocean → prison_exterior（上陸）
+- [ ] area5_ocean → gigant_interior（上陸）
+- [ ] area5_ocean → sea_god_altar（上陸）
+- [ ] sea_god_altar → ocean_floor（渦潮ワープ）
+- [ ] coral_beach → coral_village / coral_maze
+- [ ] prison_exterior → prison_isle（正門/下水道）
+- [ ] ocean_floor → atlantis_ruins
 
 ### Phase 4: イベント実装
 
@@ -1041,6 +1184,8 @@ function updatePatrolNpcs() {
 - [ ] ギガント出現イベント（セレン会話）
 - [ ] 三至宝イベント（祭壇）
 - [ ] リヴァイアサン戦後イベント
+- [ ] 迷子ダイバー救助イベント（海底の道）
+- [ ] 難破船の幽霊イベント（珊瑚の浜辺）
 
 ### Phase 5: ボス配置
 
@@ -1053,6 +1198,8 @@ function updatePatrolNpcs() {
 ### Phase 6: テスト
 
 - [ ] 通しプレイテスト（ポルティア→アトランティア）
+- [ ] フィールドマップ探索テスト
+- [ ] ルート分岐テスト（監獄島：正門 vs 下水道）
 - [ ] 各ボス戦バランステスト
 - [ ] セーブ・ロード互換性テスト
 - [ ] 既存エリア（area1-4）回帰テスト
@@ -1062,3 +1209,4 @@ function updatePatrolNpcs() {
 ## 更新履歴
 
 - 2025-01-25: 最終仕様書初版作成
+- 2025-01-25: フィールドマップ3つを追加（珊瑚の浜辺、監獄島外壁、海底の道）
