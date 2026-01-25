@@ -5,13 +5,15 @@ import { MODE } from './constants.js';
 import {
     gameMode, setGameMode, isTransitioning, menu, dialog, battle,
     inn, church, shop, partyData, player, party, currentMap,
-    titleMenuIndex, setTitleMenuIndex
+    titleMenuIndex, setTitleMenuIndex,
+    canvasWidth, canvasHeight, tileSize
 } from './state.js';
 import { SE, initAudio } from './sound.js';
 import {
     movePlayer as engineMovePlayer, updateCamera, interact, advanceDialog,
     updateTitleMenuSelection, selectTitleMenuItem
 } from './engine.js';
+import { openWorldMap } from './map.js';
 
 const keys = {};
 
@@ -19,6 +21,9 @@ const keys = {};
 let moveInterval = null;
 let currentMoveDirection = { dx: 0, dy: 0 };
 const CONTINUOUS_MOVE_DELAY = 150;  // 連続移動の間隔（ミリ秒）
+
+// ズーム防止用の変数
+let lastTouchEnd = 0;
 
 export function setupInputs() {
     window.addEventListener('keydown', (e) => {
@@ -46,10 +51,61 @@ export function setupInputs() {
         mapPinBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (gameMode === MODE.FIELD || gameMode === MODE.MENU || gameMode === MODE.DIALOG) {
-                setGameMode(MODE.MAP_VIEW);
+                openWorldMap();
             }
         });
     }
+
+    // Canvas tap events
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        canvas.addEventListener('click', (e) => {
+            initAudio();
+            handleCanvasTap(e.clientX, e.clientY);
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            initAudio();
+            if (e.changedTouches.length > 0) {
+                const touch = e.changedTouches[0];
+                if (handleCanvasTap(touch.clientX, touch.clientY)) {
+                    e.preventDefault();
+                }
+            }
+        }, { passive: false });
+    }
+
+    // ダブルタップによるズームを防止
+    document.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+            e.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, { passive: false });
+
+    // ピンチズームを防止（2本指タッチ）
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // gestureイベント（Safari）を防止
+    document.addEventListener('gesturestart', (e) => {
+        e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('gesturechange', (e) => {
+        e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('gestureend', (e) => {
+        e.preventDefault();
+    }, { passive: false });
+
+    // 右クリックメニューを無効化
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
 export function handleInput() {
@@ -75,6 +131,53 @@ function movePlayer(dir) {
 
     if (dx !== 0) engineMovePlayer(dx > 0 ? 'right' : 'left');
     else if (dy !== 0) engineMovePlayer(dy > 0 ? 'down' : 'up');
+}
+
+function handleCanvasTap(clientX, clientY) {
+    const canvas = document.getElementById('gameCanvas');
+    if (!canvas) return false;
+
+    // キャンバス上の座標に変換
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const tapX = (clientX - rect.left) * scaleX;
+    const tapY = (clientY - rect.top) * scaleY;
+
+    // メニューが開いていて、ステータスか呪文タブの場合のみ処理
+    if (!menu.active) return false;
+    if (menu.mode !== 'status' && menu.mode !== 'spells') return false;
+    if (party.length <= 1) return false;  // 仲間がいない場合は不要
+    if (menu.selectingMember) return false;  // 呪文対象選択モード中は不処理
+
+    // メニュー座標を計算（renderer.jsのdrawMenuと同じ計算）
+    const menuWidth = canvasWidth * 0.85;
+    const menuHeight = canvasHeight * 0.75;
+    const menuX = (canvasWidth - menuWidth) / 2;
+    const menuY = (canvasHeight - menuHeight) / 2;
+    const contentY = menuY + 10 + tileSize * 0.7;
+    const lineHeight = tileSize * 0.5;
+
+    // メンバーリスト領域（呪文タブの左側）
+    const memberListX = menuX + 15;
+    const memberListY = contentY + 5;
+    const memberListWidth = menuWidth * 0.28;
+
+    // タップがメンバーリスト領域内かチェック
+    if (tapX >= memberListX - 5 && tapX <= memberListX + memberListWidth + 5) {
+        for (let idx = 0; idx < party.length; idx++) {
+            const itemTop = memberListY + idx * lineHeight * 0.9 - 3;
+            const itemBottom = itemTop + lineHeight * 0.85;
+            if (tapY >= itemTop && tapY <= itemBottom) {
+                menu.memberCursor = idx;
+                if (menu.mode === 'spells') {
+                    menu.spellCursor = 0;  // 呪文カーソルもリセット
+                }
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 function handleKeyDown(e) {

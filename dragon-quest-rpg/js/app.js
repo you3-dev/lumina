@@ -14,6 +14,7 @@ import { performWarp, updateCamera, updatePlayerMovement, updateNPCs, createDebu
 import * as renderer from './renderer.js';
 import { updateSoundToggleIcon, toggleSound } from './sound.js';
 import { updateBattle } from './battle.js';
+import { updateMapPinVisibility } from './map.js';
 
 import {
     setCanvasWidth, setCanvasHeight, setTileSize, setCameraX, setCameraY,
