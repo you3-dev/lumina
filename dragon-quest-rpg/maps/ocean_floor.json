@@ -52,7 +52,7 @@
     {"id": "ancient_fish", "x": 10, "y": 15, "sprite": "🐟", "type": "villager", "messages": ["この海には古代の秘密が眠っている..."]}
   ],
   "chests": [
-    {"id": "ocean_floor_chest1", "x": 7, "y": 7, "itemId": 122, "itemName": "青い涙", "isOpened": false},
+    {"id": "ocean_floor_chest1", "x": 7, "y": 7, "itemId": 141, "itemName": "青い涙", "isOpened": false},
     {"id": "ocean_floor_chest2", "x": 30, "y": 7, "itemId": 4, "itemName": "まんげつ草", "isOpened": false}
   ],
   "encounterTable": "area5_ocean_floor",

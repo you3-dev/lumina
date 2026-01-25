@@ -717,9 +717,9 @@
             132: { id: 132, name: '鉄格子の鍵', description: '監獄島の正門を開ける鍵', type: 'key', price: 0 },
 
             // クエストアイテム（エリア5）
-            140: { id: 140, name: '青の涙', description: '海神の英知を宿す宝玉', type: 'quest', price: 0 },
-            141: { id: 141, name: '赤の涙', description: '海神の勇気を宿す宝玉', type: 'quest', price: 0 },
-            142: { id: 142, name: '緑の涙', description: '海神の慈愛を宿す宝玉', type: 'quest', price: 0 },
+            140: { id: 140, name: '人魚の涙', description: 'セイレーン女王が流した美しい涙', type: 'quest', price: 0 },
+            141: { id: 141, name: '青い涙', description: 'バルバロイの魂が宿る青い宝玉', type: 'quest', price: 0 },
+            142: { id: 142, name: '緑の涙', description: 'ギガントの生命力が凝縮された緑の宝玉', type: 'quest', price: 0 },
             143: { id: 143, name: '天空の海図', description: 'エリア6「天空界」への道を示す海図', type: 'quest', price: 0 },
 
             // その他（エリア5）
@@ -7357,15 +7357,15 @@
                                     questMessage = 'アルビダが船を明け渡した！\nリヴァイアサン号 を手に入れた！';
                                 } else if (bossId === 'sirenQueen') {
                                     setStoryFlag('sirenQueenDefeated', true);
-                                    addItem(121);  // 人魚の涙
+                                    addItem(140);  // 人魚の涙
                                     questMessage = 'セイレーン女王が真の姿を取り戻した...\n人魚の涙 を手に入れた！';
                                 } else if (bossId === 'barbaloi') {
                                     setStoryFlag('barbaloimDefeated', true);
-                                    addItem(122);  // 青い涙
+                                    addItem(141);  // 青い涙
                                     questMessage = 'バルバロイを倒した！\n青い涙 を手に入れた！';
                                 } else if (bossId === 'parasite') {
                                     setStoryFlag('parasiteDefeated', true);
-                                    addItem(124);  // 緑の涙
+                                    addItem(142);  // 緑の涙
                                     questMessage = 'パラサイトが消滅した！\nギガントが目を覚ます...\n緑の涙 を手に入れた！';
                                 } else if (bossId === 'leviathan') {
                                     setStoryFlag('leviathanDefeated', true);
@@ -10330,9 +10330,9 @@
             }
 
             // 3つの涙を持っているかチェック
-            const hasMermaidTear = hasItem(121);  // 人魚の涙
-            const hasBlueTear = hasItem(122);     // 青い涙
-            const hasGreenTear = hasItem(124);    // 緑の涙
+            const hasMermaidTear = hasItem(140);  // 人魚の涙
+            const hasBlueTear = hasItem(141);     // 青い涙
+            const hasGreenTear = hasItem(142);    // 緑の涙
 
             if (!hasMermaidTear || !hasBlueTear || !hasGreenTear) {
                 const missingTears = [];
@@ -10354,9 +10354,9 @@
                 '海神に捧げますか？'
             ], () => {
                 // 涙を消費
-                removeItem(121);  // 人魚の涙
-                removeItem(122);  // 青い涙
-                removeItem(124);  // 緑の涙
+                removeItem(140);  // 人魚の涙
+                removeItem(141);  // 青い涙
+                removeItem(142);  // 緑の涙
 
                 // フラグを立てる
                 setStoryFlag('allTearsOffered', true);
