@@ -16,6 +16,7 @@ import {
 import { expTable, spells, items, encounterTables, encounterTableFallback, shopItemsByArea } from './data.js';
 import { startBattle } from './battle.js';
 import { SE, BGM, initAudio, toggleSound } from './sound.js';
+import { clearKeys } from './input.js';
 
 export function getReviveCost(member) {
     return member.level * 20;
@@ -669,12 +670,14 @@ export function closeDialog() {
 export function openMenu() {
     if (dialog.active || isTransitioning || gameMode === MODE.BATTLE || inn.active || partyJoinConfirm.active) return;
     SE.confirm(); // メニュー開くSE
+    clearKeys(); // キー状態をクリアして移動を防ぐ
     menu.active = true;
     menu.mode = 'status'; // デフォルトでステータス画面
 }
 
 export function closeMenu() {
     SE.cancel(); // メニュー閉じるSE
+    clearKeys(); // キー状態をクリアして移動を防ぐ
     menu.active = false;
     menu.showItemAction = false;
     menu.itemActionIndex = 0;
@@ -1709,8 +1712,12 @@ export function interact() {
             dialog.pendingAction = { type: 'church' };
         }
 
+        // messagesが空でもstartDialogを呼ぶ（pendingActionを実行するため）
         if (messages && messages.length > 0) {
             startDialog(messages);
+        } else if (dialog.pendingAction) {
+            // messagesが無いがpendingActionがある場合は空のダイアログで開始
+            startDialog(['']);
         }
         return;
     }

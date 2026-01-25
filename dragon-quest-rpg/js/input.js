@@ -24,6 +24,13 @@ import { advanceBattlePhase } from './battle.js';
 
 const keys = {};
 
+// キー状態をすべてクリアする関数
+export function clearKeys() {
+    Object.keys(keys).forEach(key => {
+        keys[key] = false;
+    });
+}
+
 // 連続移動用の変数
 let moveInterval = null;
 let currentMoveDirection = { dx: 0, dy: 0 };

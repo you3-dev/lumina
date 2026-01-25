@@ -18,6 +18,7 @@ export function generateEnemyGroup(encounterTable) {
         monster.id = monsterId;
         monster.maxHp = monster.hp;
         monster.currentHp = monster.hp;
+        monster.displayName = monster.name; // displayNameを設定
         monster.isAlive = true;
         enemies.push(monster);
     }
@@ -39,6 +40,7 @@ export function startBattle(monsterTypeOrTable) {
         m.id = monsterTypeOrTable;
         m.maxHp = m.hp;
         m.currentHp = m.hp;
+        m.displayName = m.name; // displayNameを設定
         m.isAlive = true;
         battle.enemies = [m];
     } else {
