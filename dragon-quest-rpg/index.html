@@ -7349,6 +7349,29 @@
                                     addItem(85);  // 氷龍の牙
                                     questMessage = '氷龍フロストヴルムを討伐した！\n氷龍の牙 を手に入れた！';
                                 }
+                                // エリア5: 大いなる海と沈んだ王国
+                                else if (bossId === 'albida') {
+                                    setStoryFlag('shipObtained', true);
+                                    setStoryFlag('albidaDefeated', true);
+                                    partyData.vehicle = 'ship';
+                                    questMessage = 'アルビダが船を明け渡した！\nリヴァイアサン号 を手に入れた！';
+                                } else if (bossId === 'sirenQueen') {
+                                    setStoryFlag('sirenQueenDefeated', true);
+                                    addItem(121);  // 人魚の涙
+                                    questMessage = 'セイレーン女王が真の姿を取り戻した...\n人魚の涙 を手に入れた！';
+                                } else if (bossId === 'barbaloi') {
+                                    setStoryFlag('barbaloimDefeated', true);
+                                    addItem(122);  // 青い涙
+                                    questMessage = 'バルバロイを倒した！\n青い涙 を手に入れた！';
+                                } else if (bossId === 'parasite') {
+                                    setStoryFlag('parasiteDefeated', true);
+                                    addItem(124);  // 緑の涙
+                                    questMessage = 'パラサイトが消滅した！\nギガントが目を覚ます...\n緑の涙 を手に入れた！';
+                                } else if (bossId === 'leviathan') {
+                                    setStoryFlag('leviathanDefeated', true);
+                                    setStoryFlag('area5Completed', true);
+                                    questMessage = 'リヴァイアサンを倒した！\n海に平和が戻った...';
+                                }
 
                                 if (questMessage) {
                                     showBattleMessage(questMessage, () => {
@@ -9507,8 +9530,14 @@
 
         // ギガント移動処理（100歩ごと）
         function processGigantMovement() {
-            if (!gameProgress.storyFlags.gigantAppeared) return;
-            if (!currentMap || currentMap.id !== 'area5_ocean') return;
+            // ギガント体内のパラサイトを倒していたら出現しない
+            if (getStoryFlag('parasiteDefeated')) return;
+            // 船を持っていない場合は処理しない
+            if (!getStoryFlag('shipObtained')) return;
+            // 外海マップでない場合は処理しない
+            if (!currentMap || currentMap.mapId !== 'area5_ocean') return;
+            // 船に乗っていない場合は処理しない
+            if (!isOnShip()) return;
 
             partyData.gigantStepCounter++;
 
@@ -9531,6 +9560,45 @@
                     partyData.gigantPosition.y + dir.dy, 200
                 );
             }
+
+            // プレイヤーとギガントの距離チェック（飲み込み判定）
+            checkGigantSwallow();
+        }
+
+        // ギガント飲み込み判定
+        function checkGigantSwallow() {
+            const dx = Math.abs(partyData.x - partyData.gigantPosition.x);
+            const dy = Math.abs(partyData.y - partyData.gigantPosition.y);
+            // ループマップを考慮した距離計算
+            const distX = Math.min(dx, 200 - dx);
+            const distY = Math.min(dy, 200 - dy);
+            const distance = Math.sqrt(distX * distX + distY * distY);
+
+            // 距離が5以内なら飲み込まれる
+            if (distance <= 5) {
+                triggerGigantSwallow();
+            }
+        }
+
+        // ギガント飲み込みイベント
+        function triggerGigantSwallow() {
+            // 画面を揺らす
+            screenShake.active = true;
+            screenShake.intensity = 15;
+            screenShake.duration = 60;
+
+            startDialogWithCallback([
+                '！？',
+                '海面が大きく盛り上がった！',
+                '巨大な口が船を飲み込んでいく...！'
+            ], () => {
+                // 船を失う（体内では徒歩）
+                partyData.vehicle = 'none';
+                // 酸素を最大に
+                partyData.oxygen = partyData.maxOxygen;
+                // ギガント体内へワープ
+                loadMap('maps/gigant_interior.json', 12, 23);
+            });
         }
 
         // エリア5専用の移動後処理
@@ -9962,6 +10030,9 @@
                 } else if (npc.type === 'quest_ancient_spell') {
                     // 古代呪文クエストNPC
                     handleAncientSpellQuest(npc);
+                } else if (npc.type === 'sea_god_altar') {
+                    // 海神の祭壇（3つの涙を捧げる）
+                    handleSeaGodAltar(npc);
                 } else {
                     // ゲームクリア後はNPCのセリフが変わる
                     if (gameCleared && npc.clearedMessages) {
@@ -10243,6 +10314,68 @@
                     startDialog([
                         `${player.name}は ザオリクを 覚えた！`,
                         '（確実に 仲間を蘇生させる 究極の復活呪文）'
+                    ]);
+
+                    saveGame();
+                }, 600);
+            });
+        }
+
+        // 海神の祭壇イベント（3つの涙を捧げる）
+        function handleSeaGodAltar(npc) {
+            // 既に涙を捧げている場合
+            if (getStoryFlag('allTearsOffered')) {
+                startDialog(npc.completedMessages || ['深淵への道は開かれた...']);
+                return;
+            }
+
+            // 3つの涙を持っているかチェック
+            const hasMermaidTear = hasItem(121);  // 人魚の涙
+            const hasBlueTear = hasItem(122);     // 青い涙
+            const hasGreenTear = hasItem(124);    // 緑の涙
+
+            if (!hasMermaidTear || !hasBlueTear || !hasGreenTear) {
+                const missingTears = [];
+                if (!hasMermaidTear) missingTears.push('人魚の涙');
+                if (!hasBlueTear) missingTears.push('青い涙');
+                if (!hasGreenTear) missingTears.push('緑の涙');
+
+                startDialog([
+                    '3つの涙を捧げよ...',
+                    `まだ足りぬ: ${missingTears.join('、')}`
+                ]);
+                return;
+            }
+
+            // 3つの涙を捧げる
+            startDialogWithCallback([
+                '3つの涙が揃った...',
+                '人魚の涙、青い涙、緑の涙...',
+                '海神に捧げますか？'
+            ], () => {
+                // 涙を消費
+                removeItem(121);  // 人魚の涙
+                removeItem(122);  // 青い涙
+                removeItem(124);  // 緑の涙
+
+                // フラグを立てる
+                setStoryFlag('allTearsOffered', true);
+                setStoryFlag('allTearsObtained', true);
+
+                // 演出
+                spellFlash.active = true;
+                spellFlash.color = 'rgba(0, 150, 255, 1.0)';
+                spellFlash.alpha = 1.0;
+
+                setTimeout(() => {
+                    spellFlash.active = false;
+
+                    startDialog([
+                        '...祭壇が青白く輝き始めた！',
+                        '海神の声が響く...',
+                        '「汝の勇気に応え、深淵への道を開こう...」',
+                        '「海底の奥深くに潜む者を倒すのだ...」',
+                        'アトランティスへの道が開かれた！'
                     ]);
 
                     saveGame();
