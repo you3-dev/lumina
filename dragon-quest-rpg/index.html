@@ -674,7 +674,39 @@
             92: { id: 92, name: 'じょおうのティアラ', type: 'accessory', value: 0, price: 0, equippable: ['hero', 'mage', 'seer', 'iceKnight'], mpBoost: 30 },
             // クエストアイテム（エリア4）
             95: { id: 95, name: '太陽の炎', description: '女王を救う力を持つ聖なる炎', type: 'quest', price: 0 },
-            96: { id: 96, name: '極光の宝珠', description: '海を渡る力を持つ宝珠', type: 'quest', price: 0 }
+            96: { id: 96, name: '極光の宝珠', description: '海を渡る力を持つ宝珠', type: 'quest', price: 0 },
+
+            // ========================================
+            // エリア5: 大いなる海と沈んだ王国
+            // ========================================
+
+            // 武器（エリア5）
+            100: { id: 100, name: 'ポセイドンブレード', type: 'weapon', value: 85, price: 12000, equippable: ['hero', 'iceKnight'], description: '海神の加護を受けた剣' },
+            101: { id: 101, name: 'シェルスタッフ', type: 'weapon', value: 65, price: 8500, equippable: ['mage', 'seer'], description: '貝殻で作られた杖' },
+            102: { id: 102, name: '珊瑚の弓', type: 'weapon', value: 72, price: 9000, equippable: ['seer'], description: '珊瑚で作られた弓' },
+
+            // 防具（エリア5）
+            110: { id: 110, name: '碧海のローブ', type: 'armor', value: 45, price: 11000, equippable: ['mage', 'seer'], resistances: { ice: 0.5 }, description: '深海の布で織られたローブ' },
+            111: { id: 111, name: '竜鱗の鎧', type: 'armor', value: 62, price: 15000, equippable: ['hero', 'iceKnight'], resistances: { fire: 0.7 }, description: '海竜の鱗で作られた鎧' },
+            112: { id: 112, name: '泡の盾', type: 'shield', value: 28, price: 7500, equippable: ['hero', 'iceKnight'], description: '不思議な泡でできた盾' },
+
+            // 消費アイテム（エリア5）
+            120: { id: 120, name: '酸素缶', description: '水中での行動可能歩数を50増やす', type: 'oxygen', value: 50, price: 500 },
+            121: { id: 121, name: '海の香草', description: '眠り、麻痺、混乱を治療する', type: 'cure', price: 150 },
+
+            // 船パーツ（エリア5）
+            130: { id: 130, name: '重い錨', description: '船に装備すると弱い潮流を無視できる', type: 'ship_part', price: 5000 },
+            131: { id: 131, name: '船の鍵', description: 'リヴァイアサン号を動かすための鍵', type: 'key', price: 0 },
+            132: { id: 132, name: '鉄格子の鍵', description: '監獄島の正門を開ける鍵', type: 'key', price: 0 },
+
+            // クエストアイテム（エリア5）
+            140: { id: 140, name: '青の涙', description: '海神の英知を宿す宝玉', type: 'quest', price: 0 },
+            141: { id: 141, name: '赤の涙', description: '海神の勇気を宿す宝玉', type: 'quest', price: 0 },
+            142: { id: 142, name: '緑の涙', description: '海神の慈愛を宿す宝玉', type: 'quest', price: 0 },
+            143: { id: 143, name: '天空の海図', description: 'エリア6「天空界」への道を示す海図', type: 'quest', price: 0 },
+
+            // その他（エリア5）
+            150: { id: 150, name: '古代のパーツ', description: '海底で見つかった機械の部品。売却用', type: 'treasure', price: 3000 }
         };
 
         // ショップ商品リスト（エリア別対応）
@@ -689,7 +721,11 @@
             underworld_shop: [1, 4, 5, 9, 18, 19, 27, 28, 44, 45, 53, 54], // 地底の村：回復アイテム + エリア3装備
             // エリア4のショップ
             snow_village_weapon: [70, 72, 80, 82, 90], // 雪原の村・武器屋：氷の武器・防具
-            snow_village_item: [1, 4, 5, 9, 60, 61, 62] // 雪原の村・道具屋：回復アイテム + 氷対策アイテム
+            snow_village_item: [1, 4, 5, 9, 60, 61, 62], // 雪原の村・道具屋：回復アイテム + 氷対策アイテム
+            // エリア5のショップ
+            portia_weapon: [100, 101, 102, 111, 112], // ポルティア・武器屋：海の武器・防具
+            portia_armor: [110, 111, 112], // ポルティア・防具屋
+            portia_item: [1, 4, 5, 9, 120, 121] // ポルティア・道具屋：回復アイテム + 酸素缶・海の香草
         };
         let currentShopId = 'default';
         const shopItems = shopItemsByArea.default; // 互換性のため維持
@@ -1580,6 +1616,226 @@
                 actions: 2,
                 skills: ['attack', 'strongAttack', 'absoluteZero', 'frostBite', 'iceBreath', 'behoma'],
                 resistances: { ice: 0, fire: 2.0, light: 0.5, sleep: 0, poison: 0, blind: 0 }
+            },
+
+            // ========================================
+            // エリア5: 大いなる海と沈んだ王国（Lv45-60）
+            // ========================================
+
+            // === 外海の雑魚（Lv45-50）===
+            seaSlime: {
+                name: 'ウミスライム',
+                sprite: '💧',
+                level: 45,
+                hp: 120,
+                atk: 55,
+                def: 60,
+                speed: 35,
+                exp: 180,
+                gold: 150,
+                resistances: { fire: 2.0, ice: 0.5, sleep: 1.0, blind: 1.0, poison: 1.0 }
+            },
+            manOWar: {
+                name: 'しびれクラゲ',
+                sprite: '🪼',
+                level: 46,
+                hp: 110,
+                atk: 62,
+                def: 50,
+                speed: 45,
+                exp: 200,
+                gold: 170,
+                skills: ['attack'],
+                canParalyze: true,
+                resistances: { lightning: 0.5, ice: 1.5, sleep: 0.8, blind: 0.6, poison: 0 }
+            },
+            greatShark: {
+                name: 'グレートシャーク',
+                sprite: '🦈',
+                level: 48,
+                hp: 350,
+                atk: 95,
+                def: 75,
+                speed: 55,
+                exp: 350,
+                gold: 280,
+                skills: ['attack', 'strongAttack'],
+                resistances: { wind: 2.0, ice: 0.5, sleep: 0.5, blind: 0.7, poison: 1.0 }
+            },
+
+            // === 珊瑚の迷宮（Lv48-52）===
+            coralMagician: {
+                name: 'さんごの魔術師',
+                sprite: '🧙',
+                hueRotate: 180,
+                level: 49,
+                hp: 180,
+                atk: 70,
+                def: 65,
+                speed: 40,
+                exp: 280,
+                gold: 220,
+                skills: ['attack', 'rariho', 'hyados'],
+                resistances: { fire: 2.0, ice: 0, sleep: 0.3, blind: 0.5, poison: 1.0 }
+            },
+            seaSerpent: {
+                name: 'シーサーペント',
+                sprite: '🐍',
+                hueRotate: 200,
+                level: 51,
+                hp: 450,
+                atk: 110,
+                def: 90,
+                speed: 50,
+                exp: 400,
+                gold: 320,
+                skills: ['attack', 'iceBreath'],
+                resistances: { lightning: 2.0, fire: 0.8, sleep: 0.4, blind: 0.5, poison: 0.3 }
+            },
+
+            // === 監獄島（Lv50-54）===
+            prisonGuard: {
+                name: '監獄の看守',
+                sprite: '👮',
+                level: 52,
+                hp: 280,
+                atk: 105,
+                def: 110,
+                speed: 30,
+                exp: 380,
+                gold: 300,
+                skills: ['attack', 'strongAttack'],
+                resistances: { sleep: 0.5, blind: 0.5, poison: 0.5, silence: 0.5 }
+            },
+            ghostPirate: {
+                name: 'キャプテン・ゴースト',
+                sprite: '👻',
+                hueRotate: 240,
+                level: 53,
+                hp: 300,
+                atk: 90,
+                def: 80,
+                speed: 48,
+                exp: 420,
+                gold: 350,
+                skills: ['attack', 'mahoton'],
+                resistances: { light: 2.0, dark: 0, sleep: 0, blind: 0.8, poison: 0 }
+            },
+
+            // === ギガント体内（Lv52-55）===
+            ironShell: {
+                name: 'アイアンタートル',
+                sprite: '🐢',
+                level: 52,
+                hp: 200,
+                atk: 65,
+                def: 200,
+                speed: 15,
+                exp: 300,
+                gold: 250,
+                resistances: { lightning: 2.0, ice: 0.2, sleep: 0.3, blind: 1.0, poison: 0 }
+            },
+
+            // === アトランティア（Lv54-58）===
+            ancientGear: {
+                name: '古代の歯車',
+                sprite: '⚙️',
+                level: 56,
+                hp: 220,
+                atk: 85,
+                def: 120,
+                speed: 60,
+                exp: 450,
+                gold: 400,
+                skills: ['attack', 'strongAttack'],
+                resistances: { lightning: 2.5, water: 0, sleep: 0, blind: 0, poison: 0 }
+            },
+
+            // === エリア5ボス ===
+
+            // 中ボス: 海賊貴族アルビダ（出航直後イベント）
+            albida: {
+                name: '海賊貴族アルビダ',
+                sprite: '🏴‍☠️',
+                level: 50,
+                hp: 2500,
+                atk: 120,
+                def: 85,
+                speed: 75,
+                exp: 3500,
+                gold: 2000,
+                isBoss: true,
+                actions: 2,
+                skills: ['attack', 'commandAttack', 'mahoton', 'strongAttack'],
+                resistances: { sleep: 0, blind: 0.3, poison: 0, silence: 0, fire: 1.0, ice: 1.0, lightning: 1.5, wind: 0.5 }
+            },
+
+            // 珊瑚の迷宮ボス: セイレーンクイーン
+            sirenQueen: {
+                name: 'セイレーンクイーン',
+                sprite: '🧜‍♀️',
+                level: 54,
+                hp: 3200,
+                atk: 95,
+                def: 70,
+                speed: 90,
+                exp: 4500,
+                gold: 2500,
+                isBoss: true,
+                actions: 2,
+                skills: ['attack', 'lullaby', 'illusionWave', 'hydroBlast', 'hyados'],
+                resistances: { sleep: 0, blind: 0, poison: 0.5, silence: 0.3, fire: 1.5, ice: 0, lightning: 2.0, wind: 0.5 }
+            },
+
+            // 監獄島ボス: 監獄長バルバロイ
+            barbaloi: {
+                name: '監獄長バルバロイ',
+                sprite: '👹',
+                level: 56,
+                hp: 3800,
+                atk: 145,
+                def: 130,
+                speed: 45,
+                exp: 5000,
+                gold: 3000,
+                isBoss: true,
+                actions: 2,
+                skills: ['attack', 'gigantPress', 'ironWall', 'warcry', 'strongAttack'],
+                resistances: { sleep: 0, blind: 0.2, poison: 0, silence: 0, fire: 0.5, ice: 0.5, lightning: 2.0, wind: 1.0 }
+            },
+
+            // ギガントボス: 寄生王パラサイト
+            parasite: {
+                name: '寄生王パラサイト',
+                sprite: '🦠',
+                level: 55,
+                hp: 3500,
+                atk: 100,
+                def: 75,
+                speed: 65,
+                exp: 4800,
+                gold: 2800,
+                isBoss: true,
+                actions: 2,
+                skills: ['attack', 'staminaDrain', 'toxicCloud', 'bioAcid', 'drain'],
+                resistances: { sleep: 0.5, blind: 0.5, poison: 0, silence: 0.5, fire: 2.0, ice: 1.0, lightning: 1.0, wind: 1.0 }
+            },
+
+            // エリア5最終ボス: 海神リヴァイアサン
+            leviathan: {
+                name: '海神リヴァイアサン',
+                sprite: '🐉',
+                level: 60,
+                hp: 6000,
+                atk: 160,
+                def: 100,
+                speed: 80,
+                exp: 12000,
+                gold: 8000,
+                isBoss: true,
+                actions: 2,
+                skills: ['attack', 'grandTidal', 'elementShift', 'mpDrain', 'absoluteZero', 'hageshiiHonoo', 'raiden'],
+                resistances: { sleep: 0, blind: 0, poison: 0, silence: 0, fire: 1.0, ice: 1.0, lightning: 1.0, wind: 1.0 }
             }
         };
 
@@ -1606,7 +1862,121 @@
             frostBite: { name: 'フロストバイト', type: 'attack', target: 'single', power: 80, element: 'ice', flashColor: 'rgba(180, 230, 255, 0.8)' },
             // 雑魚敵用スキル
             drain: { name: 'HP吸収', type: 'drain', target: 'single', power: 20, flashColor: 'rgba(150, 50, 150, 0.5)' },
-            howl: { name: 'おたけび', type: 'debuff', effect: 'stun', flashColor: 'rgba(255, 200, 100, 0.5)' }
+            howl: { name: 'おたけび', type: 'debuff', effect: 'stun', flashColor: 'rgba(255, 200, 100, 0.5)' },
+
+            // ========================================
+            // エリア5用スキル
+            // ========================================
+
+            // アルビダ用
+            commandAttack: {
+                name: 'いっせいこうげき',
+                type: 'attack',
+                target: 'all',
+                power: 40,
+                flashColor: 'rgba(255, 150, 50, 0.6)'
+            },
+
+            // セイレーン用
+            lullaby: {
+                name: 'ねむりのうた',
+                type: 'status',
+                target: 'all',
+                statusEffect: 'sleep',
+                successRate: 0.7,
+                flashColor: 'rgba(200, 150, 255, 0.6)'
+            },
+            illusionWave: {
+                name: 'げんわくのはどう',
+                type: 'status',
+                target: 'all',
+                statusEffect: 'blind',
+                successRate: 0.6,
+                flashColor: 'rgba(255, 100, 255, 0.6)'
+            },
+            hydroBlast: {
+                name: 'ハイドロブラスト',
+                type: 'attack',
+                target: 'all',
+                power: 70,
+                element: 'water',
+                flashColor: 'rgba(50, 150, 255, 0.8)'
+            },
+
+            // バルバロイ用
+            gigantPress: {
+                name: 'ギガントプレス',
+                type: 'attack',
+                target: 'all',
+                power: 85,
+                flashColor: 'rgba(150, 100, 50, 0.8)'
+            },
+            ironWall: {
+                name: 'てっぺき',
+                type: 'buff',
+                buffType: 'defense',
+                buffRate: 2.0,
+                flashColor: 'rgba(150, 150, 150, 0.7)'
+            },
+            warcry: {
+                name: 'おたけび',
+                type: 'status',
+                target: 'all',
+                statusEffect: 'stun',
+                successRate: 0.5,
+                flashColor: 'rgba(255, 200, 100, 0.6)'
+            },
+
+            // パラサイト用
+            staminaDrain: {
+                name: 'スタミナドレイン',
+                type: 'drain',
+                target: 'single',
+                power: 50,
+                drainRate: 0.5,
+                flashColor: 'rgba(100, 50, 100, 0.7)'
+            },
+            toxicCloud: {
+                name: 'もうどくのきり',
+                type: 'status',
+                target: 'all',
+                statusEffect: 'poison',
+                successRate: 0.8,
+                flashColor: 'rgba(100, 0, 150, 0.7)'
+            },
+            bioAcid: {
+                name: 'ようかいえき',
+                type: 'debuff',
+                target: 'all',
+                debuffType: 'defense',
+                debuffRate: 0.5,
+                successRate: 0.7,
+                flashColor: 'rgba(150, 255, 50, 0.6)'
+            },
+
+            // リヴァイアサン用
+            grandTidal: {
+                name: 'だいかいしょう',
+                type: 'attack',
+                target: 'all',
+                power: 120,
+                element: 'water',
+                flashColor: 'rgba(0, 100, 200, 0.9)'
+            },
+            elementShift: {
+                name: 'エレメントシフト',
+                type: 'buff',
+                buffType: 'special',
+                flashColor: 'rgba(255, 255, 255, 0.8)'
+            },
+            mpDrain: {
+                name: 'マナドレイン',
+                type: 'drain',
+                target: 'all',
+                drainMp: true,
+                drainAmount: 15,
+                flashColor: 'rgba(150, 50, 150, 0.6)'
+            }
         };
 
         // エリア別エンカウントテーブル（mapIdベース）
@@ -1659,7 +2029,25 @@
             area4_field: ['snowSlime', 'snowSlime', 'iceBat', 'snowWolf', 'snowWolf'],
             area4_cave: ['snowSlime', 'frozenKnight', 'iceElemental', 'iceBat'],
             area4_temple: ['iceElemental', 'iceElemental', 'frostGiant', 'frozenKnight'],
-            area4_castle: ['frozenKnight', 'frostGiant', 'crystalDragon', 'crystalDragon']
+            area4_castle: ['frozenKnight', 'frostGiant', 'crystalDragon', 'crystalDragon'],
+
+            // エリア5: 大いなる海と沈んだ王国（Lv45-60）
+            // 外海（船での移動中）
+            area5_ocean: ['seaSlime', 'seaSlime', 'manOWar', 'manOWar', 'greatShark'],
+            // 珊瑚の浜辺（フィールド）
+            area5_coral_beach: ['seaSlime', 'seaSlime', 'manOWar', 'coralMagician'],
+            // 珊瑚の迷宮（ダンジョン）
+            area5_coral: ['coralMagician', 'coralMagician', 'seaSerpent', 'seaSerpent'],
+            // 監獄島外壁（フィールド）
+            area5_prison_exterior: ['prisonGuard', 'ghostPirate', 'ghostPirate'],
+            // 監獄島内部（ダンジョン）
+            area5_prison: ['prisonGuard', 'prisonGuard', 'ghostPirate', 'ghostPirate'],
+            // ギガント体内（ダンジョン）
+            area5_gigant: ['seaSlime', 'manOWar', 'ironShell', 'ironShell'],
+            // 海底の道（フィールド）
+            area5_ocean_floor: ['ancientGear', 'seaSerpent', 'ghostPirate', 'manOWar'],
+            // アトランティア（ダンジョン）
+            area5_atlantis: ['ancientGear', 'ancientGear', 'seaSerpent', 'ghostPirate']
         };
 
         // 旧type名との互換用フォールバック
@@ -2334,7 +2722,13 @@
                 libraryGuardian: false,     // 図書室の守護者
                 // エリア4ボス
                 iceGolem: false,            // 氷のゴーレム（中ボス）
-                iceQueen: false             // 氷の女王（エリアボス）
+                iceQueen: false,            // 氷の女王（エリアボス）
+                // エリア5ボス
+                albida: false,              // 海賊貴族アルビダ（中ボス）
+                sirenQueen: false,          // セイレーンクイーン
+                barbaloi: false,            // 監獄長バルバロイ
+                parasite: false,            // 寄生王パラサイト
+                leviathan: false            // 海神リヴァイアサン（エリアボス）
             },
             // ストーリー進行フラグ
             storyFlags: {
@@ -2363,7 +2757,21 @@
                 iceQueenDefeated: false,       // 氷の女王撃破
                 frostWyrmDefeated: false,      // 氷龍フロストヴルム撃破
                 area4Completed: false,         // エリア4クリア
-                auroraOrbObtained: false       // 極光の宝珠入手
+                auroraOrbObtained: false,      // 極光の宝珠入手
+                // エリア5フラグ
+                area5Entered: false,           // エリア5に入った
+                shipObtained: false,           // 船入手済み
+                albidaDefeated: false,         // アルビダ撃破
+                gigantAppeared: false,         // ギガント出現済み
+                hasPrisonKey: false,           // 監獄の鍵入手済み
+                tearBlueObtained: false,       // 青の涙入手（珊瑚の迷宮）
+                tearRedObtained: false,        // 赤の涙入手（監獄島）
+                tearGreenObtained: false,      // 緑の涙入手（ギガント）
+                allTearsCollected: false,      // 三至宝を祭壇に捧げた
+                leviathanDefeated: false,      // リヴァイアサン撃破
+                skyMapObtained: false,         // 天空の海図入手
+                helpedLostDiver: false,        // 迷子のダイバーを助けた
+                area5Completed: false          // エリア5クリア
             },
             // クエストフラグ（エリア2）
             quests: {
