@@ -6,9 +6,9 @@ import {
     player, party, partyData, setupPlayerProxy,
     canvasWidth, canvasHeight, tileSize, cameraX, cameraY,
     maps, isTransitioning, stepsSinceLastBattle,
-    gameProgress, SAVE_KEY
+    gameProgress
 } from './state.js';
-import { MODE, VISIBLE_TILES } from './constants.js';
+import { MODE, VISIBLE_TILES, SAVE_KEY } from './constants.js';
 import { setupInputs, handleInput } from './input.js';
 import { performWarp, updateCamera, updatePlayerMovement, updateNPCs, createDebugSave } from './engine.js';
 import * as renderer from './renderer.js';

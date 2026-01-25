@@ -1,14 +1,14 @@
 import {
     party, partyData, currentMap, currentMapId, currentMapPath, maps,
     setGameMode, isTransitioning, setIsTransitioning,
-    mapLoadState, SAVE_KEY, tileSize, canvasWidth, canvasHeight,
+    mapLoadState, tileSize, canvasWidth, canvasHeight,
     player, setCurrentMap, setCurrentMapId, setCurrentMapPath,
     setCameraX, setCameraY, stepsSinceLastBattle, setStepsSinceLastBattle,
     pushedIceBlocks, dialog, titleMenuIndex, setTitleMenuIndex,
     hasSaveData, setHasSaveData, gameProgress, hasItem, addItem, getStoryFlag,
     inn, church, shop
 } from './state.js';
-import { MODE, WALKABLE_TILES, TILE } from './constants.js';
+import { MODE, WALKABLE_TILES, TILE, SAVE_KEY } from './constants.js';
 import { expTable, spells, items } from './data.js';
 import { startBattle } from './battle.js';
 import { SE, BGM } from './sound.js';

@@ -4,9 +4,6 @@
 import { items, spells } from './data.js';
 import { MODE, MAX_STACK_SIZE, TILE } from './constants.js';
 
-// Save Data Key
-export const SAVE_KEY = 'dragonQuestRPG_saveData';
-
 export let gameMode = MODE.TITLE;
 export let titleMenuIndex = 0;
 export let titleMenuActive = false;
