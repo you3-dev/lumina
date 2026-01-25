@@ -9189,6 +9189,12 @@
                 currentMapId = mapData.mapId;
                 currentMapPath = targetMapPath;
                 currentMap = mapData;
+
+                // Area 5: マッププロパティの正規化
+                if (currentMap.isLooping && !currentMap.isLoopMap) {
+                    currentMap.isLoopMap = true;
+                }
+
                 player.x = targetX;
                 player.y = targetY;
                 mapNameElement.textContent = currentMap.name;
