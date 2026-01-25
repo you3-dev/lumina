@@ -11,17 +11,25 @@ export function generateEnemyGroup(encounterTable) {
     const table = encounterTables[encounterTable] || encounterTables[encounterTableFallback[encounterTable]] || encounterTables.field;
     if (!table) return [];
     const count = 1 + Math.floor(Math.random() * 3); // 1-3 enemies
+    const monsterType = table[Math.floor(Math.random() * table.length)];
+    const monsterData = monsters[monsterType];
+    const suffixes = ['A', 'B', 'C'];
     const enemies = [];
+
     for (let i = 0; i < count; i++) {
-        const monsterId = table[Math.floor(Math.random() * table.length)];
-        const monster = JSON.parse(JSON.stringify(monsters[monsterId]));
-        monster.id = monsterId;
-        monster.maxHp = monster.hp;
-        monster.currentHp = monster.hp;
-        monster.displayName = monster.name; // displayNameを設定
-        monster.isAlive = true;
-        enemies.push(monster);
+        const suffix = suffixes[i];
+        enemies.push({
+            ...monsterData,
+            id: `${monsterType}_${i}`,
+            type: monsterType,
+            displayName: count > 1 ? `${monsterData.name}${suffix}` : monsterData.name,
+            currentHp: monsterData.hp,
+            currentMp: monsterData.mp || 0,
+            status: { sleep: 0, poison: 0, blind: 0 },
+            index: i
+        });
     }
+
     return enemies;
 }
 
@@ -36,13 +44,17 @@ export function startBattle(monsterTypeOrTable) {
 
     if (monsters[monsterTypeOrTable]) {
         // Single designated monster
-        const m = JSON.parse(JSON.stringify(monsters[monsterTypeOrTable]));
-        m.id = monsterTypeOrTable;
-        m.maxHp = m.hp;
-        m.currentHp = m.hp;
-        m.displayName = m.name; // displayNameを設定
-        m.isAlive = true;
-        battle.enemies = [m];
+        const monsterData = monsters[monsterTypeOrTable];
+        battle.enemies = [{
+            ...monsterData,
+            id: `${monsterTypeOrTable}_0`,
+            type: monsterTypeOrTable,
+            displayName: monsterData.name,
+            currentHp: monsterData.hp,
+            currentMp: monsterData.mp || 0,
+            status: { sleep: 0, poison: 0, blind: 0 },
+            index: 0
+        }];
     } else {
         // Table based
         battle.enemies = generateEnemyGroup(monsterTypeOrTable);
