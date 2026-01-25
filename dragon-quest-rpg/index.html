@@ -8931,6 +8931,8 @@
                 }
                 const mapData = await response.json();
                 // console.log(`マップをロードしました: ${mapPath}`);
+                // 1D配列→2D配列変換（マップによって形式が異なるため）
+                normalizeMapData(mapData);
                 return mapData;
             } catch (error) {
                 console.error(`マップロードエラー (${mapPath}):`, error);
@@ -8951,6 +8953,31 @@
 
                 throw error;
             }
+        }
+
+        // マップデータの正規化（1D配列→2D配列変換）
+        function normalizeMapData(mapData) {
+            if (!mapData || !mapData.data || mapData.data.length === 0) {
+                return mapData;
+            }
+            // 既に2D配列（data[0]が配列）ならそのまま返す
+            if (Array.isArray(mapData.data[0])) {
+                return mapData;
+            }
+            // 1D配列を2D配列に変換
+            const cols = mapData.cols;
+            const rows = mapData.rows;
+            const flatData = mapData.data;
+            const data2D = [];
+            for (let row = 0; row < rows; row++) {
+                const rowData = [];
+                for (let col = 0; col < cols; col++) {
+                    rowData.push(flatData[row * cols + col]);
+                }
+                data2D.push(rowData);
+            }
+            mapData.data = data2D;
+            return mapData;
         }
 
         // マップパスかどうかを判定
