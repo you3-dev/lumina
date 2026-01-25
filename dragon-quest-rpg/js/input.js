@@ -11,7 +11,10 @@ import {
 import { SE, initAudio } from './sound.js';
 import {
     movePlayer as engineMovePlayer, updateCamera, interact, advanceDialog,
-    updateTitleMenuSelection, selectTitleMenuItem
+    updateTitleMenuSelection, selectTitleMenuItem,
+    openMenu, closeMenu, closeInn, closeChurch, closeDialog,
+    cancelTargetSelection, cancelAllySelection, handleShopInput,
+    startDialog
 } from './engine.js';
 import { openWorldMap } from './map.js';
 
@@ -314,9 +317,54 @@ function onActionA() {
 }
 
 function onActionB() {
-    if (dialog.active) {
-        // ダイアログを閉じる（closeDialog関数が必要）
+    if (isTransitioning) return;
+
+    // ルーラ選択中 - キャンセル
+    if (gameMode === MODE.FIELD && menu.active && menu.mode === 'rura') {
+        cancelTargetSelection();
+        return;
+    }
+    // バトル中 - 味方選択キャンセル
+    if (gameMode === MODE.BATTLE && battle.isSelectingAlly) {
+        cancelAllySelection();
+        return;
+    }
+    if (gameMode === MODE.BATTLE && battle.showSpells) {
+        battle.showSpells = false;
+    } else if (gameMode === MODE.BATTLE && battle.showItems) {
+        battle.showItems = false;
+    } else if (shop.active) {
+        handleShopInput('cancel');
+    } else if (inn.active) {
+        closeInn();
+        startDialog(['またのお越しを おまちしております。']);
+    } else if (church.active) {
+        if (church.phase === 'confirm') {
+            church.phase = 'selectMember';
+        } else if (church.phase === 'selectMember') {
+            church.phase = 'menu';
+        } else {
+            closeChurch();
+            startDialog(['また いつでも おこしください。']);
+        }
+    } else if (dialog.active) {
+        closeDialog();
     } else if (menu.active) {
-        menu.active = false;
+        if (menu.selectingMember) {
+            // 呪文対象選択モード - キャンセル
+            menu.selectingMember = false;
+        } else if (menu.selectingEquipMember) {
+            menu.selectingEquipMember = false;
+            menu.showItemAction = true;
+        } else if (menu.selectingItemMember) {
+            menu.selectingItemMember = false;
+            menu.showItemAction = true;
+        } else if (menu.showItemAction) {
+            menu.showItemAction = false;
+        } else {
+            closeMenu();
+        }
+    } else {
+        openMenu();
     }
 }

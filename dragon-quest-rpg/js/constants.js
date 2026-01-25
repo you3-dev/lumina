@@ -143,5 +143,10 @@ export const ENCOUNTER_TILES = [
     TILE.ICE_FLOOR, TILE.SNOW, TILE.ICE_CASTLE_FLOOR
 ];
 
+// エンカウント設定
+export const SAFE_STEPS = 5; // 不感地帯（この歩数以下はエンカウントしない）
+export const ENCOUNTER_RATE_PER_STEP = 0.02; // 1歩ごとの遭遇率上昇
+export const MAX_ENCOUNTER_RATE = 0.5; // 最大遭遇率（50%）
+
 export const MAX_STACK_SIZE = 99;
 export const ELEMENTS = ['fire', 'ice', 'lightning', 'wind', 'light'];

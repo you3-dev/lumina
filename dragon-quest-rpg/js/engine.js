@@ -6,10 +6,13 @@ import {
     setCameraX, setCameraY, stepsSinceLastBattle, setStepsSinceLastBattle,
     pushedIceBlocks, dialog, titleMenuIndex, setTitleMenuIndex, titleMenuActive, setTitleMenuActive,
     hasSaveData, setHasSaveData, gameProgress, hasItem, addItem, getStoryFlag,
-    inn, church, shop, createPartyMember, updateActualStats, resetGameProgress, setupPlayerProxy
+    inn, church, shop, menu, partyJoinConfirm, battle, createPartyMember, updateActualStats, resetGameProgress, setupPlayerProxy
 } from './state.js';
-import { MODE, WALKABLE_TILES, TILE, SAVE_KEY } from './constants.js';
-import { expTable, spells, items } from './data.js';
+import {
+    MODE, WALKABLE_TILES, TILE, SAVE_KEY,
+    ENCOUNTER_TILES, SAFE_STEPS, ENCOUNTER_RATE_PER_STEP, MAX_ENCOUNTER_RATE
+} from './constants.js';
+import { expTable, spells, items, encounterTables, encounterTableFallback } from './data.js';
 import { startBattle } from './battle.js';
 import { SE, BGM, initAudio, toggleSound } from './sound.js';
 
@@ -265,6 +268,9 @@ export function updatePlayerMovement(delta) {
         partyData.moveProgress = 0;
 
         checkWarp(player.x, player.y);
+        if (gameMode === MODE.FIELD) {
+            checkRandomEncounter();
+        }
         checkOxygen();
         checkCurrent();
         checkAcidDamage();
@@ -274,6 +280,55 @@ export function updatePlayerMovement(delta) {
         partyData.totalSteps++;
     }
     updateCamera();
+}
+
+export function checkRandomEncounter() {
+    // 安全地帯ではエンカウントしない
+    if (currentMap.isSafe === true) {
+        // 安全地帯に入ったら歩数リセット
+        if (stepsSinceLastBattle > 0) {
+            setStepsSinceLastBattle(0);
+        }
+        return;
+    }
+
+    // encounterRate=0のマップもスキップ（isSafe未定義の旧マップ互換）
+    if (currentMap.encounterRate <= 0) return;
+
+    // エンカウントタイル以外はスキップ
+    const tile = getTileAt(player.x, player.y);
+    if (!ENCOUNTER_TILES.includes(tile)) return;
+
+    // 歩数カウント
+    setStepsSinceLastBattle(stepsSinceLastBattle + 1);
+
+    // 不感地帯の判定（safeSteps以下はエンカウントしない）
+    if (stepsSinceLastBattle <= SAFE_STEPS) {
+        return;
+    }
+
+    // 確率の計算（歩くほど上昇）
+    const stepsOverSafe = stepsSinceLastBattle - SAFE_STEPS;
+    const currentEncounterRate = Math.min(
+        stepsOverSafe * ENCOUNTER_RATE_PER_STEP,
+        MAX_ENCOUNTER_RATE
+    );
+
+    // エンカウント判定
+    if (Math.random() < currentEncounterRate) {
+        // エンカウントテーブルを選択（優先順位）
+        // 1. マップに直接指定されたencounterTable
+        // 2. mapIdベース
+        // 3. typeベースのフォールバック
+        const mapId = currentMap.mapId || '';
+        let tableKey = currentMap.encounterTable || mapId;
+        if (!encounterTables[tableKey]) {
+            // mapIdで見つからなければtypeで探す
+            tableKey = encounterTableFallback[currentMap.type] || 'field';
+        }
+        // tableKeyを渡してグループ生成
+        startBattle(tableKey);
+    }
 }
 
 function checkOxygen() {
@@ -538,6 +593,25 @@ export function closeDialog() {
     }
 }
 
+export function openMenu() {
+    if (dialog.active || isTransitioning || gameMode === MODE.BATTLE || inn.active || partyJoinConfirm.active) return;
+    SE.confirm(); // メニュー開くSE
+    menu.active = true;
+    menu.mode = 'status'; // デフォルトでステータス画面
+}
+
+export function closeMenu() {
+    SE.cancel(); // メニュー閉じるSE
+    menu.active = false;
+    menu.showItemAction = false;
+    menu.itemActionIndex = 0;
+    menu.selectingMember = false;
+    menu.selectingEquipMember = false;
+    menu.selectingItemMember = false;
+    menu.memberCursor = 0;
+    menu.targetMemberCursor = 0;
+}
+
 export function openShop(shopId) {
     shop.active = true;
     shop.id = shopId;
@@ -551,10 +625,42 @@ export function openInn(cost) {
     setGameMode(MODE.INN);
 }
 
+export function closeInn() {
+    inn.active = false;
+    setGameMode(MODE.FIELD);
+}
+
 export function openChurch() {
     church.active = true;
     church.phase = 'menu';
     setGameMode(MODE.CHURCH);
+}
+
+export function closeChurch() {
+    church.active = false;
+    church.phase = 'menu';
+    setGameMode(MODE.FIELD);
+}
+
+export function cancelTargetSelection() {
+    battle.isSelectingTarget = false;
+    battle.pendingAction = null;
+    battle.message = '';
+}
+
+export function cancelAllySelection() {
+    battle.isSelectingAlly = false;
+    battle.pendingAction = null;
+    battle.showSpells = true;
+    battle.message = '';
+}
+
+export function handleShopInput(action) {
+    if (action === 'cancel') {
+        shop.active = false;
+        setGameMode(MODE.FIELD);
+    }
+    // 他のアクションは必要に応じて実装
 }
 
 export function getFrontPosition() {
@@ -576,6 +682,26 @@ export function getNpcAt(x, y) {
 export function getChestAt(x, y) {
     if (!currentMap || !currentMap.chests) return null;
     return currentMap.chests.find(chest => chest.x === x && chest.y === y);
+}
+
+export function openChest(chest) {
+    if (chest.isOpened) {
+        startDialog(['宝箱は からっぽだ。']);
+    } else {
+        const item = items[chest.itemId];
+        if (item) {
+            SE.chest(); // 宝箱SE
+            chest.isOpened = true;
+            // mapsオブジェクトの宝箱も同期（セーブデータに反映させるため）
+            if (maps[currentMapId] && maps[currentMapId].chests) {
+                const mapChest = maps[currentMapId].chests.find(c => c.id === chest.id);
+                if (mapChest) mapChest.isOpened = true;
+            }
+            addItem(item.id, 1);
+            startDialog(['宝箱をあけた！', `${item.name} を手に入れた！`]);
+            saveGame();
+        }
+    }
 }
 
 export function interact() {
@@ -658,15 +784,12 @@ export function interact() {
     }
 
     const chest = getChestAt(front.x, front.y);
-    if (chest && !chest.isOpened) {
-        chest.isOpened = true;
-        startDialog([`${chest.itemName}をみつけた！`]);
-        addItem(chest.itemId);
+    if (chest) {
+        openChest(chest);
         // Special quest item flags
-        if (chest.itemId === 124) {
+        if (chest.itemId === 124 && chest.isOpened) {
             gameProgress.storyFlags.tearOfGreenObtained = true;
         }
-        SE.chest();
         return;
     }
 
