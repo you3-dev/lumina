@@ -813,6 +813,68 @@ if (tileType === TILE.SEA) {
 // 2. 外海マップの記録位置へワープ
 ```
 
+### 10.2 ループマップシステム
+
+外海マップ（area5_ocean）は端に到達すると反対側から出てくるループマップ。
+
+```javascript
+// マップ属性で判定
+const isLoopMap = currentMapData.isLoopMap === true;
+
+// ループマップ用の座標計算（movePlayer関数内）
+function wrapCoordinate(coord, mapSize) {
+    // 座標がマップサイズを超えたら反対側に出る
+    if (coord < 0) {
+        return mapSize + coord;  // 例: -1 → 199 (200x200マップの場合)
+    }
+    if (coord >= mapSize) {
+        return coord - mapSize;  // 例: 200 → 0
+    }
+    return coord;
+}
+
+// 移動処理（movePlayer関数内）
+function movePlayer(dx, dy) {
+    let newX = player.x + dx;
+    let newY = player.y + dy;
+
+    // ループマップの場合、座標をラップ
+    if (isLoopMap) {
+        newX = wrapCoordinate(newX, currentMapData.cols);
+        newY = wrapCoordinate(newY, currentMapData.rows);
+    } else {
+        // 通常マップは境界でブロック
+        if (newX < 0 || newX >= currentMapData.cols) return false;
+        if (newY < 0 || newY >= currentMapData.rows) return false;
+    }
+
+    // 通行判定
+    if (!canMoveTo(newX, newY)) return false;
+
+    player.x = newX;
+    player.y = newY;
+    return true;
+}
+
+// 描画時もループを考慮（renderMap関数内）
+// 画面端でマップの反対側のタイルを描画する必要がある
+function getTileAt(x, y) {
+    if (isLoopMap) {
+        x = wrapCoordinate(x, currentMapData.cols);
+        y = wrapCoordinate(y, currentMapData.rows);
+    }
+    return currentMapData.data[y * currentMapData.cols + x];
+}
+```
+
+**ループマップの仕様**:
+| 項目 | 値 |
+|------|-----|
+| 対象マップ | `area5_ocean`（200x200） |
+| 横方向 | X=0 の左に移動 → X=199 に出現 |
+| 縦方向 | Y=0 の上に移動 → Y=199 に出現 |
+| 描画 | 画面端で反対側のタイルをシームレスに描画 |
+
 ### 10.2 酸素システム
 
 ```javascript
@@ -1131,6 +1193,7 @@ function updatePatrolNpcs() {
 ### Phase 2: システム実装
 
 - [ ] 船システム（vehicle, 乗降処理）
+- [ ] **ループマップシステム**（外海の端→反対側に出現）
 - [ ] 酸素システム（oxygen, ダメージ処理）
 - [ ] 潮流タイル処理
 - [ ] 胃液タイル処理
@@ -1210,3 +1273,4 @@ function updatePatrolNpcs() {
 
 - 2025-01-25: 最終仕様書初版作成
 - 2025-01-25: フィールドマップ3つを追加（珊瑚の浜辺、監獄島外壁、海底の道）
+- 2025-01-25: ループマップシステムの実装仕様を追加（外海マップの端→反対側）
