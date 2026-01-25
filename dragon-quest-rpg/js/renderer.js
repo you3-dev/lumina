@@ -5,17 +5,48 @@ import { TILE, MAP_TILE_COLORS, DEFAULT_TILE_COLORS, MODE } from './constants.js
 import {
     currentMap, cameraX, cameraY, tileSize, canvasWidth, canvasHeight,
     player, party, partyData, dialog, menu, inn, church, shop, battle,
-    partyJoinConfirm, ruraSelection, endingState,
+    partyJoinConfirm, ruraSelection, ruraState, endingState, spellFlash,
     switchStates, pushedIceBlocks, gameMode
 } from './state.js';
 import { items, spells, expTable } from './data.js';
 import { getStoryFlag, isBossDefeated } from './state.js';
-import { getReviveCost, getCureCost } from './engine.js';
+import { getReviveCost, getCureCost, getAvailableRuraLocations, getAlivePartyMembers } from './engine.js';
 
 let ctx = null;
 
 export function setContext(context) {
     ctx = context;
+}
+
+// 状態異常定義
+const STATUS_EFFECTS = {
+    sleep: { name: '眠り', icon: '💤', badge: '眠', duration: { min: 2, max: 3 } },
+    poison: { name: '毒', icon: '☠️', badge: '毒', damageRate: 0.1 },
+    blind: { name: '幻惑', icon: '💫', badge: '幻', hitRateModifier: 0.5 },
+    silence: { name: '沈黙', icon: '🔇', badge: '黙', duration: { min: 3, max: 5 } }
+};
+
+// 状態異常バッジを取得
+function getStatusBadges(target) {
+    let badges = [];
+    if (target.status && target.status.sleep > 0) badges.push(STATUS_EFFECTS.sleep.badge);
+    if (target.status && target.status.poison > 0) badges.push(STATUS_EFFECTS.poison.badge);
+    if (target.status && target.status.blind > 0) badges.push(STATUS_EFFECTS.blind.badge);
+    return badges.length > 0 ? '（' + badges.join('') + '）' : '';
+}
+
+// バフ状態のバッジを取得
+function getBuffBadges() {
+    if (!battle.active) return '';
+    let badges = [];
+    if (battle.buffs.attackUp > 0) badges.push('攻↑' + (battle.buffs.attackUp > 1 ? '×2' : ''));
+    if (battle.buffs.defenseUp > 0) badges.push('守↑' + (battle.buffs.defenseUp > 1 ? '×2' : ''));
+    return badges.length > 0 ? '(' + badges.join(' ') + ')' : '';
+}
+
+// 現在コマンド入力中のパーティメンバーを取得
+function getCurrentPartyMember() {
+    return party[battle.currentPartyIndex] || party[0];
 }
 
 export function getNpcEffectivePosition(npc) {
@@ -603,32 +634,365 @@ export function drawShop() {
 
 export function drawBattle() {
     if (!battle.active) return;
-    // Basic battle background
+
+    // バトル背景
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-    // Fade in effect
+    // フェードイン演出
     if (battle.fadeAlpha > 0) {
         ctx.fillStyle = `rgba(0, 0, 0, ${battle.fadeAlpha})`;
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     }
 
-    // Party status
-    const statusW = canvasWidth * 0.9;
-    const statusH = tileSize * 2;
-    const statusX = (canvasWidth - statusW) / 2;
-    const statusY = 20;
+    // 呪文フラッシュ演出
+    if (spellFlash.active && spellFlash.alpha > 0) {
+        const baseColor = spellFlash.color.replace(/[\d.]+\)$/, `${spellFlash.alpha})`);
+        ctx.fillStyle = baseColor;
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    }
+
+    // 複数モンスター表示
+    if (battle.enemies && battle.enemies.length > 0) {
+        const enemyCount = battle.enemies.length;
+        const spacing = canvasWidth / (enemyCount + 1);
+        const spriteSize = enemyCount === 1 ? tileSize * 4 : tileSize * (3 - enemyCount * 0.3);
+
+        battle.enemies.forEach((enemy, idx) => {
+            const x = spacing * (idx + 1);
+            const y = canvasHeight * 0.35;
+
+            // 死亡している敵は薄く表示
+            const isDead = enemy.currentHp <= 0;
+            if (isDead) {
+                ctx.globalAlpha = 0.3;
+            }
+
+            // モンスタースプライト
+            ctx.font = `${spriteSize}px serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // 色違いモンスター対応（hueRotateフィルタ）
+            if (enemy.hueRotate) {
+                ctx.save();
+                ctx.filter = `hue-rotate(${enemy.hueRotate}deg)`;
+                ctx.fillText(enemy.sprite, x, y);
+                ctx.restore();
+            } else {
+                ctx.fillText(enemy.sprite, x, y);
+            }
+
+            // ターゲット選択中のカーソル表示
+            if (battle.isSelectingTarget && idx === battle.targetIndex && !isDead) {
+                ctx.fillStyle = '#ffd700';
+                ctx.font = `${tileSize * 0.8}px serif`;
+                ctx.fillText('👆', x, y - spriteSize / 2 - tileSize * 0.3);
+            }
+
+            // モンスター名（各敵のスプライトの下に個別表示、奇数・偶数でY座標をずらす）
+            const nameYOffset = idx % 2 === 0 ? 0 : tileSize * 0.5;
+            const nameY = y + spriteSize / 2 + tileSize * 0.4 + nameYOffset;
+            ctx.fillStyle = isDead ? '#888' : '#fff';
+            ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+            ctx.fillText(enemy.displayName, x, nameY);
+
+            // 倒した表示（HPは非表示で緊張感を演出）
+            if (isDead && (battle.phase === 'command' || battle.phase === 'target')) {
+                ctx.fillStyle = '#888';
+                ctx.font = `${tileSize * 0.3}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                ctx.fillText('倒した', x, nameY + tileSize * 0.4);
+            }
+
+            // 状態異常バッジを名前の下に表示
+            if (!isDead) {
+                const enemyStatusBadge = getStatusBadges(enemy);
+                if (enemyStatusBadge) {
+                    ctx.fillStyle = '#f88';
+                    ctx.font = `${tileSize * 0.3}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                    ctx.fillText(enemyStatusBadge, x, nameY + tileSize * 0.4);
+                }
+            }
+
+            ctx.globalAlpha = 1.0;
+        });
+    }
+
+    // パーティステータスウィンドウ
+    const aliveMembers = getAlivePartyMembers();
+    const memberCount = party.length;
+    const memberRowH = tileSize * 0.9;
+    const statusW = canvasWidth * 0.85;
+    const statusH = Math.max(tileSize * 2.5, 20 + memberRowH * memberCount);
+    const statusX = 10;
+    const statusY = 10;
     drawWindow(statusX, statusY, statusW, statusH);
 
-    party.forEach((member, i) => {
-        const x = statusX + 20 + i * (statusW / party.length);
-        ctx.fillStyle = member.hp > 0 ? '#fff' : '#f00';
-        ctx.font = `${tileSize * 0.35}px sans-serif`;
-        ctx.textAlign = 'left';
-        ctx.fillText(member.name, x, statusY + 35);
-        ctx.fillText(`HP ${member.hp}/${member.maxHp}`, x, statusY + 70);
-        ctx.fillText(`MP ${member.mp}`, x, statusY + 105);
+    ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    // 各パーティメンバーのステータス表示
+    party.forEach((member, idx) => {
+        const rowY = statusY + 12 + idx * memberRowH;
+        const isDead = !member.isAlive || member.hp <= 0;
+
+        // コマンド入力中のメンバーをハイライト
+        if (battle.phase === 'command' && idx === battle.currentPartyIndex) {
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+            ctx.fillRect(statusX + 5, rowY - 2, statusW - 10, memberRowH - 2);
+        }
+
+        // 味方選択中のカーソル表示
+        if (battle.isSelectingAlly && idx === battle.allyTargetIndex) {
+            ctx.fillStyle = 'rgba(0, 255, 100, 0.3)';
+            ctx.fillRect(statusX + 5, rowY - 2, statusW - 10, memberRowH - 2);
+            ctx.fillStyle = '#ffd700';
+            ctx.font = `${tileSize * 0.4}px serif`;
+            ctx.fillText('▶', statusX + 2, rowY);
+        }
+
+        // 戦闘不能は暗く表示
+        ctx.fillStyle = isDead ? '#666' : '#fff';
+
+        // 名前とレベル
+        const nameText = `${member.name} Lv${member.level}`;
+        ctx.fillText(nameText, statusX + 12, rowY);
+
+        // HP/MP
+        const hpColor = member.hp <= member.maxHp * 0.25 ? '#f44' : (member.hp <= member.maxHp * 0.5 ? '#ff0' : '#8f8');
+        const mpColor = member.mp <= member.maxMp * 0.25 ? '#f88' : '#8cf';
+
+        ctx.fillStyle = isDead ? '#444' : hpColor;
+        ctx.fillText(`HP:${member.hp}/${member.maxHp}`, statusX + 12 + tileSize * 3.2, rowY);
+
+        ctx.fillStyle = isDead ? '#444' : mpColor;
+        ctx.fillText(`MP:${member.mp}/${member.maxMp}`, statusX + 12 + tileSize * 5.5, rowY);
+
+        // 状態異常バッジ
+        const memberBadge = getStatusBadges(member);
+        if (memberBadge && !isDead) {
+            ctx.fillStyle = '#f88';
+            ctx.fillText(memberBadge, statusX + statusW - 50, rowY);
+        }
     });
+
+    // バフ状態バッジ（パーティ全体）
+    const buffBadges = getBuffBadges();
+    if (buffBadges) {
+        ctx.fillStyle = '#8f8';
+        ctx.font = `${tileSize * 0.3}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+        ctx.fillText(buffBadges, statusX + statusW - 80, statusY + statusH - 18);
+    }
+
+    // メッセージウィンドウ
+    const msgPadding = 15;
+    const msgWindowWidth = canvasWidth - 20;
+    const msgMaxTextWidth = msgWindowWidth - msgPadding * 2;
+    const msgFontSize = Math.floor(tileSize * 0.42);
+    const msgLineHeight = msgFontSize * 1.4;
+    const msgFont = `${msgFontSize}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+
+    // 折り返し行数に応じてウィンドウ高さを調整
+    const msgLines = wrapText(battle.message || '', msgMaxTextWidth, msgFont);
+    const msgNumLines = Math.max(2, msgLines.length);
+    const msgH = msgPadding * 2 + msgLineHeight * msgNumLines;
+    const msgY = canvasHeight - msgH - 180;
+    drawWindow(10, msgY, msgWindowWidth, msgH);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = msgFont;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i < msgLines.length; i++) {
+        ctx.fillText(msgLines[i], 10 + msgPadding, msgY + msgPadding + i * msgLineHeight);
+    }
+
+    // コマンドウィンドウ
+    if (battle.phase === 'command') {
+        const cmdW = canvasWidth * 0.45;
+        const cmdH = tileSize * 3.7;
+        const cmdX = canvasWidth - cmdW - 10;
+        const cmdY = canvasHeight - cmdH - 10;
+        drawWindow(cmdX, cmdY, cmdW, cmdH);
+
+        const commands = ['たたかう', 'じゅもん', 'どうぐ', 'にげる'];
+        ctx.font = `${tileSize * 0.5}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+
+        commands.forEach((cmd, i) => {
+            const y = cmdY + 20 + i * tileSize * 0.7;
+            if (i === battle.commandIndex) {
+                ctx.fillStyle = '#ffd700';
+                ctx.fillText('▶', cmdX + 15, y);
+            }
+            ctx.fillStyle = '#fff';
+            ctx.fillText(cmd, cmdX + 40, y);
+        });
+
+        // 呪文サブメニュー（スクロール対応）
+        if (battle.showSpells) {
+            const currentMember = getCurrentPartyMember();
+            const validSpells = currentMember.spells.filter(id => spells[id]);
+            const maxVisibleSpells = 5; // 最大表示件数
+            const spellW = cmdW * 1.1;
+            const rowHeight = tileSize * 0.6;
+            const visibleCount = Math.min(validSpells.length, maxVisibleSpells);
+            const spellH = rowHeight * visibleCount + 40; // 上下余白含む
+            const spellX = cmdX - spellW - 10;
+            const spellY = cmdY;
+            drawWindow(spellX, spellY, spellW, spellH);
+
+            // スクロールオフセット計算（カーソルが常に表示範囲内になるよう調整）
+            let scrollOffset = 0;
+            if (validSpells.length > maxVisibleSpells) {
+                // カーソルが下端を超えたらスクロール
+                if (battle.spellIndex >= maxVisibleSpells) {
+                    scrollOffset = Math.min(
+                        battle.spellIndex - maxVisibleSpells + 1,
+                        validSpells.length - maxVisibleSpells
+                    );
+                }
+            }
+
+            // 上矢印（スクロール可能な場合）
+            if (scrollOffset > 0) {
+                ctx.fillStyle = '#ffd700';
+                ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText('▲', spellX + spellW / 2, spellY + 12);
+                ctx.textAlign = 'left';
+            }
+
+            // 呪文リスト描画
+            for (let i = 0; i < visibleCount; i++) {
+                const spellIdx = i + scrollOffset;
+                if (spellIdx >= validSpells.length) break;
+
+                const spellId = validSpells[spellIdx];
+                const spell = spells[spellId];
+                const y = spellY + 22 + i * rowHeight;
+                const canUse = currentMember.mp >= spell.mp;
+
+                // 選択カーソル
+                if (spellIdx === battle.spellIndex) {
+                    ctx.fillStyle = canUse ? '#ffd700' : '#888';
+                    ctx.fillText('▶', spellX + 10, y);
+                }
+
+                // 呪文名とMP（MP不足はグレーアウト）
+                ctx.fillStyle = canUse ? '#fff' : '#555';
+                ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                ctx.fillText(`${spell.name}`, spellX + 30, y);
+
+                // MP消費量
+                ctx.fillStyle = canUse ? '#8cf' : '#444';
+                ctx.fillText(`${spell.mp}`, spellX + spellW - 40, y);
+            }
+
+            // 下矢印（スクロール可能な場合）
+            if (scrollOffset + maxVisibleSpells < validSpells.length) {
+                ctx.fillStyle = '#ffd700';
+                ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText('▼', spellX + spellW / 2, spellY + spellH - 18);
+                ctx.textAlign = 'left';
+            }
+
+            // 操作ガイド
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = `${tileSize * 0.25}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+            ctx.fillText('B:もどる', spellX + 10, spellY + spellH - 8);
+        }
+
+        // アイテムサブメニュー（スクロール対応）
+        if (battle.showItems) {
+            // 有効なアイテムのみフィルタリング（隙間防止）
+            const validItems = player.inventory.filter(slot => items[slot.id]);
+            const maxVisibleItems = 5; // 最大表示件数
+            const itemW = cmdW * 1.3;
+            const rowHeight = tileSize * 0.6;
+            const visibleCount = Math.min(validItems.length, maxVisibleItems);
+            const itemH = rowHeight * Math.max(1, visibleCount) + 40;
+            const itemX = cmdX - itemW - 10;
+            const itemY = cmdY;
+            drawWindow(itemX, itemY, itemW, itemH);
+
+            if (validItems.length === 0) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                ctx.fillText('どうぐがない', itemX + 20, itemY + 30);
+            } else {
+                // カーソルが有効範囲を超えないよう調整
+                if (battle.itemCursor >= validItems.length) {
+                    battle.itemCursor = Math.max(0, validItems.length - 1);
+                }
+
+                // スクロールオフセット計算
+                let itemScrollOffset = 0;
+                if (validItems.length > maxVisibleItems) {
+                    if (battle.itemCursor >= maxVisibleItems) {
+                        itemScrollOffset = Math.min(
+                            battle.itemCursor - maxVisibleItems + 1,
+                            validItems.length - maxVisibleItems
+                        );
+                    }
+                }
+
+                // 上矢印（スクロール可能な場合）
+                if (itemScrollOffset > 0) {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('▲', itemX + itemW / 2, itemY + 12);
+                    ctx.textAlign = 'left';
+                }
+
+                for (let i = 0; i < visibleCount; i++) {
+                    const itemIdx = i + itemScrollOffset;
+                    if (itemIdx >= validItems.length) break;
+
+                    const slot = validItems[itemIdx];
+                    const item = items[slot.id];
+                    const y = itemY + 22 + i * rowHeight;
+                    const canUse = item.type !== 'weapon' && item.type !== 'armor';
+
+                    // 選択カーソル
+                    if (itemIdx === battle.itemCursor) {
+                        ctx.fillStyle = canUse ? '#ffd700' : '#888';
+                        ctx.fillText('▶', itemX + 10, y);
+                    }
+
+                    // アイテム名（装備品はグレーアウト）
+                    ctx.fillStyle = canUse ? '#fff' : '#555';
+                    ctx.font = `${tileSize * 0.4}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+                    let displayName = item.name;
+                    if (slot.quantity > 1) {
+                        displayName += ` x ${slot.quantity}`;
+                    }
+                    ctx.fillText(displayName, itemX + 30, y);
+
+                    // タイプアイコン
+                    if (item.type === 'weapon') {
+                        ctx.fillText('⚔️', itemX + itemW - 40, y);
+                    } else if (item.type === 'armor') {
+                        ctx.fillText('🛡️', itemX + itemW - 40, y);
+                    }
+                }
+
+                // 下矢印（スクロール可能な場合）
+                if (itemScrollOffset + maxVisibleItems < validItems.length) {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('▼', itemX + itemW / 2, itemY + itemH - 18);
+                    ctx.textAlign = 'left';
+                }
+            }
+
+            // 操作ガイド
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = `${tileSize * 0.25}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+            ctx.fillText('B:もどる', itemX + 10, itemY + itemH - 10);
+        }
+    }
 }
 
 export function drawPartyJoinConfirm() {
@@ -658,8 +1022,60 @@ export function drawPartyJoinConfirm() {
 }
 
 export function drawRuraSelection() {
-    if (!ruraSelection.active) return;
-    // ... rura selection drawing ...
+    if (!ruraState.active) return;
+
+    // エリア制限対応：利用可能な拠点のみ表示
+    const locations = getAvailableRuraLocations();
+    if (locations.length === 0) return;
+
+    // ウィンドウサイズ計算
+    const lineHeight = tileSize * 0.5;
+    const windowWidth = canvasWidth * 0.6;
+    const windowHeight = lineHeight * (locations.length + 2) + 40;
+    const windowX = (canvasWidth - windowWidth) / 2;
+    const windowY = (canvasHeight - windowHeight) / 2;
+
+    // ウィンドウ描画
+    drawWindow(windowX, windowY, windowWidth, windowHeight);
+
+    // タイトル
+    ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#ffd700';
+    ctx.fillText('どこへ いきますか？', canvasWidth / 2, windowY + 15);
+
+    // 区切り線
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.beginPath();
+    ctx.moveTo(windowX + 20, windowY + 40);
+    ctx.lineTo(windowX + windowWidth - 20, windowY + 40);
+    ctx.stroke();
+
+    // 拠点リスト
+    ctx.textAlign = 'left';
+    ctx.font = `${tileSize * 0.35}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+    const listStartY = windowY + 55;
+
+    for (let i = 0; i < locations.length; i++) {
+        const y = listStartY + i * lineHeight;
+
+        // カーソル表示
+        if (i === ruraState.cursor) {
+            ctx.fillStyle = '#ffd700';
+            ctx.fillText('▶', windowX + 25, y);
+        }
+
+        // 拠点名
+        ctx.fillStyle = i === ruraState.cursor ? '#fff' : 'rgba(255, 255, 255, 0.7)';
+        ctx.fillText(locations[i].displayName, windowX + 50, y);
+    }
+
+    // 操作説明
+    ctx.font = `${tileSize * 0.25}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillText('↑↓:選択  Enter:決定  Esc:キャンセル', canvasWidth / 2, windowY + windowHeight - 20);
 }
 
 export function drawEnding() {

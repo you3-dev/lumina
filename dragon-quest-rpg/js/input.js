@@ -14,9 +14,12 @@ import {
     updateTitleMenuSelection, selectTitleMenuItem,
     openMenu, closeMenu, closeInn, closeChurch, closeDialog,
     cancelTargetSelection, cancelAllySelection, handleShopInput,
-    startDialog
+    startDialog,
+    confirmEquipMember, confirmItemMember, executeItemAction,
+    useSpellInField, executeFieldSpellOnTarget
 } from './engine.js';
 import { openWorldMap } from './map.js';
+import { items } from './data.js';
 
 const keys = {};
 
@@ -202,7 +205,225 @@ function handleKeyDown(e) {
                 advanceDialog();
             }
         } else if (menu.active) {
-            // handleMenuInput(e.key);
+            if (menu.selectingEquipMember) {
+                // 装備対象メンバー選択モード
+                switch (e.key) {
+                    case 'ArrowUp': case 'w': case 'W':
+                        menu.targetMemberCursor = (menu.targetMemberCursor + party.length - 1) % party.length;
+                        break;
+                    case 'ArrowDown': case 's': case 'S':
+                        menu.targetMemberCursor = (menu.targetMemberCursor + 1) % party.length;
+                        break;
+                    case 'Enter': case ' ': case 'z': case 'Z':
+                        confirmEquipMember();
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        menu.selectingEquipMember = false;
+                        menu.showItemAction = true;
+                        break;
+                }
+            } else if (menu.selectingItemMember) {
+                // アイテム使用対象メンバー選択モード
+                switch (e.key) {
+                    case 'ArrowUp': case 'w': case 'W':
+                        menu.targetMemberCursor = (menu.targetMemberCursor + party.length - 1) % party.length;
+                        break;
+                    case 'ArrowDown': case 's': case 'S':
+                        menu.targetMemberCursor = (menu.targetMemberCursor + 1) % party.length;
+                        break;
+                    case 'Enter': case ' ': case 'z': case 'Z':
+                        confirmItemMember();
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        menu.selectingItemMember = false;
+                        menu.showItemAction = true;
+                        break;
+                }
+            } else if (menu.showItemAction) {
+                // アイテムアクションサブメニュー操作
+                switch (e.key) {
+                    case 'ArrowUp': case 'w': case 'W':
+                        menu.itemActionIndex = (menu.itemActionIndex + 3) % 4;
+                        break;
+                    case 'ArrowDown': case 's': case 'S':
+                        menu.itemActionIndex = (menu.itemActionIndex + 1) % 4;
+                        break;
+                    case 'Enter': case ' ': case 'z': case 'Z':
+                        executeItemAction();
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        menu.showItemAction = false;
+                        break;
+                }
+            } else if (menu.mode === 'items' && player.inventory.length > 0) {
+                // アイテムリスト操作（有効なアイテムのみカウント）
+                const validItems = player.inventory.filter(slot => items[slot.id]);
+                if (validItems.length === 0) return;
+                switch (e.key) {
+                    case 'ArrowUp': case 'w': case 'W':
+                        menu.itemCursor = (menu.itemCursor + validItems.length - 1) % validItems.length;
+                        break;
+                    case 'ArrowDown': case 's': case 'S':
+                        menu.itemCursor = (menu.itemCursor + 1) % validItems.length;
+                        break;
+                    case 'ArrowLeft': case 'a': case 'A':
+                        menu.mode = 'spells';
+                        menu.spellCursor = 0;
+                        break;
+                    case 'ArrowRight': case 'd': case 'D':
+                        menu.mode = 'map';
+                        break;
+                    case 'Enter': case ' ': case 'z': case 'Z':
+                        menu.showItemAction = true;
+                        menu.itemActionIndex = 0;
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        closeMenu();
+                        break;
+                }
+            } else if (menu.mode === 'spells') {
+                const selectedMember = party[menu.memberCursor] || party[0];
+                if (menu.selectingMember) {
+                    // 呪文対象選択モード
+                    switch (e.key) {
+                        case 'ArrowUp': case 'w': case 'W':
+                            menu.targetMemberCursor = (menu.targetMemberCursor + party.length - 1) % party.length;
+                            break;
+                        case 'ArrowDown': case 's': case 'S':
+                            menu.targetMemberCursor = (menu.targetMemberCursor + 1) % party.length;
+                            break;
+                        case 'Enter': case ' ': case 'z': case 'Z':
+                            executeFieldSpellOnTarget();
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            menu.selectingMember = false;
+                            break;
+                    }
+                } else if (selectedMember.spells.length > 0) {
+                    // 呪文リスト操作
+                    switch (e.key) {
+                        case 'ArrowUp': case 'w': case 'W':
+                            menu.spellCursor = (menu.spellCursor + selectedMember.spells.length - 1) % selectedMember.spells.length;
+                            break;
+                        case 'ArrowDown': case 's': case 'S':
+                            menu.spellCursor = (menu.spellCursor + 1) % selectedMember.spells.length;
+                            break;
+                        case 'ArrowLeft': case 'a': case 'A':
+                            if (party.length > 1) {
+                                menu.memberCursor = (menu.memberCursor + party.length - 1) % party.length;
+                                menu.spellCursor = 0;
+                            } else {
+                                menu.mode = 'status';
+                            }
+                            break;
+                        case 'ArrowRight': case 'd': case 'D':
+                            if (party.length > 1) {
+                                menu.memberCursor = (menu.memberCursor + 1) % party.length;
+                                menu.spellCursor = 0;
+                            } else {
+                                menu.mode = 'items';
+                                menu.itemCursor = 0;
+                            }
+                            break;
+                        case 'Enter': case ' ': case 'z': case 'Z':
+                            useSpellInField();
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            closeMenu();
+                            break;
+                    }
+                } else {
+                    // 呪文がない場合はタブ切り替え
+                    switch (e.key) {
+                        case 'ArrowLeft': case 'a': case 'A':
+                            if (party.length > 1) {
+                                menu.memberCursor = (menu.memberCursor + party.length - 1) % party.length;
+                                menu.spellCursor = 0;
+                            } else {
+                                menu.mode = 'status';
+                            }
+                            break;
+                        case 'ArrowRight': case 'd': case 'D':
+                            if (party.length > 1) {
+                                menu.memberCursor = (menu.memberCursor + 1) % party.length;
+                                menu.spellCursor = 0;
+                            } else {
+                                menu.mode = 'items';
+                                menu.itemCursor = 0;
+                            }
+                            break;
+                        case 'Escape': case 'x': case 'b': case 'B':
+                            closeMenu();
+                            break;
+                    }
+                }
+            } else if (menu.mode === 'map') {
+                // ちずタブ
+                switch (e.key) {
+                    case 'ArrowLeft': case 'a': case 'A':
+                        menu.mode = 'items';
+                        menu.itemCursor = 0;
+                        break;
+                    case 'ArrowRight': case 'd': case 'D':
+                        menu.mode = 'status';
+                        break;
+                    case 'Enter': case ' ': case 'z': case 'Z':
+                        closeMenu();
+                        openWorldMap();
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        closeMenu();
+                        break;
+                }
+            } else if (menu.mode === 'status') {
+                // ステータスモード（パーティメンバー選択可能）
+                switch (e.key) {
+                    case 'ArrowUp': case 'w': case 'W':
+                        if (party.length > 1) {
+                            menu.memberCursor = (menu.memberCursor + party.length - 1) % party.length;
+                        }
+                        break;
+                    case 'ArrowDown': case 's': case 'S':
+                        if (party.length > 1) {
+                            menu.memberCursor = (menu.memberCursor + 1) % party.length;
+                        }
+                        break;
+                    case 'ArrowLeft': case 'a': case 'A':
+                        menu.mode = 'map';
+                        break;
+                    case 'ArrowRight': case 'd': case 'D':
+                        menu.mode = 'spells';
+                        menu.spellCursor = 0;
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        closeMenu();
+                        break;
+                }
+            } else {
+                // タブ切り替えモード（アイテム・呪文がない場合）
+                switch (e.key) {
+                    case 'ArrowLeft': case 'a': case 'A':
+                        if (menu.mode === 'spells') {
+                            menu.mode = 'status';
+                        } else if (menu.mode === 'items') {
+                            menu.mode = 'spells';
+                            menu.spellCursor = 0;
+                        }
+                        break;
+                    case 'ArrowRight': case 'd': case 'D':
+                        if (menu.mode === 'spells') {
+                            menu.mode = 'items';
+                            menu.itemCursor = 0;
+                        } else if (menu.mode === 'items') {
+                            menu.mode = 'map';
+                        }
+                        break;
+                    case 'Escape': case 'x': case 'b': case 'B':
+                        closeMenu();
+                        break;
+                }
+            }
+            e.preventDefault();
         } else {
             if (e.key === 'z' || e.key === 'Enter' || e.key === ' ') {
                 handleButton('A');

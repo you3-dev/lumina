@@ -388,15 +388,27 @@ export const battle = {
     active: false,
     enemies: [],
     selectedEnemyIndex: 0,
+    currentEnemyIndex: 0,      // 敵ターン中の処理対象
+    targetIndex: 0,            // プレイヤーのターゲット選択
+    isSelectingTarget: false,  // ターゲット選択モード
     phase: 'start', // start, command, target, message, result, end
     commandIndex: 0,
     spellIndex: 0,
     showSpells: false,
     itemIndex: 0,
+    itemCursor: 0,             // アイテムカーソル位置
     showItems: false,
     turn: 0, // 0: player, 1: enemy
     partyIndex: 0,
-    messages: []
+    currentPartyIndex: 0,      // 現在コマンド入力中のメンバー
+    isSelectingAlly: false,    // 味方選択モード
+    allyTargetIndex: 0,        // 味方ターゲット
+    message: '',               // 現在のメッセージ（単数）
+    messages: [],              // メッセージキュー
+    messageQueue: [],          // メッセージキュー（別名）
+    flashCount: 0,             // フラッシュアニメーション
+    fadeAlpha: 0,              // フェードイン効果
+    buffs: { attackUp: 0, defenseUp: 0, speedUp: 0 }  // バフ状態
 };
 
 export const switchStates = {};
@@ -431,6 +443,21 @@ export const ruraSelection = {
     active: false,
     selectedIndex: 0,
     locations: []
+};
+
+// ルーラ用状態（メニュー操作用）
+export const ruraState = {
+    active: false,
+    cursor: 0,
+    casterIndex: 0
+};
+
+// 最後に訪れた町（キメラのつばさ用）
+export const lastTown = {
+    mapPath: 'maps/town.json',
+    x: 9,
+    y: 9,
+    name: 'アルカディアの街'
 };
 
 export function getStoryFlag(flag) {
