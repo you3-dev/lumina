@@ -16,7 +16,8 @@ export function generateEnemyGroup(encounterTable) {
         const monsterId = table[Math.floor(Math.random() * table.length)];
         const monster = JSON.parse(JSON.stringify(monsters[monsterId]));
         monster.id = monsterId;
-        monster.hp = monster.maxHp = monster.hp;
+        monster.maxHp = monster.hp;
+        monster.currentHp = monster.hp;
         monster.isAlive = true;
         enemies.push(monster);
     }
@@ -36,7 +37,8 @@ export function startBattle(monsterTypeOrTable) {
         // Single designated monster
         const m = JSON.parse(JSON.stringify(monsters[monsterTypeOrTable]));
         m.id = monsterTypeOrTable;
-        m.hp = m.maxHp = m.hp;
+        m.maxHp = m.hp;
+        m.currentHp = m.hp;
         m.isAlive = true;
         battle.enemies = [m];
     } else {

@@ -613,6 +613,10 @@ export function recordDungeonEntrance(prevMapData, prevX, prevY, prevMapPath) {
 export function typeNextChar() {
     if (!dialog.active) return;
     const currentMessage = dialog.messages[dialog.currentIndex];
+    if (!currentMessage) {
+        dialog.isTyping = false;
+        return;
+    }
     if (dialog.charIndex < currentMessage.length) {
         dialog.displayedText += currentMessage[dialog.charIndex];
         dialog.charIndex++;
@@ -1705,7 +1709,9 @@ export function interact() {
             dialog.pendingAction = { type: 'church' };
         }
 
-        startDialog(messages);
+        if (messages && messages.length > 0) {
+            startDialog(messages);
+        }
         return;
     }
 

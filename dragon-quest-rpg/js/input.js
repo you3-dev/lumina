@@ -20,6 +20,7 @@ import {
 } from './engine.js';
 import { openWorldMap } from './map.js';
 import { items } from './data.js';
+import { advanceBattlePhase } from './battle.js';
 
 const keys = {};
 
@@ -423,6 +424,8 @@ function handleKeyDown(e) {
                         break;
                 }
             }
+            // メニュー操作時はキー入力をクリアして移動を防ぐ
+            keys[e.key] = false;
             e.preventDefault();
         } else {
             if (e.key === 'z' || e.key === 'Enter' || e.key === ' ') {
@@ -431,6 +434,26 @@ function handleKeyDown(e) {
                 handleButton('B');
             } else if (e.key === 'm') {
                 setGameMode(MODE.MAP_VIEW);
+            }
+        }
+    } else if (gameMode === MODE.BATTLE) {
+        if (battle.phase === 'command') {
+            // コマンド選択フェーズ
+            switch (e.key) {
+                case 'ArrowUp': case 'w': case 'W':
+                    battle.commandIndex = (battle.commandIndex + 3) % 4;
+                    break;
+                case 'ArrowDown': case 's': case 'S':
+                    battle.commandIndex = (battle.commandIndex + 1) % 4;
+                    break;
+                case 'Enter': case ' ': case 'z': case 'Z':
+                    handleButton('A');
+                    break;
+            }
+        } else {
+            // その他のフェーズ（メッセージ表示など）
+            if (e.key === 'z' || e.key === 'Enter' || e.key === ' ') {
+                handleButton('A');
             }
         }
     } else if (gameMode === MODE.SHOP || gameMode === MODE.INN || gameMode === MODE.CHURCH) {
@@ -526,7 +549,10 @@ function handleButton(btn) {
 function onActionA() {
     if (isTransitioning) return;
 
-    if (gameMode === MODE.FIELD) {
+    if (gameMode === MODE.BATTLE) {
+        // バトルフェーズを進める
+        advanceBattlePhase();
+    } else if (gameMode === MODE.FIELD) {
         if (dialog.active) {
             advanceDialog();
         } else if (menu.active) {
