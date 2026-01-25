@@ -5405,7 +5405,15 @@
             ctx.font = `${tileSize * 0.5}px 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            ctx.fillText('⚔️ ぶきぼうぐや 🛡️', canvasWidth / 2, windowY + 15);
+            // shopIdに応じたショップ名を表示
+            const shopNames = {
+                'default': '⚔️ ぶきぼうぐや 🛡️',
+                'portia_weapon': '⚔️ ぶきぼうぐや 🛡️',
+                'portia_armor': '🛡️ ぼうぐや 🛡️',
+                'portia_item': '💊 どうぐや 💊'
+            };
+            const shopName = shopNames[currentShopId] || '⚔️ ぶきぼうぐや 🛡️';
+            ctx.fillText(shopName, canvasWidth / 2, windowY + 15);
 
             // 所持金表示
             ctx.fillStyle = '#fff';
