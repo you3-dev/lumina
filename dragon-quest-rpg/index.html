@@ -717,9 +717,9 @@
             132: { id: 132, name: '鉄格子の鍵', description: '監獄島の正門を開ける鍵', type: 'key', price: 0 },
 
             // クエストアイテム（エリア5）
-            140: { id: 140, name: '青の涙', description: '海神の英知を宿す宝玉', type: 'quest', price: 0 },
-            141: { id: 141, name: '赤の涙', description: '海神の勇気を宿す宝玉', type: 'quest', price: 0 },
-            142: { id: 142, name: '緑の涙', description: '海神の慈愛を宿す宝玉', type: 'quest', price: 0 },
+            140: { id: 140, name: '人魚の涙', description: 'セイレーン女王が流した美しい涙', type: 'quest', price: 0 },
+            141: { id: 141, name: '青い涙', description: 'バルバロイの魂が宿る青い宝玉', type: 'quest', price: 0 },
+            142: { id: 142, name: '緑の涙', description: 'ギガントの生命力が凝縮された緑の宝玉', type: 'quest', price: 0 },
             143: { id: 143, name: '天空の海図', description: 'エリア6「天空界」への道を示す海図', type: 'quest', price: 0 },
 
             // その他（エリア5）
@@ -7357,15 +7357,15 @@
                                     questMessage = 'アルビダが船を明け渡した！\nリヴァイアサン号 を手に入れた！';
                                 } else if (bossId === 'sirenQueen') {
                                     setStoryFlag('sirenQueenDefeated', true);
-                                    addItem(121);  // 人魚の涙
+                                    addItem(140);  // 人魚の涙
                                     questMessage = 'セイレーン女王が真の姿を取り戻した...\n人魚の涙 を手に入れた！';
                                 } else if (bossId === 'barbaloi') {
                                     setStoryFlag('barbaloimDefeated', true);
-                                    addItem(122);  // 青い涙
+                                    addItem(141);  // 青い涙
                                     questMessage = 'バルバロイを倒した！\n青い涙 を手に入れた！';
                                 } else if (bossId === 'parasite') {
                                     setStoryFlag('parasiteDefeated', true);
-                                    addItem(124);  // 緑の涙
+                                    addItem(142);  // 緑の涙
                                     questMessage = 'パラサイトが消滅した！\nギガントが目を覚ます...\n緑の涙 を手に入れた！';
                                 } else if (bossId === 'leviathan') {
                                     setStoryFlag('leviathanDefeated', true);
@@ -10330,9 +10330,9 @@
             }
 
             // 3つの涙を持っているかチェック
-            const hasMermaidTear = hasItem(121);  // 人魚の涙
-            const hasBlueTear = hasItem(122);     // 青い涙
-            const hasGreenTear = hasItem(124);    // 緑の涙
+            const hasMermaidTear = hasItem(140);  // 人魚の涙
+            const hasBlueTear = hasItem(141);     // 青い涙
+            const hasGreenTear = hasItem(142);    // 緑の涙
 
             if (!hasMermaidTear || !hasBlueTear || !hasGreenTear) {
                 const missingTears = [];
@@ -10354,9 +10354,9 @@
                 '海神に捧げますか？'
             ], () => {
                 // 涙を消費
-                removeItem(121);  // 人魚の涙
-                removeItem(122);  // 青い涙
-                removeItem(124);  // 緑の涙
+                removeItem(140);  // 人魚の涙
+                removeItem(141);  // 青い涙
+                removeItem(142);  // 緑の涙
 
                 // フラグを立てる
                 setStoryFlag('allTearsOffered', true);
@@ -12624,7 +12624,7 @@
             }
         }
 
-        // デバッグ用：エリア3クリア状態のセーブデータ作成
+        // デバッグ用：エリア4クリア状態のセーブデータ作成（エリア5テスト用）
         function createDebugSaveData() {
             try {
                 // パーティをクリアしてヒーローを作成
@@ -12634,16 +12634,16 @@
                     name: 'ゆうしゃ',
                     job: 'hero',
                     sprite: '🧙',
-                    hp: 200,
-                    maxHp: 200,
-                    mp: 80,
-                    maxMp: 80,
-                    baseAtk: 50,
-                    baseDef: 40,
-                    speed: 10,
-                    level: 40,
-                    exp: 50000,
-                    spells: ['hoimi', 'behoimi', 'dein', 'raiden', 'rura'],
+                    hp: 280,
+                    maxHp: 280,
+                    mp: 120,
+                    maxMp: 120,
+                    baseAtk: 75,
+                    baseDef: 60,
+                    speed: 14,
+                    level: 48,
+                    exp: 120000,
+                    spells: ['hoimi', 'behoimi', 'behomara', 'dein', 'raiden', 'rura', 'zaoriku'],
                     equipment: { weapon: 19, armor: 28, accessory: null }
                 });
                 party.push(hero);
@@ -12654,16 +12654,16 @@
                     name: 'マリア',
                     job: 'mage',
                     sprite: '🧙',
-                    hp: 120,
-                    maxHp: 120,
-                    mp: 150,
-                    maxMp: 150,
-                    baseAtk: 25,
-                    baseDef: 20,
-                    speed: 12,
-                    level: 38,
-                    exp: 45000,
-                    spells: ['mera', 'merami', 'gira', 'begirama', 'hoimi', 'behoimi'],
+                    hp: 160,
+                    maxHp: 160,
+                    mp: 200,
+                    maxMp: 200,
+                    baseAtk: 35,
+                    baseDef: 28,
+                    speed: 16,
+                    level: 46,
+                    exp: 110000,
+                    spells: ['mera', 'merami', 'merazoma', 'gira', 'begirama', 'hoimi', 'behoimi', 'behomara'],
                     equipment: { weapon: 45, armor: 54, accessory: null }
                 });
                 party.push(mage);
@@ -12674,42 +12674,95 @@
                     name: 'セレン',
                     job: 'seer',
                     sprite: '🔮',
-                    hp: 100,
-                    maxHp: 100,
-                    mp: 180,
-                    maxMp: 180,
-                    baseAtk: 20,
-                    baseDef: 18,
-                    speed: 18,
-                    level: 36,
-                    exp: 40000,
-                    spells: ['bagi', 'bagima', 'rukani', 'rariho', 'piorimu', 'hoimi', 'behoimi'],
+                    hp: 140,
+                    maxHp: 140,
+                    mp: 220,
+                    maxMp: 220,
+                    baseAtk: 28,
+                    baseDef: 24,
+                    speed: 22,
+                    level: 45,
+                    exp: 100000,
+                    spells: ['bagi', 'bagima', 'bagicross', 'rukani', 'rariho', 'piorimu', 'hoimi', 'behoimi'],
                     equipment: { weapon: null, armor: null, accessory: null }
                 });
                 party.push(seren);
 
-                // partyData設定
-                partyData.gold = 50000;
-                partyData.x = 70;
-                partyData.y = 41;
-                partyData.direction = 'up';
-                partyData.inventory = [
-                    { id: 1, quantity: 10 },
-                    { id: 4, quantity: 5 },
-                    { id: 5, quantity: 3 },
-                    { id: 9, quantity: 5 }
-                ];
+                // グラシオ（氷の騎士）を追加
+                const glacio = createPartyMember({
+                    id: 'iceKnight_glacio',
+                    name: 'グラシオ',
+                    job: 'iceKnight',
+                    sprite: '🧊',
+                    hp: 220,
+                    maxHp: 220,
+                    mp: 60,
+                    maxMp: 60,
+                    baseAtk: 70,
+                    baseDef: 65,
+                    speed: 10,
+                    level: 44,
+                    exp: 95000,
+                    spells: ['hyado', 'hyodara', 'mahyado'],
+                    equipment: { weapon: 80, armor: 83, accessory: null }
+                });
+                party.push(glacio);
 
-                // フラグ設定
-                gameProgress.storyFlags.mageJoined = true;
-                gameProgress.storyFlags.serenJoined = true;
-                gameProgress.quests.serenJoin.joined = true;
+                // partyData設定（ポルティアへ行ける状態）
+                partyData.gold = 80000;
+                partyData.x = 7;
+                partyData.y = 5;
+                partyData.direction = 'down';
+                partyData.inventory = [
+                    { id: 1, quantity: 20 },  // やくそう
+                    { id: 4, quantity: 10 },  // まんげつ草
+                    { id: 5, quantity: 5 },   // 聖水
+                    { id: 6, quantity: 3 },   // 世界樹のしずく
+                    { id: 9, quantity: 10 },  // キメラのつばさ
+                    { id: 120, quantity: 5 }  // 酸素缶
+                ];
+                // Area 5用のプロパティ
+                partyData.vehicle = 'none';
+                partyData.shipPosition = { x: 100, y: 105 };
+                partyData.oxygen = 100;
+                partyData.maxOxygen = 100;
+                partyData.gigantStepCounter = 0;
+                partyData.gigantPosition = { x: 150, y: 180 };
+
+                // フラグ設定（エリア1〜4クリア済み）
+                // エリア1
+                gameProgress.bossDefeated.midBoss = true;
+                gameProgress.storyFlags.reportedMidBossDefeat = true;
+                gameProgress.storyFlags.portalRoomUnlocked = true;
+                // エリア2
+                gameProgress.bossDefeated.quicksandBoss = true;
+                gameProgress.bossDefeated.banditKing = true;
+                gameProgress.bossDefeated.pyramidGuardian = true;
+                gameProgress.bossDefeated.desertGuardian = true;
+                gameProgress.storyFlags.bazaarUnlocked = true;
+                gameProgress.storyFlags.desertPortalUnlocked = true;
+                gameProgress.quests.waterShortage = { started: true, bossDefeated: true, completed: true };
+                gameProgress.quests.passportRecovery = { started: true, bossDefeated: true, completed: true };
+                gameProgress.quests.royalCrest = { started: true, bossDefeated: true, completed: true };
+                // エリア3
                 gameProgress.bossDefeated.shadowGuardian = true;
-                gameProgress.bossDefeated.iceGolem = true;
                 gameProgress.storyFlags.shadowGuardianDefeated = true;
                 gameProgress.storyFlags.northPathOpened = true;
                 gameProgress.storyFlags.area3Completed = true;
+                gameProgress.storyFlags.mageJoined = true;
+                gameProgress.storyFlags.serenJoined = true;
+                gameProgress.quests.serenJoin = { joined: true };
+                // エリア4（氷の女王撃破済み）
+                gameProgress.bossDefeated.iceGolem = true;
+                gameProgress.bossDefeated.iceQueen = true;
+                gameProgress.bossDefeated.frostWyrm = true;
                 gameProgress.storyFlags.iceGolemDefeated = true;
+                gameProgress.storyFlags.iceQueenDefeated = true;
+                gameProgress.storyFlags.frostWyrmDefeated = true;
+                gameProgress.storyFlags.area4Completed = true;
+                gameProgress.storyFlags.auroraOrbObtained = true;
+                gameProgress.storyFlags.glacioJoined = true;
+                gameProgress.quests.glacioJoin = { iceGolemDefeated: true, joined: true };
 
                 // 直接localStorageにセーブデータを書き込む
                 const saveData = {
@@ -12732,19 +12785,20 @@
                         isAlive: true
                     })),
                     partyData: {
-                        x: 70,
-                        y: 41,
-                        direction: 'up',
-                        gold: 50000,
-                        inventory: [
-                            { id: 1, quantity: 10 },
-                            { id: 4, quantity: 5 },
-                            { id: 5, quantity: 3 },
-                            { id: 9, quantity: 5 }
-                        ]
+                        x: partyData.x,
+                        y: partyData.y,
+                        direction: partyData.direction,
+                        gold: partyData.gold,
+                        inventory: partyData.inventory,
+                        vehicle: partyData.vehicle,
+                        shipPosition: partyData.shipPosition,
+                        oxygen: partyData.oxygen,
+                        maxOxygen: partyData.maxOxygen,
+                        gigantStepCounter: partyData.gigantStepCounter,
+                        gigantPosition: partyData.gigantPosition
                     },
-                    currentMapPath: 'maps/ice_field.json',
-                    currentMapId: 'ice_field',
+                    currentMapPath: 'maps/portal_room.json',
+                    currentMapId: 'portal_room',
                     chestStates: {},
                     gameProgress: {
                         bossDefeated: { ...gameProgress.bossDefeated },
@@ -12772,7 +12826,7 @@
                     }
                 };
                 localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-                alert('データセット完了');
+                alert('エリア5テスト用データセット完了！\\n旅の扉の部屋からスタート→ポルティアへ');
                 location.reload();
             } catch (e) {
                 alert('エラー: ' + e.message);
