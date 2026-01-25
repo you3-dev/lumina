@@ -526,7 +526,21 @@
             TORCH: 26,            // 燭台（灯火パズル用）
             ICE_ALTAR: 27,        // 氷の祭壇（記憶パズル用）
             ICE_SWITCH: 28,       // 圧力スイッチ
-            ICE_BLOCK: 29         // 押せる氷ブロック
+            ICE_BLOCK: 29,        // 押せる氷ブロック
+            // エリア5: 海洋タイル
+            SHIP_LANDING: 30,     // 船着き場（上陸ポイント）
+            DEEP_SEA: 31,         // 深海（船通行可能）
+            CORAL: 32,            // サンゴ礁
+            BEACH: 33,            // 砂浜
+            DOCK: 34,             // 桟橋
+            SEAWEED: 35,          // 海藻（水中マップ用）
+            BUBBLE: 36,           // 空気の泡（酸素回復）
+            ACID: 37,             // 胃液タイル（ダメージ）
+            CURRENT_UP: 40,       // 上向き潮流
+            CURRENT_DOWN: 41,     // 下向き潮流
+            CURRENT_LEFT: 42,     // 左向き潮流
+            CURRENT_RIGHT: 43,    // 右向き潮流
+            AIR_BUBBLE: 50        // 空気の泡タイル（酸素全回復）
         };
 
         // マップタイプ別のタイル色
@@ -593,7 +607,10 @@
             [TILE.ICE_BLOCK]: '#6888a8'        // 氷ブロック（暗めの水色）
         };
 
-        const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR, TILE.PORTAL, TILE.STAIRS_UP, TILE.STAIRS_DOWN, TILE.SAND, TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND, TILE.UNDERWORLD_FLOOR, TILE.WEDGE_ALTAR, TILE.UNDERWORLD_TOWN, TILE.ICE_FLOOR, TILE.SNOW, TILE.ICE_CASTLE_FLOOR, TILE.TORCH, TILE.ICE_ALTAR, TILE.ICE_SWITCH, TILE.ICE_HOLE];
+        const WALKABLE_TILES = [TILE.GRASS, TILE.CASTLE, TILE.TOWN, TILE.STAIRS, TILE.FLOOR, TILE.PORTAL, TILE.STAIRS_UP, TILE.STAIRS_DOWN, TILE.SAND, TILE.OASIS, TILE.PYRAMID, TILE.QUICKSAND, TILE.UNDERWORLD_FLOOR, TILE.WEDGE_ALTAR, TILE.UNDERWORLD_TOWN, TILE.ICE_FLOOR, TILE.SNOW, TILE.ICE_CASTLE_FLOOR, TILE.TORCH, TILE.ICE_ALTAR, TILE.ICE_SWITCH, TILE.ICE_HOLE,
+            // エリア5: 海洋タイル
+            TILE.SHIP_LANDING, TILE.CORAL, TILE.BEACH, TILE.DOCK, TILE.SEAWEED, TILE.BUBBLE, TILE.ACID, TILE.AIR_BUBBLE,
+            TILE.CURRENT_UP, TILE.CURRENT_DOWN, TILE.CURRENT_LEFT, TILE.CURRENT_RIGHT];
         const ENCOUNTER_TILES = [TILE.GRASS, TILE.FLOOR, TILE.SAND, TILE.UNDERWORLD_FLOOR, TILE.ICE_FLOOR, TILE.SNOW, TILE.ICE_CASTLE_FLOOR]; // エンカウントが発生するタイル（草原、ダンジョン床、砂漠、地底床、氷床、雪原、氷の城）
 
         // ========================================
@@ -3388,7 +3405,16 @@
             moving: false,
             moveDelay: 120,
             gold: 0,
-            inventory: []
+            inventory: [],
+            // エリア5: 船システム
+            vehicle: 'none',  // 'none' | 'ship'
+            shipPosition: { x: 100, y: 105 },  // 船の位置（外海マップ用）
+            // エリア5: 酸素システム
+            oxygen: 100,      // 現在の酸素（0-100）
+            maxOxygen: 100,   // 最大酸素
+            // エリア5: ギガント追跡
+            gigantStepCounter: 0,  // ギガント移動用歩数カウンター
+            gigantPosition: { x: 150, y: 180 }  // ギガントの現在位置
         };
 
         // 位置情報とゴールド・インベントリはpartyDataを使用
@@ -3890,7 +3916,14 @@
                     y: partyData.y,
                     direction: partyData.direction,
                     gold: partyData.gold,
-                    inventory: JSON.parse(JSON.stringify(partyData.inventory))
+                    inventory: JSON.parse(JSON.stringify(partyData.inventory)),
+                    // Area 5: 船・酸素・ギガント
+                    vehicle: partyData.vehicle,
+                    shipPosition: partyData.shipPosition ? { ...partyData.shipPosition } : null,
+                    oxygen: partyData.oxygen,
+                    maxOxygen: partyData.maxOxygen,
+                    gigantStepCounter: partyData.gigantStepCounter,
+                    gigantPosition: partyData.gigantPosition ? { ...partyData.gigantPosition } : null
                 },
                 // 後方互換用（旧形式も保持）
                 player: {
@@ -3966,6 +3999,13 @@
                         partyData.direction = data.partyData.direction || 'down';
                         partyData.gold = data.partyData.gold || 0;
                         partyData.inventory = data.partyData.inventory || [];
+                        // Area 5: 船・酸素・ギガント
+                        partyData.vehicle = data.partyData.vehicle || 'none';
+                        partyData.shipPosition = data.partyData.shipPosition || { x: 100, y: 105 };
+                        partyData.oxygen = data.partyData.oxygen !== undefined ? data.partyData.oxygen : 100;
+                        partyData.maxOxygen = data.partyData.maxOxygen || 100;
+                        partyData.gigantStepCounter = data.partyData.gigantStepCounter || 0;
+                        partyData.gigantPosition = data.partyData.gigantPosition || { x: 150, y: 180 };
                     }
 
                     // playerの参照を更新し、プロキシを再設定
@@ -4511,6 +4551,36 @@
         function drawPlayer() {
             const screenX = player.x * tileSize - cameraX;
             const screenY = player.y * tileSize - cameraY;
+
+            // 船に乗っている場合は船を描画
+            if (isOnShip()) {
+                // 船体（茶色の木造船）
+                ctx.fillStyle = '#8B4513';
+                ctx.beginPath();
+                ctx.moveTo(screenX + tileSize * 0.1, screenY + tileSize * 0.5);
+                ctx.lineTo(screenX + tileSize * 0.9, screenY + tileSize * 0.5);
+                ctx.lineTo(screenX + tileSize * 0.75, screenY + tileSize * 0.9);
+                ctx.lineTo(screenX + tileSize * 0.25, screenY + tileSize * 0.9);
+                ctx.closePath();
+                ctx.fill();
+                // マスト
+                ctx.fillStyle = '#654321';
+                ctx.fillRect(screenX + tileSize * 0.45, screenY + tileSize * 0.1, tileSize * 0.1, tileSize * 0.45);
+                // 帆（白）
+                ctx.fillStyle = '#FFFAF0';
+                ctx.beginPath();
+                ctx.moveTo(screenX + tileSize * 0.5, screenY + tileSize * 0.15);
+                ctx.lineTo(screenX + tileSize * 0.8, screenY + tileSize * 0.35);
+                ctx.lineTo(screenX + tileSize * 0.5, screenY + tileSize * 0.5);
+                ctx.closePath();
+                ctx.fill();
+                // プレイヤーアイコン（小さく）
+                ctx.font = `${tileSize * 0.3}px serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText('🧙', screenX + tileSize * 0.5, screenY + tileSize * 0.7);
+                return;
+            }
+
             ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.beginPath();
             ctx.ellipse(screenX + tileSize / 2, screenY + tileSize * 0.9, tileSize * 0.35, tileSize * 0.12, 0, 0, Math.PI * 2);
@@ -4525,6 +4595,55 @@
             ctx.font = `${tileSize * 0.4}px serif`;
             ctx.textAlign = 'center';
             ctx.fillText('⚔️', screenX + tileSize / 2, screenY + tileSize * 0.15);
+        }
+
+        // エリア5: 酸素ゲージ描画（水中マップ用）
+        function drawOxygenGauge() {
+            // 水中マップでない場合は表示しない
+            if (!isUnderwaterMap()) return;
+
+            const gaugeWidth = 150;
+            const gaugeHeight = 20;
+            const x = canvasWidth - gaugeWidth - 20;
+            const y = 20;
+
+            // 背景
+            ctx.fillStyle = 'rgba(0, 0, 50, 0.8)';
+            ctx.fillRect(x - 5, y - 5, gaugeWidth + 10, gaugeHeight + 25);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - 5, y - 5, gaugeWidth + 10, gaugeHeight + 25);
+
+            // ラベル
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('🫧 酸素', x, y + 30);
+
+            // ゲージ枠
+            ctx.fillStyle = '#333';
+            ctx.fillRect(x, y, gaugeWidth, gaugeHeight);
+
+            // 酸素量に応じた色
+            const ratio = partyData.oxygen / partyData.maxOxygen;
+            let gaugeColor;
+            if (ratio > 0.5) {
+                gaugeColor = '#00bfff';  // 青
+            } else if (ratio > 0.25) {
+                gaugeColor = '#ffcc00';  // 黄色
+            } else {
+                gaugeColor = '#ff4444';  // 赤
+            }
+
+            // ゲージ本体
+            ctx.fillStyle = gaugeColor;
+            ctx.fillRect(x, y, gaugeWidth * ratio, gaugeHeight);
+
+            // 数値表示
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${partyData.oxygen}`, x + gaugeWidth / 2, y + gaugeHeight - 4);
         }
 
         function drawMessageWindow() {
@@ -5957,6 +6076,8 @@
                 drawShop();
                 drawPartyJoinConfirm();
                 drawRuraSelection();
+                // エリア5: 酸素ゲージ（水中マップ用）
+                drawOxygenGauge();
             }
 
             ctx.restore();
@@ -6387,6 +6508,11 @@
                         }
                         break;
                     case 1: // じゅもん
+                        // 魔法封印エリアチェック（監獄島など）
+                        if (currentMap && currentMap.sealSpells) {
+                            battle.message = 'このばしょでは じゅもんが つかえない！';
+                            break;
+                        }
                         battle.showSpells = true;
                         battle.spellIndex = 0;
                         break;
@@ -9217,8 +9343,29 @@
         // 移動
         // ========================================
         function canMove(x, y) {
-            if (x < 0 || x >= currentMap.cols || y < 0 || y >= currentMap.rows) return false;
+            // ループマップは境界チェック不要
+            if (!currentMap.isLoopMap) {
+                if (x < 0 || x >= currentMap.cols || y < 0 || y >= currentMap.rows) return false;
+            }
+
+            // ループマップの場合は座標をラップ
+            if (currentMap.isLoopMap) {
+                x = wrapCoordinate(x, currentMap.cols);
+                y = wrapCoordinate(y, currentMap.rows);
+            }
+
             const tile = currentMap.data[y][x];
+
+            // 海タイルは船に乗っている場合のみ通行可能
+            if (tile === TILE.SEA) {
+                return isOnShip();
+            }
+
+            // 船に乗っている場合、陸地タイルは通れない（上陸ワープポイント除く）
+            if (isOnShip() && tile !== TILE.SEA && tile !== TILE.SHIP_LANDING) {
+                return false;
+            }
+
             if (!WALKABLE_TILES.includes(tile)) return false;
             if (isNpcBlocking(x, y) || isChestBlocking(x, y)) return false;
             // 氷ブロック判定（押せる場合は移動可能）
@@ -9237,6 +9384,216 @@
         // 氷床パズル: 滑り始め位置を記録
         let icePuzzleEntrance = null;
 
+        // ========================================
+        // エリア5: ループマップ・船・酸素システム
+        // ========================================
+
+        // ループマップ用座標ラップ関数
+        function wrapCoordinate(coord, mapSize) {
+            if (coord < 0) {
+                return mapSize + coord;
+            }
+            if (coord >= mapSize) {
+                return coord - mapSize;
+            }
+            return coord;
+        }
+
+        // 船での移動速度係数
+        const SHIP_SPEED_MULTIPLIER = 1.5;
+
+        // 船に乗っているか判定
+        function isOnShip() {
+            return partyData.vehicle === 'ship';
+        }
+
+        // 水中マップか判定
+        function isUnderwaterMap() {
+            return currentMap && (currentMap.isUnderwater || currentMap.isLowOxygen);
+        }
+
+        // 酸素処理（移動後に呼び出す）
+        function processOxygen() {
+            if (!isUnderwaterMap()) {
+                // 水中でなければ酸素を回復
+                partyData.oxygen = partyData.maxOxygen;
+                return;
+            }
+
+            // 空気の泡タイルチェック（タイルID: 50）
+            const currentTile = currentMap.data[player.y][player.x];
+            if (currentTile === 50) {
+                partyData.oxygen = partyData.maxOxygen;
+                showMessage('空気を吸い込んだ！');
+                return;
+            }
+
+            // 酸素消費
+            partyData.oxygen -= 1;
+
+            if (partyData.oxygen <= 0) {
+                partyData.oxygen = 0;
+                // 全員に最大HPの10%ダメージ
+                party.forEach(member => {
+                    if (member.hp > 0) {
+                        const damage = Math.floor(member.maxHp * 0.1);
+                        member.hp = Math.max(1, member.hp - damage);
+                    }
+                });
+                showMessage('息が続かない！ダメージを受けた！');
+            }
+        }
+
+        // 潮流タイル処理（タイルID: 40-43）
+        const CURRENT_TILES = {
+            40: { dx: 0, dy: -1 },  // 上向き潮流
+            41: { dx: 0, dy: 1 },   // 下向き潮流
+            42: { dx: -1, dy: 0 },  // 左向き潮流
+            43: { dx: 1, dy: 0 }    // 右向き潮流
+        };
+
+        function processCurrentTile() {
+            if (!currentMap || player.moving) return;
+
+            const currentTile = currentMap.data[player.y][player.x];
+            const current = CURRENT_TILES[currentTile];
+
+            if (current) {
+                // 重い錨を持っていれば潮流を無視（アイテムID: 130）
+                if (hasItem(130)) {
+                    return;
+                }
+
+                // 強制移動
+                const newX = player.x + current.dx;
+                const newY = player.y + current.dy;
+
+                if (currentMap.isLoopMap) {
+                    player.x = wrapCoordinate(newX, currentMap.cols);
+                    player.y = wrapCoordinate(newY, currentMap.rows);
+                } else if (canMove(newX, newY)) {
+                    player.x = newX;
+                    player.y = newY;
+                }
+                updateCamera();
+            }
+        }
+
+        // 胃液タイル処理（タイルID: 37）
+        const ACID_TILE = 37;
+        const ACID_DAMAGE = 15;
+
+        function processAcidTile() {
+            if (!currentMap) return;
+
+            const currentTile = currentMap.data[player.y][player.x];
+
+            if (currentTile === ACID_TILE) {
+                // 全員に15ダメージ
+                party.forEach(member => {
+                    if (member.hp > 0) {
+                        member.hp = Math.max(1, member.hp - ACID_DAMAGE);
+                    }
+                });
+                showMessage('胃液でダメージを受けた！');
+            }
+        }
+
+        // ギガント移動処理（100歩ごと）
+        function processGigantMovement() {
+            if (!gameProgress.storyFlags.gigantAppeared) return;
+            if (!currentMap || currentMap.id !== 'area5_ocean') return;
+
+            partyData.gigantStepCounter++;
+
+            if (partyData.gigantStepCounter >= 100) {
+                partyData.gigantStepCounter = 0;
+
+                // ランダム方向に移動
+                const directions = [
+                    { dx: 10, dy: 0 },
+                    { dx: -10, dy: 0 },
+                    { dx: 0, dy: 10 },
+                    { dx: 0, dy: -10 }
+                ];
+                const dir = directions[Math.floor(Math.random() * 4)];
+
+                partyData.gigantPosition.x = wrapCoordinate(
+                    partyData.gigantPosition.x + dir.dx, 200
+                );
+                partyData.gigantPosition.y = wrapCoordinate(
+                    partyData.gigantPosition.y + dir.dy, 200
+                );
+            }
+        }
+
+        // エリア5専用の移動後処理
+        function processArea5AfterMove() {
+            processOxygen();
+            processCurrentTile();
+            processAcidTile();
+            processGigantMovement();
+        }
+
+        // 上陸処理（船から島/大陸へ）
+        function handleShipLanding(x, y) {
+            // 船入手フラグがない場合は操作不可
+            if (!getStoryFlag('shipObtained')) {
+                startDialog(['船がないと上陸できない...']);
+                return;
+            }
+
+            // マップのwarps定義から上陸先を検索
+            const landingWarp = currentMap.warps?.find(w =>
+                w.type === 'landing' && w.x === x && w.y === y
+            );
+
+            if (landingWarp) {
+                // 船の位置を現在位置に保存
+                partyData.shipPosition = { x: partyData.x, y: partyData.y };
+                // 徒歩に変更
+                partyData.vehicle = 'none';
+                // ワープ先へ移動
+                startDialogWithCallback(['上陸した！'], () => {
+                    loadMap(landingWarp.toMap, landingWarp.toX, landingWarp.toY);
+                });
+            } else {
+                // ワープ定義がない場合は通常上陸（その場で降りる）
+                partyData.shipPosition = { x: partyData.x, y: partyData.y };
+                partyData.vehicle = 'none';
+                startDialog(['上陸した！']);
+            }
+        }
+
+        // 出港処理（桟橋から船へ）
+        function handleEmbark(x, y) {
+            // 船入手フラグがない場合
+            if (!getStoryFlag('shipObtained')) {
+                startDialog(['船がないと出港できない...', 'まずは船を手に入れよう。']);
+                return;
+            }
+
+            // マップのwarps定義から出港先を検索
+            const embarkWarp = currentMap.warps?.find(w =>
+                w.type === 'embark' && w.x === x && w.y === y
+            );
+
+            if (embarkWarp) {
+                // 船に乗る
+                partyData.vehicle = 'ship';
+                // 船の保存位置または指定座標へワープ
+                const destX = embarkWarp.toX || partyData.shipPosition.x;
+                const destY = embarkWarp.toY || partyData.shipPosition.y;
+                startDialogWithCallback(['出港した！'], () => {
+                    loadMap(embarkWarp.toMap, destX, destY);
+                });
+            } else {
+                // ワープ定義がない場合は船の位置へ戻る
+                partyData.vehicle = 'ship';
+                startDialog(['船に乗り込んだ！']);
+            }
+        }
+
         function movePlayer(dx, dy) {
             if (player.moving || isTransitioning || dialog.active || menu.active || inn.active || shop.active || partyJoinConfirm.active || gameMode === MODE.BATTLE) return;
 
@@ -9245,8 +9602,14 @@
             else if (dx < 0) player.direction = 'left';
             else if (dx > 0) player.direction = 'right';
 
-            const newX = player.x + dx;
-            const newY = player.y + dy;
+            let newX = player.x + dx;
+            let newY = player.y + dy;
+
+            // ループマップ処理（外海マップ用）
+            if (currentMap.isLoopMap) {
+                newX = wrapCoordinate(newX, currentMap.cols);
+                newY = wrapCoordinate(newY, currentMap.rows);
+            }
 
             // 氷ブロック押し処理
             const iceBlock = getIceBlockAt(newX, newY);
@@ -9277,6 +9640,8 @@
                     checkWarp();
                     if (gameMode === MODE.FIELD) {
                         checkRandomEncounter();
+                        // エリア5専用処理（酸素、潮流、胃液、ギガント移動）
+                        processArea5AfterMove();
                     }
                     player.moving = false;
 
@@ -9609,6 +9974,18 @@
             const frontTile = currentMap.data[front.y]?.[front.x];
             if (frontTile === TILE.WEDGE_ALTAR) {
                 handleWedgeAltar(front.x, front.y);
+                return;
+            }
+
+            // Area 5: 上陸処理（船から島へ）
+            if (isOnShip() && frontTile === TILE.SHIP_LANDING) {
+                handleShipLanding(front.x, front.y);
+                return;
+            }
+
+            // Area 5: 出港処理（桟橋から船へ）
+            if (!isOnShip() && frontTile === TILE.DOCK) {
+                handleEmbark(front.x, front.y);
                 return;
             }
 
