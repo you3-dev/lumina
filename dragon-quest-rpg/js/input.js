@@ -15,6 +15,11 @@ import {
 
 const keys = {};
 
+// 連続移動用の変数
+let moveInterval = null;
+let currentMoveDirection = { dx: 0, dy: 0 };
+const CONTINUOUS_MOVE_DELAY = 150;  // 連続移動の間隔（ミリ秒）
+
 export function setupInputs() {
     window.addEventListener('keydown', (e) => {
         initAudio();
@@ -26,7 +31,25 @@ export function setupInputs() {
         keys[e.key] = false;
     });
 
-    // Touch controls... (simplified)
+    // Touch controls
+    setupDpadButton('dpad-up', 0, -1);
+    setupDpadButton('dpad-down', 0, 1);
+    setupDpadButton('dpad-left', -1, 0);
+    setupDpadButton('dpad-right', 1, 0);
+
+    setupActionButton('btn-a', onActionA);
+    setupActionButton('btn-b', onActionB);
+
+    // Map pin button
+    const mapPinBtn = document.getElementById('mapPinBtn');
+    if (mapPinBtn) {
+        mapPinBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (gameMode === MODE.FIELD || gameMode === MODE.MENU || gameMode === MODE.DIALOG) {
+                setGameMode(MODE.MAP_VIEW);
+            }
+        });
+    }
 }
 
 export function handleInput() {
@@ -40,7 +63,18 @@ export function handleInput() {
 }
 
 function movePlayer(dir) {
-    engineMovePlayer(dir);
+    let dx = 0, dy = 0;
+    if (dir === 'up') dy = -1;
+    else if (dir === 'down') dy = 1;
+    else if (dir === 'left') dx = -1;
+    else if (dir === 'right') dx = 1;
+    else if (typeof dir === 'object') {
+        dx = dir.dx || dir.x || 0;
+        dy = dir.dy || dir.y || 0;
+    }
+
+    if (dx !== 0) engineMovePlayer(dx > 0 ? 'right' : 'left');
+    else if (dy !== 0) engineMovePlayer(dy > 0 ? 'down' : 'up');
 }
 
 function handleKeyDown(e) {
@@ -83,24 +117,103 @@ function handleKeyDown(e) {
     }
 }
 
-function handleDpad(dir, pressed) {
-    if (pressed) movePlayer(dir);
+// 連続移動の開始
+function startContinuousMove(dx, dy) {
+    // 既存のインターバルをクリア
+    if (moveInterval) {
+        clearInterval(moveInterval);
+        moveInterval = null;
+    }
+    currentMoveDirection = { dx, dy };
+    movePlayer({ dx, dy });  // 即座に1回移動
+    moveInterval = setInterval(() => {
+        if (gameMode === MODE.FIELD && !isTransitioning && !dialog.active &&
+            !menu.active && !inn.active && !shop.active) {
+            movePlayer(currentMoveDirection);
+        }
+    }, CONTINUOUS_MOVE_DELAY);
+}
+
+// 連続移動の停止
+function stopContinuousMove() {
+    if (moveInterval) {
+        clearInterval(moveInterval);
+        moveInterval = null;
+    }
+    currentMoveDirection = { dx: 0, dy: 0 };
+}
+
+// D-padボタンのセットアップ
+function setupDpadButton(id, dx, dy) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+
+    const handlePress = (e) => {
+        e.preventDefault();
+        initAudio();
+        if (isTransitioning || dialog.active) return;
+        btn.classList.add('pressed');
+        // 連続移動を開始
+        startContinuousMove(dx, dy);
+    };
+    const handleRelease = () => {
+        btn.classList.remove('pressed');
+        stopContinuousMove();
+    };
+    btn.addEventListener('touchstart', handlePress, { passive: false });
+    btn.addEventListener('touchend', handleRelease);
+    btn.addEventListener('mousedown', handlePress);
+    btn.addEventListener('mouseup', handleRelease);
+    btn.addEventListener('mouseleave', handleRelease);
+}
+
+// アクションボタンのセットアップ
+function setupActionButton(id, callback) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+
+    const handlePress = (e) => {
+        e.preventDefault();
+        initAudio();
+        btn.classList.add('pressed');
+        callback();
+    };
+    const handleRelease = () => {
+        btn.classList.remove('pressed');
+    };
+    btn.addEventListener('touchstart', handlePress, { passive: false });
+    btn.addEventListener('touchend', handleRelease);
+    btn.addEventListener('mousedown', handlePress);
+    btn.addEventListener('mouseup', handleRelease);
+    btn.addEventListener('mouseleave', handleRelease);
 }
 
 function handleButton(btn) {
     if (btn === 'A') {
-        if (gameMode === MODE.FIELD) {
-            if (dialog.active) {
-                advanceDialog();
-            } else if (menu.active) {
-                // selectMenuItem();
-            } else {
-                interact();
-            }
-        }
+        onActionA();
     } else if (btn === 'B') {
-        if (menu.active) {
-            // closeMenu();
+        onActionB();
+    }
+}
+
+function onActionA() {
+    if (isTransitioning) return;
+
+    if (gameMode === MODE.FIELD) {
+        if (dialog.active) {
+            advanceDialog();
+        } else if (menu.active) {
+            // メニュー操作は後で実装
+        } else {
+            interact();
         }
+    }
+}
+
+function onActionB() {
+    if (dialog.active) {
+        // ダイアログを閉じる（closeDialog関数が必要）
+    } else if (menu.active) {
+        menu.active = false;
     }
 }
