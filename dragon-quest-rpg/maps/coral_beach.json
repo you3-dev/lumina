@@ -48,8 +48,8 @@
     {"id": "beach_crab", "x": 8, "y": 22, "sprite": "🦀", "type": "villager", "messages": ["カニカニ..."]}
   ],
   "chests": [
-    {"id": "beach_chest1", "x": 35, "y": 6, "itemId": 2, "itemName": "やくそう", "isOpened": false},
-    {"id": "beach_chest2", "x": 3, "y": 25, "itemId": 140, "itemName": "人魚の涙", "isOpened": false}
+    {"id": "beach_chest1", "x": 35, "y": 6, "itemId": 1, "isOpened": false},
+    {"id": "beach_chest2", "x": 3, "y": 25, "itemId": 140, "isOpened": false}
   ],
   "encounterTable": "area5_coral_beach",
   "encounterRate": 0.06
