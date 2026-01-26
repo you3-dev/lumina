@@ -1790,16 +1790,16 @@
             albida: {
                 name: '海賊貴族アルビダ',
                 sprite: '🏴‍☠️',
-                level: 50,
-                hp: 2500,
-                atk: 120,
-                def: 85,
-                speed: 75,
-                exp: 3500,
-                gold: 2000,
+                level: 52,
+                hp: 3800,
+                atk: 145,
+                def: 95,
+                speed: 80,
+                exp: 4000,
+                gold: 2500,
                 isBoss: true,
                 actions: 2,
-                skills: ['attack', 'commandAttack', 'mahoton', 'strongAttack'],
+                skills: ['attack', 'pirateSlash', 'anchorSmash', 'mahoton', 'strongAttack'],
                 resistances: { sleep: 0, blind: 0.3, poison: 0, silence: 0, fire: 1.0, ice: 1.0, lightning: 1.5, wind: 0.5 }
             },
 
@@ -1908,6 +1908,20 @@
                 target: 'all',
                 power: 40,
                 flashColor: 'rgba(255, 150, 50, 0.6)'
+            },
+            pirateSlash: {
+                name: 'かいぞくのいちげき',
+                type: 'attack',
+                target: 'single',
+                power: 85,
+                flashColor: 'rgba(100, 50, 50, 0.7)'
+            },
+            anchorSmash: {
+                name: 'いかりおとし',
+                type: 'attack',
+                target: 'all',
+                power: 55,
+                flashColor: 'rgba(80, 80, 80, 0.6)'
             },
 
             // セイレーン用
