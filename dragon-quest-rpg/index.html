@@ -666,6 +666,8 @@
             // 回復アイテム（上位）
             4: { id: 4, name: '上薬草', description: 'HPを100回復する', type: 'heal', value: 100, price: 50 },
             5: { id: 5, name: '世界樹の葉', description: '戦闘不能を回復する', type: 'revive', price: 500 },
+            6: { id: 6, name: '世界樹のしずく', description: '味方全員のHP/MPを全回復する', type: 'full_heal', price: 0 },
+            7: { id: 7, name: '力の種', description: '攻撃力が永続的に2上がる', type: 'stat_seed', statType: 'atk', statName: '攻撃力', value: 2, price: 300 },
             9: { id: 9, name: 'キメラのつばさ', description: '最後に訪れた町に戻る', type: 'escape', price: 25 },
             // エリア4: 氷雪の大陸アイテム
             // 消費アイテム
@@ -723,7 +725,22 @@
             143: { id: 143, name: '天空の海図', description: 'エリア6「天空界」への道を示す海図', type: 'quest', price: 0 },
 
             // その他（エリア5）
-            150: { id: 150, name: '古代のパーツ', description: '海底で見つかった機械の部品。売却用', type: 'treasure', price: 3000 }
+            150: { id: 150, name: '古代のパーツ', description: '海底で見つかった機械の部品。売却用', type: 'treasure', price: 3000 },
+
+            // ステータスアップ種（共通）
+            160: { id: 160, name: '守りの種', description: '防御力が永続的に2上がる', type: 'stat_seed', statType: 'def', statName: '防御力', value: 2, price: 300 },
+            161: { id: 161, name: '命の種', description: '最大HPが永続的に5上がる', type: 'stat_seed', statType: 'hp', statName: '最大HP', value: 5, price: 500 },
+            162: { id: 162, name: '不思議な木の実', description: '最大MPが永続的に3上がる', type: 'stat_seed', statType: 'mp', statName: '最大MP', value: 3, price: 500 },
+            163: { id: 163, name: '素早さの種', description: '素早さが永続的に2上がる', type: 'stat_seed', statType: 'speed', statName: '素早さ', value: 2, price: 300 },
+
+            // 売却用アイテム
+            170: { id: 170, name: '人魚の鱗', description: '美しく輝く人魚の鱗。高値で売れる', type: 'treasure', price: 2000 },
+            171: { id: 171, name: '小さなメダル', description: '不思議な力を持つメダル', type: 'treasure', price: 100 },
+
+            // ゴールド（宝箱専用）
+            180: { id: 180, name: '50ゴールド', description: '50Gを入手', type: 'gold', value: 50, price: 0 },
+            181: { id: 181, name: '100ゴールド', description: '100Gを入手', type: 'gold', value: 100, price: 0 },
+            182: { id: 182, name: '500ゴールド', description: '500Gを入手', type: 'gold', value: 500, price: 0 }
         };
 
         // ショップ商品リスト（エリア別対応）
@@ -7939,8 +7956,14 @@
                         const mapChest = maps[currentMapId].chests.find(c => c.id === chest.id);
                         if (mapChest) mapChest.isOpened = true;
                     }
-                    addItem(item.id, 1);
-                    startDialog(['宝箱をあけた！', `${item.name} を手に入れた！`]);
+                    // ゴールド宝箱の特殊処理
+                    if (item.type === 'gold') {
+                        partyData.gold += item.value;
+                        startDialog(['宝箱をあけた！', `${item.value} ゴールド を手に入れた！`]);
+                    } else {
+                        addItem(item.id, 1);
+                        startDialog(['宝箱をあけた！', `${item.name} を手に入れた！`]);
+                    }
                     saveGame();
                 }
             }
@@ -8506,6 +8529,63 @@
 
                 case 'key':
                     // 鍵：フィールドでは使えない
+                    message = 'ここでは 使えない！';
+                    break;
+
+                case 'full_heal':
+                    // 世界樹のしずく：パーティ全員のHP/MP全回復
+                    {
+                        let healed = false;
+                        party.forEach(m => {
+                            if (m.isAlive && (m.hp < m.maxHp || m.mp < m.maxMp)) {
+                                m.hp = m.maxHp;
+                                m.mp = m.maxMp;
+                                healed = true;
+                            }
+                        });
+                        if (healed) {
+                            message = `${item.name}を使った！\n全員の HP MPが 全回復した！`;
+                            success = true;
+                        } else {
+                            message = '全員 まんたんだ！';
+                        }
+                    }
+                    break;
+
+                case 'stat_seed':
+                    // ステータスアップ種：永続的にステータス上昇
+                    {
+                        if (!target.isAlive || target.hp <= 0) {
+                            message = `${target.name}は たおれている！`;
+                        } else {
+                            if (item.statType === 'atk') target.baseAtk += item.value;
+                            else if (item.statType === 'def') target.baseDef += item.value;
+                            else if (item.statType === 'hp') { target.maxHp += item.value; target.hp += item.value; }
+                            else if (item.statType === 'mp') { target.maxMp += item.value; target.mp += item.value; }
+                            else if (item.statType === 'speed') target.speed += item.value;
+                            updateMemberActualStats(target);
+                            message = `${target.name}に ${item.name}を使った！\n${item.statName}が ${item.value} 上がった！`;
+                            success = true;
+                        }
+                    }
+                    break;
+
+                case 'oxygen':
+                    // 酸素缶：酸素を回復（水中マップ用）
+                    {
+                        if (partyData.oxygen >= partyData.maxOxygen) {
+                            message = '酸素は まんたんだ！';
+                        } else {
+                            partyData.oxygen = Math.min(partyData.oxygen + item.value, partyData.maxOxygen);
+                            message = `${item.name}を使った！\n酸素が ${item.value} 回復した！`;
+                            success = true;
+                        }
+                    }
+                    break;
+
+                case 'treasure':
+                case 'gold':
+                    // 売却用アイテム・ゴールド：フィールドでは使えない
                     message = 'ここでは 使えない！';
                     break;
 
