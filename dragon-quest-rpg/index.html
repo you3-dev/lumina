@@ -490,7 +490,6 @@
         let titleMenuIndex = 0;
         let titleMenuActive = false;
         let hasSaveData = false;
-        let debugToggleCount = 0;  // デバッグ用カウンター
         let soundToggleListenerAdded = false;  // イベントリスナー重複防止フラグ
 
         // タイルタイプ
@@ -10205,6 +10204,21 @@
                 } else if (npc.type === 'sea_god_altar') {
                     // 海神の祭壇（3つの涙を捧げる）
                     handleSeaGodAltar(npc);
+                } else if (npc.id === 'snow_elder') {
+                    // エリア5遷移イベント（雪原の村長）
+                    if (isBossDefeated('iceQueen')) {
+                        startDialogWithCallback([
+                            "氷の女王を倒したか！実に見事な戦いぶりであった。",
+                            "しかし、世界にはまだ未知なる脅威がある。",
+                            "グランディア城の「時空の間」から、北の海へと繋がる扉が開かれた。",
+                            "ルーラでグランディア城へ戻り、「港町ポルティア」を目指すのじゃ。"
+                        ], () => {
+                            setStoryFlag('area4Completed', true);
+                            saveGame();
+                        });
+                    } else {
+                        startDialog(npc.messages);
+                    }
                 } else {
                     // ゲームクリア後はNPCのセリフが変わる
                     if (gameCleared && npc.clearedMessages) {
@@ -12755,7 +12769,6 @@
             }
 
             titleMenuActive = false;
-            debugToggleCount = 0;  // デバッグ用カウンターリセット
             pressStart.style.display = 'block';
             titleMenu.classList.remove('active');
             updateTitleMenuSelection();
@@ -12780,232 +12793,10 @@
 
                     initAudio();
                     toggleSound();
-                    // デバッグ用：タイトル画面で20回切り替えるとデバッグセーブ作成
-                    const titleScreen = document.getElementById('titleScreen');
-                    if (titleScreen && !titleScreen.classList.contains('hidden')) {
-                        debugToggleCount++;
-                        if (debugToggleCount === 20) {
-                            createDebugSaveData();
-                            debugToggleCount = 0;
-                        }
-                    }
                 };
 
                 soundToggleBtn.addEventListener('click', handleSoundToggle);
                 soundToggleBtn.addEventListener('touchend', handleSoundToggle);
-            }
-        }
-
-        // デバッグ用：エリア4クリア状態のセーブデータ作成（エリア5テスト用）
-        function createDebugSaveData() {
-            try {
-                // パーティをクリアしてヒーローを作成
-                party.length = 0;
-                const hero = createPartyMember({
-                    id: 'hero',
-                    name: 'ゆうしゃ',
-                    job: 'hero',
-                    sprite: '🧙',
-                    hp: 280,
-                    maxHp: 280,
-                    mp: 120,
-                    maxMp: 120,
-                    baseAtk: 75,
-                    baseDef: 60,
-                    speed: 14,
-                    level: 48,
-                    exp: 120000,
-                    spells: ['hoimi', 'behoimi', 'behomara', 'dein', 'raiden', 'rura', 'zaoriku'],
-                    equipment: { weapon: 19, armor: 28, accessory: null }
-                });
-                party.push(hero);
-
-                // マリア（魔法使い）を追加
-                const mage = createPartyMember({
-                    id: 'mage_maria',
-                    name: 'マリア',
-                    job: 'mage',
-                    sprite: '🧙',
-                    hp: 160,
-                    maxHp: 160,
-                    mp: 200,
-                    maxMp: 200,
-                    baseAtk: 35,
-                    baseDef: 28,
-                    speed: 16,
-                    level: 46,
-                    exp: 110000,
-                    spells: ['mera', 'merami', 'merazoma', 'gira', 'begirama', 'hoimi', 'behoimi', 'behomara'],
-                    equipment: { weapon: 45, armor: 54, accessory: null }
-                });
-                party.push(mage);
-
-                // セレン（星読み）を追加
-                const seren = createPartyMember({
-                    id: 'seer_seren',
-                    name: 'セレン',
-                    job: 'seer',
-                    sprite: '🔮',
-                    hp: 140,
-                    maxHp: 140,
-                    mp: 220,
-                    maxMp: 220,
-                    baseAtk: 28,
-                    baseDef: 24,
-                    speed: 22,
-                    level: 45,
-                    exp: 100000,
-                    spells: ['bagi', 'bagima', 'bagicross', 'rukani', 'rariho', 'piorimu', 'hoimi', 'behoimi'],
-                    equipment: { weapon: null, armor: null, accessory: null }
-                });
-                party.push(seren);
-
-                // グラシオ（氷の騎士）を追加
-                const glacio = createPartyMember({
-                    id: 'iceKnight_glacio',
-                    name: 'グラシオ',
-                    job: 'iceKnight',
-                    sprite: '🧊',
-                    hp: 220,
-                    maxHp: 220,
-                    mp: 60,
-                    maxMp: 60,
-                    baseAtk: 70,
-                    baseDef: 65,
-                    speed: 10,
-                    level: 44,
-                    exp: 95000,
-                    spells: ['hyado', 'hyodara', 'mahyado'],
-                    equipment: { weapon: 80, armor: 83, accessory: null }
-                });
-                party.push(glacio);
-
-                // partyData設定（ポルティアへ行ける状態）
-                partyData.gold = 80000;
-                partyData.x = 15;
-                partyData.y = 2;
-                partyData.direction = 'up';
-                partyData.inventory = [
-                    { id: 1, quantity: 20 },  // やくそう
-                    { id: 4, quantity: 10 },  // まんげつ草
-                    { id: 5, quantity: 5 },   // 聖水
-                    { id: 6, quantity: 3 },   // 世界樹のしずく
-                    { id: 9, quantity: 10 },  // キメラのつばさ
-                    { id: 120, quantity: 5 }  // 酸素缶
-                ];
-                // Area 5用のプロパティ
-                partyData.vehicle = 'none';
-                partyData.shipPosition = { x: 100, y: 105 };
-                partyData.oxygen = 100;
-                partyData.maxOxygen = 100;
-                partyData.gigantStepCounter = 0;
-                partyData.gigantPosition = { x: 150, y: 180 };
-
-                // フラグ設定（エリア1〜4クリア済み）
-                // エリア1
-                gameProgress.bossDefeated.midBoss = true;
-                gameProgress.storyFlags.reportedMidBossDefeat = true;
-                gameProgress.storyFlags.portalRoomUnlocked = true;
-                // エリア2
-                gameProgress.bossDefeated.quicksandBoss = true;
-                gameProgress.bossDefeated.banditKing = true;
-                gameProgress.bossDefeated.pyramidGuardian = true;
-                gameProgress.bossDefeated.desertGuardian = true;
-                gameProgress.storyFlags.bazaarUnlocked = true;
-                gameProgress.storyFlags.desertPortalUnlocked = true;
-                gameProgress.quests.waterShortage = { started: true, bossDefeated: true, completed: true };
-                gameProgress.quests.passportRecovery = { started: true, bossDefeated: true, completed: true };
-                gameProgress.quests.royalCrest = { started: true, bossDefeated: true, completed: true };
-                // エリア3
-                gameProgress.bossDefeated.shadowGuardian = true;
-                gameProgress.storyFlags.shadowGuardianDefeated = true;
-                gameProgress.storyFlags.northPathOpened = true;
-                gameProgress.storyFlags.area3Completed = true;
-                gameProgress.storyFlags.mageJoined = true;
-                gameProgress.storyFlags.serenJoined = true;
-                gameProgress.quests.serenJoin = { joined: true };
-                // エリア4（氷の女王撃破済み）
-                gameProgress.bossDefeated.iceGolem = true;
-                gameProgress.bossDefeated.iceQueen = true;
-                gameProgress.bossDefeated.frostWyrm = true;
-                gameProgress.storyFlags.iceGolemDefeated = true;
-                gameProgress.storyFlags.iceQueenDefeated = true;
-                gameProgress.storyFlags.frostWyrmDefeated = true;
-                gameProgress.storyFlags.area4Completed = true;
-                gameProgress.storyFlags.auroraOrbObtained = true;
-                gameProgress.storyFlags.glacioJoined = true;
-                gameProgress.quests.glacioJoin = { iceGolemDefeated: true, joined: true };
-                // エリア5（ポルティア・アルビダ撃破済み）
-                gameProgress.bossDefeated.albida = true;
-
-                // 直接localStorageにセーブデータを書き込む
-                const saveData = {
-                    party: party.map(m => ({
-                        id: m.id,
-                        name: m.name,
-                        job: m.job,
-                        sprite: m.sprite,
-                        hp: m.hp,
-                        maxHp: m.maxHp,
-                        mp: m.mp,
-                        maxMp: m.maxMp,
-                        baseAtk: m.baseAtk,
-                        baseDef: m.baseDef,
-                        speed: m.speed,
-                        level: m.level,
-                        exp: m.exp,
-                        spells: [...m.spells],
-                        equipment: { ...m.equipment },
-                        isAlive: true
-                    })),
-                    partyData: {
-                        x: partyData.x,
-                        y: partyData.y,
-                        direction: partyData.direction,
-                        gold: partyData.gold,
-                        inventory: partyData.inventory,
-                        vehicle: partyData.vehicle,
-                        shipPosition: partyData.shipPosition,
-                        oxygen: partyData.oxygen,
-                        maxOxygen: partyData.maxOxygen,
-                        gigantStepCounter: partyData.gigantStepCounter,
-                        gigantPosition: partyData.gigantPosition
-                    },
-                    currentMapPath: 'maps/town_portia.json',
-                    currentMapId: 'town_portia',
-                    chestStates: {},
-                    gameProgress: {
-                        bossDefeated: { ...gameProgress.bossDefeated },
-                        storyFlags: { ...gameProgress.storyFlags },
-                        areas: { ...gameProgress.areas },
-                        quests: JSON.parse(JSON.stringify(gameProgress.quests)),
-                        openedPassages: {},
-                        visitedLocations: [
-                            // エリア1
-                            { mapId: 'castle', displayName: 'グランディア城', area: 'area1', arrivalX: 9, arrivalY: 13 },
-                            { mapId: 'village', displayName: '中央の村', area: 'area1', arrivalX: 10, arrivalY: 18 },
-                            { mapId: 'town', displayName: 'アルカディアの街', area: 'area1', arrivalX: 9, arrivalY: 14 },
-                            // エリア2
-                            { mapId: 'oasis_village', displayName: 'オアシスの村', area: 'area2', arrivalX: 7, arrivalY: 13 },
-                            { mapId: 'bazaar_town', displayName: 'バザールの町', area: 'area2', arrivalX: 10, arrivalY: 18 },
-                            { mapId: 'hidden_village', displayName: '砂に埋もれた隠れ里', area: 'area2', arrivalX: 7, arrivalY: 13 },
-                            { mapId: 'desert_castle', displayName: '太陽の城塞', area: 'area2', arrivalX: 12, arrivalY: 23 },
-                            // エリア3
-                            { mapId: 'underworld_village', displayName: '地底の村', area: 'area3', arrivalX: 7, arrivalY: 13 },
-                            { mapId: 'hidden_sanctuary', displayName: '隠れ宿', area: 'area3', arrivalX: 5, arrivalY: 8 },
-                            // エリア4
-                            { mapId: 'snow_village', displayName: '雪原の村', area: 'area4', arrivalX: 10, arrivalY: 18 },
-                            // エリア5
-                            { mapId: 'town_portia', displayName: '港町ポルティア', area: 'area5', arrivalX: 15, arrivalY: 28 }
-                        ],
-                        lastEntrance: null
-                    }
-                };
-                localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-                alert('エリア5テスト用データセット完了！\\nポルティア桟橋（アルビダ撃破後）からスタート→北へ進んで出航');
-                location.reload();
-            } catch (e) {
-                alert('エラー: ' + e.message);
             }
         }
 
