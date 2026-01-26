@@ -81,7 +81,7 @@ const map = {
     data: data,
     warps: [
         // Embark to Ocean
-        { x: 15, y: 0, targetMap: "maps/area5_ocean.json", targetX: 100, targetY: 106, type: "embark" },
+        { x: 15, y: 0, targetMap: "maps/area5_ocean.json", targetX: 100, targetY: 108, type: "embark" },
         // Return to Portal Room (South)
         { x: 15, y: 29, targetMap: "maps/portal_room.json", targetX: 7, targetY: 5 }
     ],
@@ -154,6 +154,16 @@ const map = {
             sprite: "🔨",
             type: "villager", // Later upgrade logic
             messages: ["わしはこの船の整備士だ。", "この船は古代の技術で作られていてな、並大抵の嵐には負けんよ。"]
+        },
+        // 船長ボス（桟橋上で出口をブロック）
+        {
+            id: "albida_pirate",
+            x: 15, y: 1,
+            sprite: "🏴‍☠️",
+            type: "boss",
+            bossId: "albida",
+            messages: ["ハハハ！俺はアルビダ、この船の船長だ！", "この船が欲しければ、俺を倒してみろ！"],
+            defeatedMessages: ["...お前の勝ちだ。船は好きに使え。", "だが覚えておけ、海は甘くないぞ..."]
         }
     ],
     chests: [
