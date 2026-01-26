@@ -12882,9 +12882,9 @@
 
                 // partyData設定（ポルティアへ行ける状態）
                 partyData.gold = 80000;
-                partyData.x = 7;
-                partyData.y = 5;
-                partyData.direction = 'down';
+                partyData.x = 15;
+                partyData.y = 2;
+                partyData.direction = 'up';
                 partyData.inventory = [
                     { id: 1, quantity: 20 },  // やくそう
                     { id: 4, quantity: 10 },  // まんげつ草
@@ -12935,6 +12935,8 @@
                 gameProgress.storyFlags.auroraOrbObtained = true;
                 gameProgress.storyFlags.glacioJoined = true;
                 gameProgress.quests.glacioJoin = { iceGolemDefeated: true, joined: true };
+                // エリア5（ポルティア・アルビダ撃破済み）
+                gameProgress.bossDefeated.albida = true;
 
                 // 直接localStorageにセーブデータを書き込む
                 const saveData = {
@@ -12969,8 +12971,8 @@
                         gigantStepCounter: partyData.gigantStepCounter,
                         gigantPosition: partyData.gigantPosition
                     },
-                    currentMapPath: 'maps/portal_room.json',
-                    currentMapId: 'portal_room',
+                    currentMapPath: 'maps/town_portia.json',
+                    currentMapId: 'town_portia',
                     chestStates: {},
                     gameProgress: {
                         bossDefeated: { ...gameProgress.bossDefeated },
@@ -12992,13 +12994,15 @@
                             { mapId: 'underworld_village', displayName: '地底の村', area: 'area3', arrivalX: 7, arrivalY: 13 },
                             { mapId: 'hidden_sanctuary', displayName: '隠れ宿', area: 'area3', arrivalX: 5, arrivalY: 8 },
                             // エリア4
-                            { mapId: 'snow_village', displayName: '雪原の村', area: 'area4', arrivalX: 10, arrivalY: 18 }
+                            { mapId: 'snow_village', displayName: '雪原の村', area: 'area4', arrivalX: 10, arrivalY: 18 },
+                            // エリア5
+                            { mapId: 'town_portia', displayName: '港町ポルティア', area: 'area5', arrivalX: 15, arrivalY: 28 }
                         ],
                         lastEntrance: null
                     }
                 };
                 localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-                alert('エリア5テスト用データセット完了！\\n旅の扉の部屋からスタート→ポルティアへ');
+                alert('エリア5テスト用データセット完了！\\nポルティア桟橋（アルビダ撃破後）からスタート→北へ進んで出航');
                 location.reload();
             } catch (e) {
                 alert('エラー: ' + e.message);
